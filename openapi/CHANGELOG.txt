@@ -1,0 +1,291 @@
+Zachęcamy do śledzenia zmian tej strony używając np. https://www.followthatpage.com
+2026-06-09:
+  - dodanie opcjonalnych parametrów filtrowania do endpointów listujących:
+    - GET /dictionaries/deliveryMethods - id, cod, vendor
+    - GET /dictionaries/shippingMethods - id, groupId, operator, cod
+    - GET /dictionaries/responsiblePersons - id, name
+    - GET /dictionaries/responsibleProducers - id, name
+    - GET /dictionaries/attachments - id, kind, name
+    - GET /shipping/postingPoints - id, groupId, isDefault
+2026-06-02:
+  - GET /delivery/priceLists - zwraca teraz obiekty { id, name } zamiast samych nazw cenników (dodano id cennika dostawy)
+  - GET /delivery/priceListsDetails - dodanie opcjonalnych parametrów filtrowania: id (wiele), name (wiele), erliProEnabled
+2026-05-22:
+  - dodanie pola `currency` do obiektu Order (GET /orders/{id}, POST /orders/_search, inbox)
+  - dodanie pola `taxRate` do obiektu items w zamówieniu (GET /orders/{id}, POST /orders/_search, inbox)
+2025-12-15:
+  - dodanie PATCH /products/batch-update - aktualizacja wielu produktów jednocześnie
+2025-10-23:
+  - dodanie GET /payment/operations/:id - pobranie szczegółow płatności
+  - oznaczenie `GET /payment/:id` jako deprecated, należy używać `GET /payment/operations/:id`
+  - oznaczenie `GET /payment/payouts/:id` jako deprecated, należy używać `GET /payment/operations/:id`
+  - dodanie POST /payment/operations/_search - wyszukiwania operacji płatności
+  - oznaczenie `POST /payment/_search` jako deprecated, należy używać `POST /payment/operations/_search`
+  - oznaczenie `POST /payment/payouts/_search` jako deprecated, należy używać `POST /payment/operations/_search`
+2025-10-16:
+  - POST /dictionaries/categories/_search - ustawienie endpointu jako deprecated
+  - POST /dictionaries/category/_search - dodanie nowego endpointu do wyszukiwania kategorii
+  - POST /dictionaries/attribute/_search - dodanie nowego endpointu do wyszukiwania atrybutów 
+2025-08-07:
+  - dodanie nowego kuriera `Hellmann`
+2025-04-10:
+  - dodanie `translations` jako możliwą wartość `buyableProblems` produktu
+2025-03-31:
+  - POST /dictionaries/attributeValues/_search - dodanie nowego endpointu do wyszukiwania wartości atrybutów słownikowych 
+  - POST /dictionaries/categories/_search - ustawienie value oraz valueIds jako deprecated
+2025-03-27:
+  - POST /orders/_search - wycofanie możliwości sortowania po ID; rekomendujemy migrację na sortowanie po polu 'created' oraz pola 'after' w formacie opisanym w dokumentacji
+2025-03-19:
+  - deprekacja pola producerId: nowe pole: externalResponsibleProducer
+    deprekacja pola responsiblePersonId: nowe pole: externalResponsiblePerson
+    - POST /products/{externalId}
+    - PATCH /products/{externalId}
+2025-03-03:
+  - deprekacja wartości false dla pola archived w produkcie. Wyłączenie możliwości przywrócenia produktu z archiwum.
+2025-02-27:
+  - dodanie do mechanizmu hook'a orderSellerStatusChanged.
+2025-02-13:
+  - dodanie PATCH /orders/{id}/status - zarządzanie statusem zamówienia
+  - endpoint PATCH /orders/{id} jest przestarzały dla zmiany statusu zamówienia albo dla aktualizacji numeru przewozowego.
+    Zamiast niego należy używać:
+    - PATCH /orders/{id}/status dla zmiany statusu zamówienia
+    - POST /shipping/external dla dodania numeru przewozowego/paczki
+2024-11-28:
+  - dodanie GET /dictionaries/responsiblePersons - pobranie listy osób odpowiedzialnych za wprowadzenie produktu na rynek EU
+  - dodanie POST /dictionaries/responsiblePersons - utworzenie osoby odpowiedzialnej za wprowadzenie produktu na rynek EU
+  - dodanie PATCH /dictionaries/responsiblePersons/{id} - aktualizacji osoby odpowiedzialnej za wprowadzenie produktu na rynek EU
+  - dodanie DELETE /dictionaries/responsiblePersons/{id} - usunięcie osoby odpowiedzialnej za wprowadzenie produktu na rynek EU
+  - dodanie POST /dictionaries/responsiblePersons - utworzenie osoby odpowiedzialnej za wprowadzenie produktu na rynek EU
+  - dodanie GET /dictionaries/responsibleProducers - pobranie listy producentów
+  - dodanie POST /dictionaries/responsibleProducers - dodanie producenta
+  - dodanie PATCH /dictionaries/responsibleProducers/{id} - aktualizacja producenta
+  - dodanie DELETE /dictionaries/responsibleProducers/{id} - usunięcie producenta
+2024-11-25:
+  - dodanie do produktu pola producerId które odnosi się do zasobu /dictionaries/responsibleProducers (id)
+  - dodanie do produktu pola responsiblePersonId które odnosi się do zasobu /dictionaries/responsiblePersons (id)
+2024-10-31:
+  - w GET /products/_search, /products/{id} zwracamy stawkę VAT (taxRate)
+  - w GET /orders/_search, /orders/{id} w items, zwracamy stawkę VAT (taxRate)
+2024-08-29:
+  - w POST /products/_search pola 'archived' i 'status' nie mogą już być używane z operatorami 'in', 'nin', '>', '>=', '<', '<='. Nie można sortować po polu 'externalReferenceId' i filtrować z operatorami '>', '>=', '<', '<='
+2024-05-15:
+  - dodanie GET /delivery/priceListsDetails - pobranie szczegółowych cenników dostaw
+  - dodanie POST /delivery/priceLists - dodanie nowego cennika dostaw
+  - dodanie PATCH /delivery/priceLists/{id} - aktualizacja istniejącego cennika dostaw
+  - dodanie pola maxUnitPrice do obiektu ShippingMethod
+2024-02-15:
+  - dodanie GET /products/:externalId/discount - pobranie promocji czasowej
+  - dodanie POST /products/:externalId/discount - utworzenie promocji czasowej
+2023-10-02:
+  - dodanie GET /payments/payouts/{id} - pobranie wypłaty po id dla firmy
+  - dodanie GET /payments/payouts/_search - wyszukanie wypłat dla firmy
+2023-09-21
+  - dodanie GET /dictionaries/deliveryMethods/{priceList}
+2023-06-16:
+  - dodanie pola returns do obiektu Order
+2022-12-22:
+  - dodanie pola referencePriceType do obiektu Product
+2022-11-22:
+  - dodano adresy obrazków na serwerach Erli w polu internalUrl w images w ProductResponse.
+2022-08-20:
+  - domyślnie dispatchTime przyjmujemy w dniach roboczych, podawanie go w godzinach/miesiącach w przyszłości zostanie usunięte
+2022-06-29:
+  - zmiana externalReferences w ProductResponse z tablicy stringów na tablicę obiektów
+  - przesyłanie tablicy stringów w externalReferences w ProductCreate i ProductUpdate jest odradzane i w przyszłości ta możliwość zostanie usunięta
+2022-05-14:
+  - zmiana nazwy pola externalId na externalPaymentId w obiekcie Payment w /payments/{id} oraz /payments/_search
+2022-03-14:
+  - dodanie odpowiedzi typu ProductUpdateResponse w PATCH /products/{externalId}
+2022-03-10:
+  - dodanie pola calculatedParcelsCount do obiektu Order
+2022-02-18:
+  - dodanie pola valueIds do POST /dictionaries/categories/_search w sekcji attributes
+2022-02-15:
+  - dodanie POST /payments/_search wyszukiwanie płatności dla sklepu
+  - dodanie GET /payments/:id pobranie płatności po id dla sklepu
+  - dodanie pola purchasedAt do obiektu Order
+2022-02-14:
+  - oznaczono POST /billing/entries jako przestarzałe na rzecz /billing/company/entries
+  - dodanie POST /billing/company/rebates (możliwość czytania rezerwy i historii rabatów)
+  - dodanie POST /billing/company/entries - rozliczenia z ERLI dotyczące całej firmy (wszystkich sklepów jednej firmy)
+2022-02-11:
+  - dodanie pola vendor w GET /dictionaries/deliveryMethods
+2022-02-08
+  - zmiana minimalnej wagi dla paczek z 1g na 10g
+2022-02-04:
+  - dodanie GET /shipping/pickupProtocols
+2022-01-14:
+  - dodanie pola pickupProtocol w endpointach zwracajacych dane paczki np GET /shipping/parcels/{id}
+2022-01-10:
+  - ograniczenie długości dla pola additionalInformation do 40 znaków dla Poczty Polskiej
+2021-12-01:
+  - usunięcie pola description w zasobie Parcel
+2021-11-26:
+  - dodanie GET /dictionaries/shippingMethods
+  - dodanie GET /shipping/postingPoints
+  - dodanie POST /shipping/parcels
+  - dodanie POST /shipping/parcels/_search
+  - dodanie GET /shipping/parcels/{id}
+  - dodanie DELETE /shipping/parcels/{id}
+2021-11-19:
+  - dodanie POST /inbox/_search
+2021-11-17:
+  - wyłączono możliwość anulowania zamówienia przez API. Usunięto możliwość przekazywania pola ‘canceled’ dla zasobu PATCH order/{id}
+2021-10-29:
+  - poprawiono listę dostępnych statusów wysyłki w orderze – przy aktualizacji zamówienia lista dostępnych statusów została ograniczona w dokumentacji, tak aby odzwierciedlać zachowanie API
+2021-10-22:
+  - dodano pola street, buildingNumber i flatNumber w zamówieniach dla adresu dostawy i danych faktury
+2021-10-20:
+  - wkrótce wyłączymy możliwość anulowania zamówienia przez API. Usuniemy możliwość przekazywania pola ‘canceled’ dla zasobu PATCH order/{id}
+2021-10-18:
+  - usunięto z dokumentacji pola commissionAffectingCancelled oraz cancelled z Order.items[…], nie były one nigdy używane
+2021-09-30:
+  - zablokowano możliwość dodawania oraz edycji danych trackingowych w zamówieniu gdy wybraną metodą dostawy jest jedna z metod Erli
+2021-09-16:
+  - dodanie pola weight (waga w gramach) do produktów w zamowieniu GET /order/{id} oraz POST /order/_search
+2021-09-15:
+  - zwracanie błędu gdy w POST /commissions/_estimate zostanie przekazana kategoria, która nie jest liściem
+2021-09-02:
+  - nowe statusy wysyłki w orderze - "trackingUnavailable", "returned"
+2021-07-23:
+  - jednorazowo ustawiono wszystkim aktywnym produktom 'frozen.status: false`, czego efektem będzie możliwość aktualizacji ich stanu poprzez podpiętą integrację; dodatkowo nie powinno być możliwe zamrożenie pola status w aktywnym produkcie z panelu sklepu, wyłącznie z api
+2021-07-19:
+  - deprekacja pola packaging w produkcie; nowe pola: deliveryPriceList oraz weight (także we frozen)
+2021-07-09:
+  - dodano nowe metody dostawy do punktu: DPD i UPS
+2021-07-07:
+  - dodanie mechanizmu hook'ów orderCreated, orderStatusChanged.
+  - w przypadku błędu lub braku hook'a informacja o zdarzeniach: "productsNeedSync", "orderCreated", "orderStatusChanged" trafia do inbox.
+2021-06-17:
+  - możliwość wyszukiwania produktów według marketplaceId
+2021-06-14:
+  - dodanie POST /billing/entries
+  - dodanie GET /dictionaries/billingEntryTypes
+2021-06-10:
+  - dodanie pól: "max", "min", "precision" dla typu "number" i "range" atrybutów kategorii
+  - dodanie pól: "maxValues" oraz - jeżeli istnieje - "unit" do atrybutów kategorii
+2021-05-31:
+  - dodanie pola attributes w produkcie
+  - dodanie pola categories w produkcie
+2021-05-27:
+  - dodanie POST /commissions/_estimate
+2021-05-25:
+  - dodanie endpointu GET /me zwracającego ShopResponse
+2021-05-17:
+  - zwiększenie maksymalnej liczby wartości dla atrybutów zewnętrznych
+2021-05-13:
+  - w dokumentacji poprawiono zwracany kod http w PUT /hooks/{hookName}
+  - w orderze zrwacamy pole updated
+2021-05-07:
+  - nie ignorowanie nadmiarowych znaków na końcu klucza uwierzytelniającego
+2021-04-28:
+  - dodanie pola newExternalId w produkcie
+  - dodanie pola externalReferences w produkcie
+  - dodanie nowych statusów dostawy `claimed`, `canceled`, `error`
+2021-04-25:
+  - możliwość oznaczenia pojedynczych wiadomości jako przeczytane w inbox
+2021-04-07:
+  - dodanie ceny katalogowej (pole: `cataloguePrice`) w produkcie
+2021-03-31:
+  - dodanie `minPrice` jako możliwą wartość `buyableProblems` produktu
+2021-03-10:
+  - zmiana preferowanej wagi produktu w gramach, a nie w kilogramach
+2021-03-03:
+  - dodanie pola `invoiceType` w ProductCreate i ProductUpdate
+2021-02-20:
+  - oznaczenie `GET /dictionaries/categories` jako deprecated, należy używać `POST /dictionaries/categories/_search`
+2021-02-19:
+  - możliwość użycia tagów "sub" i "sup" w opisie produktów
+2021-02-16:
+  - nie da się zmienić ceny produktu, który jest aktualnie promowany
+  - udokumentowanie statusu zamówienia cancelled
+2021-02-09:
+  - listę zamówień (endpoint /orders/_search) można filtrować używając pola `userEmail`
+2021-01-28:
+  - przeniesienie endpointu /priceLists do /delivery/priceLists
+  - przeniesienie endpointu /dictionaries/vendors do /dictionaries/deliveryVendors
+2021-01-27:
+  - dodanie nowych endpointów: lista kurierów, lista metod dostawy, lista cenników, lista kategorii
+2021-01-19:
+  - pozwolenie na zapytania wielkości do 500 kiB (wcześniej limit wynosił 100 kiB)
+2021-01-14:
+  - ograniczenie długości przyjmowanych pól do max 2000 znaków (oprócz opisu produktu)
+2021-01-04:
+  - dodania pola "payment.id" w zamówieniu
+2020-12-23:
+  - lista produktów domyślnie zawiera produkty zarchiwizowane i niezarchiwizowane
+2020-12-03:
+  - pole `description` w ProductCreate i ProductUpdate może być nullem
+2020-11-24:
+  - pole `archived` w ProductUpdate i `archivedAt` w ProductSearch
+2020-11-19:
+  - pole isVariantImage jest wykorzystywane
+  - pole isVariantImage może być ustawione w wielu obrazkach danego produktu
+  - 'thumbnail' jako atrybut wariantowy może znajdować się wyłacznie na początku listy atrybutów wariantowych
+2020-11-16:
+  - dodanie filtrowania podczas przeszukiwania zamówień
+2020-10-22:
+  - dodanie pola archived do produktu
+2020-10-19:
+  - uaktualenienie dokumentacji: informacja o cachowaniu, usunięcie informacji o trybie paczkowania
+2020-09-23:
+  - rozszerzenie metody PATCH /orders/{id} o dodatkowe pola canceled i externalOrderId
+2020-09-15:
+  - dodanie mechanizmu hook'ów productsNeedSync
+2020-09-02:
+  - podniesienie wersji bibioteki do walidacji i do dokumentacji, naprawa błędów w walidacji
+2020-08-27:
+  - dodanie mechanizmu hook'ów checkBuyability
+2020-07-24:
+  - dodanie filtrowania i ubogacenie sortowania w /products/_search
+  - wybieranie które pola mają być zwracane w /products/_search
+  - dodanie pól created i updated do ProductResponse
+  - usunięcie endpointu /products (był deprecated od lutego), należy zamiast niego używać /products/_search
+  - usunięcie z dokumentacji z ProductResponse pola `shopId` (którego nie było w modelach)
+2020-07-22:
+  - zastąpienie pola frozenFields w produkcie polem frozen
+  - w ProductUpdate umożliwienie edycji pola frozen oraz wprowadzenie pola overrideFrozen
+2020-07-21:
+  - deprekacja pola frozenFields w produkcie
+2020-07-15:
+  - dodanie pola frozenFields do produktu
+2020-07-08:
+  - dodanie pola sku do produktu
+  - dodanie pól ean i sku do produktów w zamówieniu
+
+2020-07-06:
+  - naprawienie pokazywania NIPu w order.user.invoiceAddress
+
+2020-07-01:
+  - usunięcie nieudokumentowanych pól trackingowych z order.delivery
+  - usunięcie id z order.user.deliveryAddress, order.user.invoiceAddress
+
+2020-06-29:
+  - udokumentowanie pól firstName, lastName w order.user.deliveryAddress i w order.user.invoiceAddress
+  - usunięcie nieistniejącego pola name z order.user.deliveryAddress i z order.user.invoiceAddress
+  - udokumentowanie pola order.delivery.typeId
+
+2020-06-22:
+  - pozwalamy na ujemne stocki w produktach, w locie zmieniamy je na 0
+
+2020-06-10:
+  - poprawne zwracanie kodu błędu 413 (i kilku innych) zamiast 500
+
+2020-06-08:
+  - dodanie pól "rebate" oraz "items.X.unitPriceBeforeRebate" w zamówieniu
+
+2020-04-30:
+  - dodanie pola "ean" w produkcie
+
+2020-04-01:
+  - dodanie nowych możliwych wartości dla "deliveryTracking.vendor" w zmianie status zamówienia
+
+2020-03-30:
+  - dodanie nowego statusu zamówień "cancelled" (zmiana statusu zamówienia zawsze tworzy wiadomość w inbox)
+
+2020-03-03:
+  - pole id jest wymagane w wartościach atrybutów typu "dictionary"
+
+2020-02-24:
+  - deprekacja GET /products - zaplanowane pozbycie się tego endpointu
+  - dodanie POST /products/_search jako zamiennik dla GET /products
