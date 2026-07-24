@@ -1,4 +1,4 @@
-# ADR-002: Generate Layer 1 from the OpenAPI spec
+# ADR-001: Generate Layer 1 from the OpenAPI spec (models only)
 
 **Status:** Accepted
 **Date:** 2026-07-24
@@ -16,15 +16,17 @@ Generate Layer 1 (`*Raw` transport POJOs) from the vendored spec with `openapi-g
 generator, `native`/Jackson library), producing **models + supporting runtime only, no api-client
 classes** — the SDK reimplements transport itself. The vendored `openapi/swagger.json` is
 source-of-truth, re-fetched (never hand-edited), and never appears in a diff except as a deliberate
-whole-file refresh.
+whole-file refresh (`openapi/fetch-spec.sh`).
 
-Because the upstream spec has minor non-fatal defects and a few schemas trip known generator bugs, a
-build-only `normalizeSpec` step writes a corrected copy to `build/spec/` (collapses array-branch
-`oneOf`/`anyOf` to free-form; drops array-item enums), and generator spec validation is skipped.
-Details: `docs/KNOWN-SERVER-BEHAVIORS.md`.
+The upstream spec has minor non-fatal validation defects, and a few schemas trip known generator
+bugs. Rather than edit the spec, a build-only `normalizeSpec` step writes a corrected copy to
+`build/spec/`: it collapses `oneOf`/`anyOf` branches that contain an inline array to free-form
+objects, and drops `enum` from array `items` (the generator's dead-code query-string helper
+mis-types `List<Enum>` as `List<String>`). Generator spec validation is skipped.
 
 ## Consequences
 
 - Layer 1 tracks the spec automatically; a spec refresh is a single reviewed commit.
 - Generator quirks are handled in one declarative build step, not by editing generated code.
-- Some polymorphic value fields are `Object` at Layer 1; the domain layer re-types them.
+- Some polymorphic value fields are `Object`/`List<String>` at Layer 1; the domain layer re-types
+  them. Revisit the workarounds if a newer generator fixes the underlying bugs.

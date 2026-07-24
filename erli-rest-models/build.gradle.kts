@@ -31,7 +31,7 @@ val generatedRoot = layout.buildDirectory.dir("generated/openapi")
 // schemas include an inline array branch, which trips a known openapi-generator bug (it emits an
 // invalid `List<X>.class` token). This step writes a build-only normalized copy that collapses
 // exactly those array-branch composites to free-form objects (Object at Layer 1; the domain layer
-// re-types them). The vendored spec stays pristine. See docs/KNOWN-SERVER-BEHAVIORS.md.
+// re-types them). The vendored spec stays pristine. See ADR/ADR-001-generate-from-spec-models-only.md.
 val normalizeSpec by tasks.registering {
     inputs.file(vendoredSpec)
     outputs.file(normalizedSpec)
@@ -84,7 +84,7 @@ openApiGenerate {
 
     // Upstream spec has minor validation gaps (path params lacking required:true, stray
     // examples/default attributes). We never hand-edit the spec, so validation is skipped here and
-    // covered by tests + the live wire instead. See docs/KNOWN-SERVER-BEHAVIORS.md.
+    // covered by tests + the live wire instead. See ADR/ADR-001-generate-from-spec-models-only.md.
     validateSpec.set(false)
     skipValidateSpec.set(true)
 
@@ -99,7 +99,7 @@ openApiGenerate {
     generateModelDocumentation = false
     // Selective generation: models + their supporting runtime (the invoker package: JSON helper,
     // AbstractOpenApiSchema, date formats). NO per-endpoint api-client classes — the SDK reimplements
-    // transport itself (claude/7). Listing "models"+"supportingFiles" but not "apis" excludes apis.
+    // transport itself (ADR-002). Listing "models"+"supportingFiles" but not "apis" excludes apis.
     globalProperties = mapOf(
         "models" to "",
         "supportingFiles" to "",

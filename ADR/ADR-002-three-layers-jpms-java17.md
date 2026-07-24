@@ -1,4 +1,4 @@
-# ADR-001: Three-layer architecture with JPMS
+# ADR-002: Three-layer architecture with JPMS (Java 17)
 
 **Status:** Accepted
 **Date:** 2026-07-24
@@ -10,7 +10,7 @@ thin transport wrapper, and the internal transport/generated types must not leak
 
 ## Decision
 
-Adopt a three-layer module architecture with the Java Platform Module System:
+Adopt a three-layer module architecture on Java 17 with the Java Platform Module System:
 
 - **Layer 3 (public, exported):** `sdk.domain.*` — a single `ErliClient` (AutoCloseable) exposing
   interface domain accessors; immutable request/response records and typed builders. The only
@@ -21,10 +21,11 @@ Adopt a three-layer module architecture with the Java Platform Module System:
 
 Enforce the boundary with JPMS: a `erli-jpms-consumer` module compiled against the named-module
 surface, a test that parses `module-info.java` for un-exported leaks, and a javadoc element-list vs.
-exports diff.
+exports diff. `@NullMarked` at every exported `package-info.java`; internals and generated code are
+never annotated.
 
 ## Consequences
 
-- Consumers import only `sdk.domain.*`; `*Raw`/`*Impl` cannot leak.
+- Consumers import only `sdk.domain.*`; `*Raw`/`internal.*` cannot leak.
 - Refactoring Layer 1/2 is non-breaking as long as the exported surface is stable.
 - Slightly more module wiring up front; paid back by an enforced public contract.

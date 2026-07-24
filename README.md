@@ -1,21 +1,40 @@
 # erli-java-sdk
 
-Typed Java SDK for the **Erli.pl Marketplace REST API** (`https://erli.pl/svc/shop-api`).
+A typed Java SDK for the [Erli.pl Marketplace REST API](https://erli.pl/svc/shop-api/doc/).
 
-> **Unofficial.** Not affiliated with, endorsed by, or supported by Erli sp. z o.o. It wraps the
-> publicly documented Marketplace API (OpenAPI 3.0.0).
+> **Status: pre-release (`0.0.1-SNAPSHOT`).** Under active development on `develop`. The public API
+> is not stable and it is not yet published to Maven Central.
 
-## Status
+> **Unofficial and unaffiliated.** This is an independent, community-built SDK. It is **not** an
+> official Erli product and is **not affiliated with, endorsed, sponsored, or supported by Erli**.
+> "Erli" is a trademark of its respective owner; the name is used here solely to identify the
+> third-party REST API this library targets (nominative use). The software is provided "as is" under
+> AGPL-3.0-only, without warranty of any kind. You are responsible for using it in accordance with
+> Erli's API terms and conditions.
 
-Pre-release, under active development on the `develop` branch. Not yet published to Maven Central.
-Public API surface is not stable until the first tagged `v0.x` release.
+## About
 
-## What it is
+This SDK provides a premium, strongly-typed surface over the Erli Marketplace API: a single
+`ErliClient` entry point exposing domain accessors (products, orders, inbox, payments, shipping,
+delivery, dictionaries, billing, commissions, campaigns, hooks, account), Bearer-key authentication,
+resilient transport with a configurable retry policy, and lazy `Stream`-based pagination.
 
-A premium, strongly-typed client over the Erli Marketplace API — immutable request/response records,
-typed builders, remediation-oriented exceptions, lazy streaming pagination, and a configurable retry
-policy. Layer 1 (`*Raw` transport POJOs) is generated from `openapi/swagger.json`; consumers use only
-the `sdk.domain.*` surface.
+Data-transfer types are generated from Erli's
+[OpenAPI 3.0 specification](https://erli.pl/svc/shop-api/doc/swagger.json); the client, transport,
+authentication, and domain facades are hand-written.
+
+## Architecture
+
+Three layers, enforced by the Java Platform Module System (JPMS):
+
+| Layer | Module | Exported | Contents |
+|---|---|---|---|
+| 3 — public API | `erli-client` | yes | `ErliClient`, `sdk.domain.*` facades + builders + immutable models, `config`, `core`, `exception` |
+| 2 — internal | `erli-client` (`…erli.internal`) | no | `*Impl` endpoint wrappers, `HttpRuntime`, `ApiPaths`, retry, pagination |
+| 1 — generated | `erli-rest-models` | no | `*Raw` OpenAPI POJOs |
+
+Consumers depend only on `sdk.domain.*` — never on `internal.*`, `*Raw`, or transport types.
+Decisions are recorded in [`ADR/`](ADR/).
 
 ## Requirements
 
@@ -25,10 +44,12 @@ the `sdk.domain.*` surface.
 ## Authentication
 
 The API uses a single static **Bearer** API key, sent as `Authorization: Bearer <key>` on every
-request. Provide it from the environment; never hard-code it.
+request. Provide it from the environment; never hard-code it. The base URL is configurable (the
+production default is `https://erli.pl/svc/shop-api`; a separate test environment is allocated by
+Erli on request).
 
 ```java
-// Skeleton — the public surface is under construction (see docs/API-SURFACE.md).
+// Skeleton — the public surface is under construction.
 try (ErliClient client = ErliClient.builder()
         .apiKey(ApiKey.of(System.getenv("ERLI_API_KEY")))
         .build()) {
@@ -36,18 +57,6 @@ try (ErliClient client = ErliClient.builder()
 }
 ```
 
-The base URL is configurable; the production default is `https://erli.pl/svc/shop-api`. A separate
-test environment (distinct domain + credentials) is allocated by Erli BOK on request.
-
-## Documentation
-
-- Upstream API reference (Swagger UI): <https://erli.pl/svc/shop-api/doc/reference/>
-- Upstream guide: <https://erli.pl/svc/shop-api/doc/>
-- Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- API surface plan: [`docs/API-SURFACE.md`](docs/API-SURFACE.md)
-- Decisions: [`docs/ADR/`](docs/ADR/)
-
 ## License
 
-[AGPL-3.0-only](LICENSE). Commercial licensing is available separately; see
-[`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request.
+[AGPL-3.0-only](LICENSE.txt).
