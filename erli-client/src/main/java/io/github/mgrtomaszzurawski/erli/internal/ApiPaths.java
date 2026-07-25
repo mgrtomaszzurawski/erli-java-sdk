@@ -22,6 +22,8 @@ public final class ApiPaths {
     // --- APPEND BLOCK: bucket B Orders ------------------------------------------------------------
 
     // --- APPEND BLOCK: bucket C Shipping & Delivery -----------------------------------------------
+    /** {@code GET /shipping/parcels/{id}} — one parcel by id. */
+    public static final String SHIPPING_PARCEL_BY_ID = "/shipping/parcels/{id}";
 
     // --- APPEND BLOCK: bucket D Dictionaries ------------------------------------------------------
     /** {@code GET /dictionaries/deliveryMethods} — delivery methods reference list. */
@@ -42,4 +44,21 @@ public final class ApiPaths {
     public static final String PAYMENT_OPERATIONS_SEARCH = "/payments/operations/_search";
 
     // --- APPEND BLOCK: bucket F Comms & Automation ------------------------------------------------
+    /** Placeholder substituted with the hook name in {@link #HOOK_BY_NAME}. */
+    public static final String HOOK_NAME_PLACEHOLDER = "{hookName}";
+
+    /** {@code POST /hooks/checkBuyability/run} — test-fire the shop's buyability hook. */
+    public static final String HOOK_CHECK_BUYABILITY_RUN = "/hooks/checkBuyability/run";
+    /** {@code POST /hooks/productsNeedSync/run} — test-fire the shop's product-sync hook. */
+    public static final String HOOK_PRODUCTS_NEED_SYNC_RUN = "/hooks/productsNeedSync/run";
+    /** {@code GET /hooks} — the shop's registered webhook subscriptions. */
+    public static final String HOOKS = "/hooks";
+    /** {@code PUT}/{@code DELETE /hooks/{hookName}} — save or remove one subscription. */
+    public static final String HOOK_BY_NAME = "/hooks/{hookName}";
+    /** {@code GET /inbox} — the 500 oldest unread messages. */
+    public static final String INBOX = "/inbox";
+    /** {@code POST /inbox/mark-read} — acknowledge messages as read. */
+    public static final String INBOX_MARK_READ = "/inbox/mark-read";
+    /** {@code POST /inbox/_search} — the 500 oldest unread messages, filtered by type. */
+    public static final String INBOX_SEARCH = "/inbox/_search";
 }

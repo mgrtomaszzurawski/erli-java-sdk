@@ -33,4 +33,20 @@ public record ErliErrorDetails(
         String spanId,
         String payload,
         String rawBody) {
+
+    /**
+     * Log-safe rendering. The record's default {@code toString} would print {@link #rawBody()} and
+     * {@link #payload()} verbatim — and on 4xx responses from write endpoints those echo the request,
+     * which can carry buyer PII (e-mail, address, courier instructions). This override omits both; the
+     * accessors still expose them for deliberate, non-logging use. (CORE-11.)
+     */
+    @Override
+    public String toString() {
+        return "ErliErrorDetails[httpStatus=" + httpStatus
+                + ", failureType=" + failureType
+                + ", name=" + name
+                + ", traceId=" + traceId
+                + ", spanId=" + spanId
+                + ", rawBody=<redacted>]";
+    }
 }

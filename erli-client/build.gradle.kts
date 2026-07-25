@@ -20,9 +20,13 @@ dependencies {
     // Layer 1 raw models + Jackson stay internal to this module (never re-exported to consumers).
     implementation(project(":erli-rest-models"))
     implementation(libs.jackson.databind)
-    // Datatype modules JsonCodec registers directly. They also arrive transitively via Layer 1's
-    // `api(...)`, but this module imports them itself, so it declares them itself.
+    // Declared directly because JsonCodec imports JavaTimeModule and module-info `requires` it. It also
+    // arrives transitively through erli-rest-models' `api`, but relying on that would break this module
+    // the day Layer 1 narrows that dependency — and the JPMS gate would not catch it, because the
+    // consumer's compile classpath never resolves erli-client's transitive requires.
     implementation(libs.jackson.datatype.jsr310)
+    // Same reasoning for the nullable module: `nullable: true` properties are generated as
+    // JsonNullable<T>, and JsonCodec registers the module that decodes them.
     implementation(libs.jackson.databind.nullable)
 
     testImplementation(platform(libs.junit.bom))

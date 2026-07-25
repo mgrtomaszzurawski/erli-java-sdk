@@ -15,10 +15,11 @@ import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.Page;
 import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
 import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
-import io.github.mgrtomaszzurawski.erli.internal.client.finance.PathParameters;
+import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -89,7 +90,7 @@ public final class PaymentsAccessImpl implements PaymentsAccess {
     }
 
     private static String operationPath(String pathTemplate, long operationId) {
-        return PathParameters.fill(pathTemplate, ID_PLACEHOLDER, Long.toString(operationId));
+        return PathTemplate.expand(pathTemplate, Map.of(ID_PLACEHOLDER, Long.toString(operationId)));
     }
 
     /**

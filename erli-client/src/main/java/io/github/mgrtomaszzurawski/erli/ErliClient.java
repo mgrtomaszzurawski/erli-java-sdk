@@ -8,6 +8,9 @@ import io.github.mgrtomaszzurawski.erli.domain.billing.BillingAccess;
 import io.github.mgrtomaszzurawski.erli.domain.campaigns.CampaignsAccess;
 import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionsAccess;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentsAccess;
+import io.github.mgrtomaszzurawski.erli.domain.hooks.HooksAccess;
+import io.github.mgrtomaszzurawski.erli.domain.inbox.InboxAccess;
+import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shop.ShopAccess;
 import io.github.mgrtomaszzurawski.erli.internal.ErrorMapper;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
@@ -17,6 +20,9 @@ import io.github.mgrtomaszzurawski.erli.internal.client.billing.BillingAccessImp
 import io.github.mgrtomaszzurawski.erli.internal.client.campaigns.CampaignsAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.commissions.CommissionsAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.payments.PaymentsAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.hooks.HooksAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.inbox.InboxAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.shipping.ShippingAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shop.ShopAccessImpl;
 
 import java.net.http.HttpClient;
@@ -45,11 +51,14 @@ public final class ErliClient implements AutoCloseable {
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final ShopAccess shop;
+    private final ShippingAccess shipping;
     private final DictionariesAccess dictionaries;
     private final CommissionsAccess commissions;
     private final BillingAccess billing;
     private final CampaignsAccess campaigns;
     private final PaymentsAccess payments;
+    private final InboxAccess inbox;
+    private final HooksAccess hooks;
 
     private ErliClient(Builder builder) {
         HttpClient httpClient = builder.httpClient != null
@@ -66,11 +75,14 @@ public final class ErliClient implements AutoCloseable {
                 codec,
                 new ErrorMapper(codec));
         this.shop = new ShopAccessImpl(runtime);
+        this.shipping = new ShippingAccessImpl(runtime);
         this.dictionaries = new DictionariesAccessImpl(runtime);
         this.commissions = new CommissionsAccessImpl(runtime);
         this.billing = new BillingAccessImpl(runtime);
         this.campaigns = new CampaignsAccessImpl(runtime);
         this.payments = new PaymentsAccessImpl(runtime);
+        this.inbox = new InboxAccessImpl(runtime, codec);
+        this.hooks = new HooksAccessImpl(runtime);
     }
 
     public static Builder builder() {
@@ -94,6 +106,13 @@ public final class ErliClient implements AutoCloseable {
     // --- APPEND BLOCK: bucket A Products accessor -------------------------------------------------
     // --- APPEND BLOCK: bucket B Orders accessor --------------------------------------------------
     // --- APPEND BLOCK: bucket C Shipping & Delivery accessor -------------------------------------
+    /** Access to parcels, external parcels, posting points and pickup protocols ({@code /shipping/*}). */
+    public ShippingAccess shipping() {
+        ensureOpen();
+        return shipping;
+    }
+
+    // --- APPEND BLOCK: bucket D Dictionaries accessor --------------------------------------------
     /** Access to Erli's reference dictionaries (delivery methods, …). */
     public DictionariesAccess dictionaries() {
         ensureOpen();
@@ -126,6 +145,17 @@ public final class ErliClient implements AutoCloseable {
     }
 
     // --- APPEND BLOCK: bucket F Comms & Automation accessor --------------------------------------
+    /** Access to the shop's event inbox ({@code /inbox}). */
+    public InboxAccess inbox() {
+        ensureOpen();
+        return inbox;
+    }
+
+    /** Access to the shop's webhook subscriptions and their test-fire operations ({@code /hooks}). */
+    public HooksAccess hooks() {
+        ensureOpen();
+        return hooks;
+    }
 
     private void ensureOpen() {
         if (closed.get()) {

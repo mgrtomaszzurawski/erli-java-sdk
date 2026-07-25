@@ -32,6 +32,7 @@ module io.github.mgrtomaszzurawski.erli {
     // --- APPEND BLOCK: bucket A Products ---------------------------------------------------------
     // --- APPEND BLOCK: bucket B Orders ----------------------------------------------------------
     // --- APPEND BLOCK: bucket C Shipping & Delivery ---------------------------------------------
+    exports io.github.mgrtomaszzurawski.erli.domain.shipping;
     // --- APPEND BLOCK: bucket D Dictionaries ----------------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.dictionaries;
     // --- APPEND BLOCK: bucket E Finance ---------------------------------------------------------
@@ -46,4 +47,6 @@ module io.github.mgrtomaszzurawski.erli {
     // `opens` grants reflective access only: the package stays unexported and uncompilable against.
     opens io.github.mgrtomaszzurawski.erli.internal.client.payments to com.fasterxml.jackson.databind;
     // --- APPEND BLOCK: bucket F Comms & Automation ----------------------------------------------
+    exports io.github.mgrtomaszzurawski.erli.domain.hooks;
+    exports io.github.mgrtomaszzurawski.erli.domain.inbox;
 }

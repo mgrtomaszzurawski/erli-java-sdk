@@ -57,13 +57,26 @@ try (ErliClient client = ErliClient.builder()
 }
 ```
 
-## Guides
+## Feature guides
 
-Per-feature guides land with the domain they document.
+Per-domain guides are added as each domain ships:
 
-| Guide | Covers |
-|---|---|
-| [Finance](docs/finance.md) | payments, payouts, billing ledger, commission estimates, campaign spend |
+| Guide | Accessor | What it covers |
+|---|---|---|
+| [`docs/inbox.md`](docs/inbox.md) | `client.inbox()` | polling the event inbox, order/product-sync events, acknowledging messages |
+| [`docs/hooks.md`](docs/hooks.md) | `client.hooks()` | registering webhook subscriptions and firing them on demand |
+| [`docs/finance.md`](docs/finance.md) | `client.payments()`, `client.billing()`, `client.commissions()`, `client.campaigns()` | payments and payouts, the settlement ledger, commission estimates, campaign spend |
+
+```java
+// Drain the event inbox, then acknowledge the batch.
+try (ErliClient client = ErliClient.fromEnvironment()) {
+    List<Message> batch = client.inbox().unread();
+    batch.forEach(message -> System.out.println(message.type() + " at " + message.created()));
+    if (!batch.isEmpty()) {
+        client.inbox().markRead(ReadReceipt.upTo(batch.get(batch.size() - 1).id()));
+    }
+}
+```
 
 ## License
 
