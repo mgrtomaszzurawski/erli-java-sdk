@@ -66,7 +66,7 @@ public final class ErliClient implements AutoCloseable {
                 codec,
                 new ErrorMapper(codec));
         this.shop = new ShopAccessImpl(runtime);
-        this.shipping = new ShippingAccessImpl(runtime);
+        this.shipping = new ShippingAccessImpl(runtime, codec);
         this.delivery = new DeliveryAccessImpl(runtime);
         this.dictionaries = new DictionariesAccessImpl(runtime);
         this.inbox = new InboxAccessImpl(runtime, codec);

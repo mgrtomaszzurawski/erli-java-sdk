@@ -14,6 +14,7 @@ import io.github.mgrtomaszzurawski.erli.domain.shipping.PostingPointQuery;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingAccess;
 import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
+import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
 import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,9 +42,11 @@ public final class ShippingAccessImpl implements ShippingAccess {
     private static final String FILTER_DEFAULT_ONLY = "true";
 
     private final HttpRuntime runtime;
+    private final JsonCodec codec;
 
-    public ShippingAccessImpl(HttpRuntime runtime) {
+    public ShippingAccessImpl(HttpRuntime runtime, JsonCodec codec) {
         this.runtime = Objects.requireNonNull(runtime, "runtime");
+        this.codec = Objects.requireNonNull(codec, "codec");
     }
 
     @Override
@@ -64,9 +67,9 @@ public final class ShippingAccessImpl implements ShippingAccess {
     }
 
     @Override
-    public List<Parcel> searchParcels(List<ParcelFilter> filters) {
-        requireNotEmpty(filters, "filters");
-        return runtime.postList(ApiPaths.SHIPPING_PARCELS_SEARCH, ShippingRequestMapper.toRawSearch(filters),
+    public List<Parcel> searchParcels(ParcelFilter filter) {
+        Objects.requireNonNull(filter, "filter");
+        return runtime.postList(ApiPaths.SHIPPING_PARCELS_SEARCH, ShippingRequestMapper.toRawSearch(filter),
                         io.github.mgrtomaszzurawski.erli.rest.model.Parcel.class)
                 .stream()
                 .map(ParcelMapper::toDomain)
@@ -86,7 +89,7 @@ public final class ShippingAccessImpl implements ShippingAccess {
         return runtime.postList(ApiPaths.SHIPPING_EXTERNAL,
                         ShippingRequestMapper.toRawExternalParcels(drafts), JsonNode.class)
                 .stream()
-                .map(ExternalParcelMapper::toResult)
+                .map(rawEntry -> ExternalParcelMapper.toResult(rawEntry, codec))
                 .toList();
     }
 

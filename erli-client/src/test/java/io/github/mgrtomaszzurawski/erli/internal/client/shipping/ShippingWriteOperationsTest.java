@@ -112,7 +112,7 @@ class ShippingWriteOperationsTest {
                 RetryPolicy.builder().maxAttempts(2).baseDelay(Duration.ofMillis(1))
                         .maxDelay(Duration.ofMillis(2)).randomGenerator(new Random(0)).build(),
                 USER_AGENT, Duration.ofSeconds(5), codec, new ErrorMapper(codec));
-        return new ShippingAccessImpl(runtime);
+        return new ShippingAccessImpl(runtime, codec);
     }
 
     private static ParcelDraft sampleDraft() {
@@ -156,8 +156,7 @@ class ShippingWriteOperationsTest {
     void postsASearchFilterInTheShapeTheApiExpects() {
         server.stubFor(post(urlEqualTo(PARCELS_SEARCH_PATH)).willReturn(okJson("[]")));
 
-        shippingAccess().searchParcels(
-                List.of(ParcelFilter.isEqualTo(ParcelSearchField.ORDER_ID, "100007x1234")));
+        shippingAccess().searchParcels(ParcelFilter.isEqualTo(ParcelSearchField.ORDER_ID, "100007x1234"));
 
         server.verify(postRequestedFor(urlEqualTo(PARCELS_SEARCH_PATH))
                 .withRequestBody(equalToJson("""
@@ -169,8 +168,7 @@ class ShippingWriteOperationsTest {
     void sendsAMembershipFilterAsAListValue() {
         server.stubFor(post(urlEqualTo(PARCELS_SEARCH_PATH)).willReturn(okJson("[]")));
 
-        shippingAccess().searchParcels(
-                List.of(ParcelFilter.isAnyOf(ParcelSearchField.ID, List.of("1", "2"))));
+        shippingAccess().searchParcels(ParcelFilter.isAnyOf(ParcelSearchField.ID, List.of("1", "2")));
 
         server.verify(postRequestedFor(urlEqualTo(PARCELS_SEARCH_PATH))
                 .withRequestBody(equalToJson("""
@@ -282,11 +280,36 @@ class ShippingWriteOperationsTest {
     }
 
     @Test
-    void refusesEmptyBatchesBeforeSendingAnything() {
+    void refusesAnEmptyParcelBatchWithoutSendingAnything() {
         assertThrows(IllegalArgumentException.class, () -> shippingAccess().createParcels(List.of()));
-        assertThrows(IllegalArgumentException.class, () -> shippingAccess().searchParcels(List.of()));
-        assertThrows(IllegalArgumentException.class, () -> shippingAccess().pickupProtocols(List.of()));
+
+        server.verify(0, postRequestedFor(urlEqualTo(PARCELS_PATH)));
+    }
+
+    @Test
+    void refusesAnEmptyExternalBatchWithoutSendingAnything() {
         assertThrows(IllegalArgumentException.class,
                 () -> shippingAccess().registerExternalParcels(List.of()));
+
+        server.verify(0, postRequestedFor(urlEqualTo(EXTERNAL_PATH)));
+    }
+
+    @Test
+    void refusesAnEmptyPickupProtocolRequestWithoutSendingAnything() {
+        assertThrows(IllegalArgumentException.class, () -> shippingAccess().pickupProtocols(List.of()));
+
+        server.verify(0, getRequestedFor(urlPathEqualTo(PICKUP_PROTOCOLS_PATH)));
+    }
+
+    @Test
+    void refusesARelativePathSegmentOnTheDestructiveDeleteVerbs() {
+        assertThrows(IllegalArgumentException.class,
+                () -> shippingAccess().cancelParcel(ParcelId.of("..")));
+        assertThrows(IllegalArgumentException.class,
+                () -> shippingAccess().deleteExternalParcel(ParcelId.of(".")));
+
+        // Collapsing "." to the collection endpoint would turn a single cancel into a bulk operation.
+        server.verify(0, deleteRequestedFor(urlPathEqualTo("/shipping/parcels/")));
+        server.verify(0, deleteRequestedFor(urlPathEqualTo(EXTERNAL_PATH)));
     }
 }

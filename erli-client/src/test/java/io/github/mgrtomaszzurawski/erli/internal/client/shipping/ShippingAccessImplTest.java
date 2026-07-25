@@ -93,7 +93,7 @@ class ShippingAccessImplTest {
                 Duration.ofSeconds(5),
                 codec,
                 new ErrorMapper(codec));
-        return new ShippingAccessImpl(runtime);
+        return new ShippingAccessImpl(runtime, codec);
     }
 
     private static RetryPolicy fastRetry() {

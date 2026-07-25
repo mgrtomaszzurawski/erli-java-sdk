@@ -39,10 +39,13 @@ public interface ShippingAccess {
     /**
      * Search parcels ({@code POST /shipping/parcels/_search}).
      *
-     * @param filters the filters to apply; all must match. Must not be empty
+     * <p>Erli's search body carries exactly one filter — there is no array and no and/or wrapper — so
+     * this takes one rather than a list a caller could over-fill and have silently truncated.
+     *
+     * @param filter the filter to apply
      * @return the matching parcels
      */
-    List<Parcel> searchParcels(List<ParcelFilter> filters);
+    List<Parcel> searchParcels(ParcelFilter filter);
 
     /**
      * Cancel a parcel ({@code DELETE /shipping/parcels/{id}}).

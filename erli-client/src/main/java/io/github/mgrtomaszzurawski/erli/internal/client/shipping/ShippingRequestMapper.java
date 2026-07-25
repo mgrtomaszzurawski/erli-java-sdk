@@ -153,23 +153,14 @@ final class ShippingRequestMapper {
     }
 
     /**
-     * Build the {@code _search} body.
-     *
-     * <p>The API states {@code filter} as an {@code anyOf} over two shapes — scalar comparison and
-     * membership — which the generated model exposes as two branch types. The sealed
-     * {@link ParcelFilter} already guarantees the operator and value agree, so each domain filter maps
-     * straight onto its matching branch.
-     *
-     * <p>The wire accepts a single filter object, not an array, so exactly one filter is sent; callers
-     * passing more are told so rather than having the extras silently dropped.
+     * Build the {@code _search} body. The API states {@code filter} as an {@code anyOf} over two
+     * shapes — scalar comparison and membership — which the generated model exposes as two branch
+     * types. The sealed {@link ParcelFilter} already guarantees the operator and value agree, so each
+     * domain filter maps straight onto its matching branch.
      */
-    static SearchParcels toRawSearch(List<ParcelFilter> filters) {
-        if (filters.size() != 1) {
-            throw new IllegalArgumentException(
-                    "Erli accepts exactly one parcel search filter, got " + filters.size());
-        }
+    static SearchParcels toRawSearch(ParcelFilter filter) {
         SearchParcels raw = new SearchParcels();
-        raw.filter(toRawFilter(filters.get(0)));
+        raw.filter(toRawFilter(filter));
         return raw;
     }
 

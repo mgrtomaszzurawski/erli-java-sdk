@@ -72,6 +72,7 @@ class DeliveryAccessImplTest {
     private static final String PRICE_LIST_BY_ID_PATH = "/delivery/priceList/42";
     private static final int HTTP_BAD_REQUEST = 400;
     private static final int HTTP_UNAUTHORIZED = 401;
+    private static final int HTTP_FORBIDDEN = 403;
     private static final int HTTP_NOT_FOUND = 404;
     private static final int HTTP_CONFLICT = 409;
     private static final int HTTP_SERVER_ERROR = 500;
@@ -235,11 +236,23 @@ class DeliveryAccessImplTest {
         server.verify(0, postRequestedFor(urlEqualTo(PRICE_LIST_PATH)));
     }
 
+    @Test
+    void mapsAWriteEndpointErrorToItsRemediationExceptionToo() {
+        server.stubFor(post(urlEqualTo(PRICE_LIST_PATH)).willReturn(aResponse().withStatus(HTTP_CONFLICT)
+                .withBody("{\"errorCode\":1200,\"errorMessage\":\"name taken\"}")));
+
+        // The conflict this area actually produces is on create, not on the read the table drives.
+        assertThrows(ErliValidationException.class, () -> deliveryAccess().createPriceList(
+                PriceListDraft.builder("*").price(samplePrice()).build()));
+    }
+
     /** The mandatory error-path table ({@code TESTING.md}) for this area's read endpoint. */
     static Stream<Arguments> errorPathTable() {
         return Stream.of(
                 Arguments.of(HTTP_UNAUTHORIZED,
                         "{\"failureType\":\"security\",\"message\":\"Invalid API key\",\"httpCode\":401}",
+                        ErliAuthException.class),
+                Arguments.of(HTTP_FORBIDDEN, "{\"failureType\":\"security\",\"httpCode\":403}",
                         ErliAuthException.class),
                 Arguments.of(HTTP_NOT_FOUND, "{\"errorCode\":1400}", ErliNotFoundException.class),
                 Arguments.of(HTTP_BAD_REQUEST, "{\"errorCode\":1200}", ErliValidationException.class),

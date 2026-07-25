@@ -41,6 +41,24 @@ public record ParcelDraft(
         Objects.requireNonNull(additionalInformation, "additionalInformation");
     }
 
+    /**
+     * Renders the draft without its personal data. {@link ShippingParty} redacts itself, but
+     * {@code additionalInformation} is free text for the courier ("leave with the neighbour at flat 3,
+     * gate code 1234") and routinely restates the delivery address — the read side hides the same field
+     * on {@link ParcelShipment}, and an outbound draft must not leak what the inbound record protects.
+     */
+    @Override
+    public String toString() {
+        return "ParcelDraft[orderId=" + orderId
+                + ", deliveryMethod=" + deliveryMethod
+                + ", dimensions=" + dimensions
+                + ", receiver=" + receiver
+                + ", postingPointId=" + postingPointId.map(String::valueOf).orElse("null")
+                + ", additionalInformation=" + (additionalInformation.isEmpty() ? "null" : "***")
+                + ", nonStandard=" + nonStandard
+                + ']';
+    }
+
     public static Builder builder(
             OrderId orderId, ShippingMethodId deliveryMethod, ParcelDimensions dimensions,
             ShippingParty receiver) {

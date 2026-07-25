@@ -28,8 +28,7 @@ final class PriceListRequestMapper {
 
     private static final String DIMENSION_KEY = "dimension";
     private static final String LIMIT_KEY = "limit";
-    /** Grosze per złoty — the scale that turns a {@link Money} back into the integer the API wants. */
-    private static final BigDecimal MINOR_UNITS_PER_MAJOR = new BigDecimal("100");
+    private static final BigDecimal TEN = BigDecimal.TEN;
 
     private PriceListRequestMapper() {
     }
@@ -107,15 +106,28 @@ final class PriceListRequestMapper {
         return raw;
     }
 
-    /** Mirrors {@link PriceListMapper}'s read side: the wire carries grosze, the domain carries Money. */
+    /**
+     * Mirror of {@link PriceListMapper}'s read side: the wire carries minor units, the domain carries
+     * {@link Money}. The scale comes from the currency itself rather than a hardcoded 100, so the
+     * conversion stays exact for any currency Erli adds — and the two failure modes are reported
+     * apart, because "0.5 grosza" and "more than a billion złoty" need different fixes.
+     */
     private static Integer toMinorUnits(Money amount, String fieldName) {
-        BigDecimal minorUnits = amount.amount().multiply(MINOR_UNITS_PER_MAJOR);
+        int fractionDigits = amount.currency().getDefaultFractionDigits();
+        BigDecimal minorUnits = amount.amount().multiply(TEN.pow(Math.max(fractionDigits, 0)));
+        BigDecimal whole;
         try {
-            return minorUnits.intValueExact();
+            whole = minorUnits.setScale(0, java.math.RoundingMode.UNNECESSARY);
         } catch (ArithmeticException notAWholeNumber) {
-            throw new IllegalArgumentException(
-                    "'" + fieldName + "' must be a whole number of grosze, got " + amount.amount(),
+            throw new IllegalArgumentException("'" + fieldName + "' is not a whole number of "
+                    + amount.currency().getCurrencyCode() + " minor units: " + amount.amount(),
                     notAWholeNumber);
+        }
+        try {
+            return whole.intValueExact();
+        } catch (ArithmeticException tooLarge) {
+            throw new IllegalArgumentException("'" + fieldName + "' exceeds the range the API accepts: "
+                    + amount.amount() + " " + amount.currency().getCurrencyCode(), tooLarge);
         }
     }
 
