@@ -4,11 +4,13 @@ import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliConfigurationException;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DictionariesAccess;
+import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionsAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shop.ShopAccess;
 import io.github.mgrtomaszzurawski.erli.internal.ErrorMapper;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.internal.client.dictionaries.DictionariesAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.commissions.CommissionsAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shop.ShopAccessImpl;
 
 import java.net.http.HttpClient;
@@ -38,6 +40,7 @@ public final class ErliClient implements AutoCloseable {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final ShopAccess shop;
     private final DictionariesAccess dictionaries;
+    private final CommissionsAccess commissions;
 
     private ErliClient(Builder builder) {
         HttpClient httpClient = builder.httpClient != null
@@ -55,6 +58,7 @@ public final class ErliClient implements AutoCloseable {
                 new ErrorMapper(codec));
         this.shop = new ShopAccessImpl(runtime);
         this.dictionaries = new DictionariesAccessImpl(runtime);
+        this.commissions = new CommissionsAccessImpl(runtime);
     }
 
     public static Builder builder() {
@@ -84,6 +88,13 @@ public final class ErliClient implements AutoCloseable {
         return dictionaries;
     }
     // --- APPEND BLOCK: bucket E Finance accessor -------------------------------------------------
+
+    /** Commission estimates ({@code POST /commissions/_estimate}). */
+    public CommissionsAccess commissions() {
+        ensureOpen();
+        return commissions;
+    }
+
     // --- APPEND BLOCK: bucket F Comms & Automation accessor --------------------------------------
 
     private void ensureOpen() {
