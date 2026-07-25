@@ -50,7 +50,14 @@ public final class JsonCodec {
                 // An unset optional field must be omitted from a write body, not sent as an explicit
                 // null: the API's request schemas are additionalProperties:false and treat a null as a
                 // value to store. This also lets JsonNullable's "undefined" state stay off the wire.
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                // Unknown enum values decode to null instead of throwing (CORE-12). A Layer-1 enum is a
+                // snapshot of the vendored spec; when the API grows one (a new PayU method, a new
+                // carrier), a strict decoder would fail the WHOLE response over a single field. With
+                // this, decoding survives and the field is null — closed enums stay fail-loud via the
+                // mapper's required-field check, while open/growing enums map null to an UNRECOGNIZED
+                // sentinel. See KNOWN-SERVER-BEHAVIORS.md "Enum handling".
+                .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
     }
 
     /** Deserialize a response body into {@code type}, wrapping any failure as a transport error. */
