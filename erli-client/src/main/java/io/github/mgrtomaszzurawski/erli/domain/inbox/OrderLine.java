@@ -21,7 +21,8 @@ import java.util.Optional;
  * @param slug                  the marketplace URL slug at purchase time
  * @param ean                   the product's EAN, if it has one
  * @param sku                   the shop's SKU, if it has one
- * @param taxRate               the VAT rate that applied, when the API reports it
+ * @param taxRate               the VAT rate that applied, when the API reports one this SDK version
+ *                              recognises — an unrecognised rate decodes to absent (CORE-12)
  */
 public record OrderLine(
         long id,

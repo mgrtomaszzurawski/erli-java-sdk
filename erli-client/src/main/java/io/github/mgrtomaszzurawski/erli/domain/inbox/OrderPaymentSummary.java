@@ -11,7 +11,8 @@ import java.util.Optional;
  * payload the shop receives.
  *
  * @param id     the marketplace's payment id
- * @param status the payment's status, when the API reports it
+ * @param status the payment's status, when the API reports one this SDK version recognises — an
+ *               unrecognised status decodes to absent (CORE-12)
  */
 @Deprecated(since = "0.1.0")
 public record OrderPaymentSummary(long id, Optional<PaymentStatus> status) {

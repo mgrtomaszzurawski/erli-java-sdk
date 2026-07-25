@@ -11,7 +11,8 @@ import java.util.Optional;
  * @param externalId  the operator's own id for the point
  * @param heading     the point's headline, as shown to the buyer
  * @param type        the operator's type code for the point
- * @param provider    which operator runs the point
+ * @param provider    which operator runs the point, when the API named one and this SDK version
+ *                    recognises it — an unrecognised operator also decodes to absent (CORE-12)
  * @param name        the point's name
  * @param description free-form directions, e.g. opening hours or how to find it
  * @param address     the street address
