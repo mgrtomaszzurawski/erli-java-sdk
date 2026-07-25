@@ -186,6 +186,30 @@ class AttachmentMapperTest {
     }
 
     @Test
+    void refusesToTruncateAProductIdTheApiCannotRepresent() {
+        List<Long> tooLarge = List.of(Integer.MAX_VALUE + 1L);
+
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+                () -> AttachmentMapper.toAttachRequest(1L, tooLarge));
+
+        assertTrue(failure.getMessage().contains("product id"), failure.getMessage());
+    }
+
+    @Test
+    void refusesToTruncateAnAttachmentIdOnDelete() {
+        List<Long> tooLarge = List.of(Integer.MAX_VALUE + 1L);
+
+        assertThrows(IllegalArgumentException.class, () -> AttachmentMapper.toDeleteRequest(tooLarge));
+    }
+
+    @Test
+    void resolvesEveryMarketFromItsWireValue() {
+        for (Market market : Market.values()) {
+            assertEquals(market, Market.fromWire(market.wireValue()));
+        }
+    }
+
+    @Test
     void reportsThePerProductFailuresTheApiReturnsWithHttp200() {
         // Observed live: attach answers 200 with ok:false when a product id does not exist.
         ManageAttachedProductsResponse raw = new JsonCodec().read("""

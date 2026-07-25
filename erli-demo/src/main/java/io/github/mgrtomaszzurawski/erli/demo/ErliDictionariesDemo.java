@@ -42,7 +42,12 @@ import java.util.List;
 public final class ErliDictionariesDemo {
 
     private static final int SAMPLE_SIZE = 3;
-    private static final int CATEGORY_PROBE_LIMIT = 250;
+    /**
+     * One page exactly: the stream short-circuits after the first fetch, so the live proof costs one
+     * request rather than two. The sandbox rate-limits a burst readily and multi-page walking is
+     * already pinned by {@code DictionaryEndpointsTest}.
+     */
+    private static final int CATEGORY_PROBE_LIMIT = 200;
     /** A category known to be a leaf on the sandbox ("Elementy dekarskie"). */
     private static final CategoryId SAMPLE_LEAF_CATEGORY = CategoryId.of("4");
     private static final String SEED_KEY_PREFIX = "erli-sdk-demo-";
@@ -124,18 +129,19 @@ public final class ErliDictionariesDemo {
         System.out.printf("createResponsiblePerson    -> id=%d, key=%s%n", created.id(), created.idempotenceKey());
         System.out.printf("    toString redacts PII: %s%n", created);
 
-        List<ResponsibleParty> found = dictionaries.responsiblePersons(ResponsiblePartyQuery.byId(created.id()));
-        System.out.printf("responsiblePersons(byId)   -> %d%n", found.size());
+        // Whatever happens next — including the 429 this sandbox hands out readily — the entry must
+        // not survive the run, or the next live review finds a dirty shop.
+        try {
+            List<ResponsibleParty> found = dictionaries.responsiblePersons(ResponsiblePartyQuery.byId(created.id()));
+            System.out.printf("responsiblePersons(byId)   -> %d%n", found.size());
 
-        ResponsibleParty patched = dictionaries.updateResponsiblePerson(created.id(),
-                ResponsiblePartyUpdate.builder(CountryCode.PL).city("Kraków").build());
-        System.out.printf("updateResponsiblePerson    -> city now %s%n", patched.city());
-
-        dictionaries.deleteResponsiblePerson(created.id());
-        boolean stillThere = dictionaries.responsiblePersons(ResponsiblePartyQuery.byId(created.id()))
-                .stream()
-                .anyMatch(party -> party.id() == created.id());
-        System.out.printf("deleteResponsiblePerson    -> removed: %b (sandbox left clean)%n", !stillThere);
+            ResponsibleParty patched = dictionaries.updateResponsiblePerson(created.id(),
+                    ResponsiblePartyUpdate.builder(CountryCode.PL).city("Kraków").build());
+            System.out.printf("updateResponsiblePerson    -> city now %s%n", patched.city());
+        } finally {
+            dictionaries.deleteResponsiblePerson(created.id());
+            System.out.printf("deleteResponsiblePerson    -> id %d removed (sandbox left clean)%n", created.id());
+        }
     }
 
     /**
@@ -153,14 +159,16 @@ public final class ErliDictionariesDemo {
         System.out.printf("createAttachment           -> id=%d, kind=%s%n",
                 created.id(), created.kind().map(Object::toString).orElse("-"));
 
-        ProductAttachmentResult attached = dictionaries.attachProducts(created.id(), List.of(UNKNOWN_PRODUCT_ID));
-        System.out.printf("attachProducts             -> complete=%b, errors=%d (HTTP 200 with ok=false)%n",
-                attached.isComplete(), attached.errors().size());
-        attached.errors().forEach(error ->
-                System.out.printf("    product %d refused: %s%n", error.productId(), error.error()));
-
-        AttachmentRemoval removal = dictionaries.deleteAttachments(List.of(created.id()));
-        System.out.printf("deleteAttachments          -> removed=%s, complete=%b (sandbox left clean)%n",
-                removal.removedAttachmentIds(), removal.isComplete());
+        try {
+            ProductAttachmentResult attached = dictionaries.attachProducts(created.id(), List.of(UNKNOWN_PRODUCT_ID));
+            System.out.printf("attachProducts             -> complete=%b, errors=%d (HTTP 200 with ok=false)%n",
+                    attached.isComplete(), attached.errors().size());
+            attached.errors().forEach(error ->
+                    System.out.printf("    product %d refused: %s%n", error.productId(), error.error()));
+        } finally {
+            AttachmentRemoval removal = dictionaries.deleteAttachments(List.of(created.id()));
+            System.out.printf("deleteAttachments          -> removed=%s, complete=%b (sandbox left clean)%n",
+                    removal.removedAttachmentIds(), removal.isComplete());
+        }
     }
 }

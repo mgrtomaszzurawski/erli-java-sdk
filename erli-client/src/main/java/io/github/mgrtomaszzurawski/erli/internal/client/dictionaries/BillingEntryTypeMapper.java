@@ -16,13 +16,6 @@ final class BillingEntryTypeMapper {
     private BillingEntryTypeMapper() {
     }
 
-    static List<BillingEntryType> toDomainList(BillingEntryTypesResponseInner[] rawTypes) {
-        if (rawTypes == null) {
-            return List.of();
-        }
-        return Arrays.stream(rawTypes).map(BillingEntryTypeMapper::toDomain).toList();
-    }
-
     static BillingEntryType toDomain(BillingEntryTypesResponseInner rawType) {
         Objects.requireNonNull(rawType, "raw BillingEntryTypesResponseInner");
         return new BillingEntryType(

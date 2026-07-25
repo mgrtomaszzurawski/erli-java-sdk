@@ -6,6 +6,7 @@ import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.CategoryResponse;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,9 +33,13 @@ class CategoryMapperTest {
         return new JsonCodec().read(json, CategoryResponse[].class);
     }
 
+    private static List<Category> mapAll(String json) {
+        return Arrays.stream(decode(json)).map(CategoryMapper::toDomain).toList();
+    }
+
     @Test
     void mapsTheRootCategoryWithAnEmptyBreadcrumb() {
-        Category root = CategoryMapper.toDomainList(decode(OBSERVED_CATEGORIES_JSON)).get(0);
+        Category root = mapAll(OBSERVED_CATEGORIES_JSON).get(0);
 
         assertEquals(CategoryId.of("0"), root.id());
         assertEquals("Korzeń", root.name());
@@ -44,7 +49,7 @@ class CategoryMapperTest {
 
     @Test
     void mapsALeafCategoryWithItsFullBreadcrumbPath() {
-        Category leaf = CategoryMapper.toDomainList(decode(OBSERVED_CATEGORIES_JSON)).get(2);
+        Category leaf = mapAll(OBSERVED_CATEGORIES_JSON).get(2);
 
         assertEquals(CategoryId.of("4"), leaf.id());
         assertTrue(leaf.leaf());
@@ -56,7 +61,7 @@ class CategoryMapperTest {
 
     @Test
     void exposesTheNumericIdUsedByThePaginationCursor() {
-        Category leaf = CategoryMapper.toDomainList(decode(OBSERVED_CATEGORIES_JSON)).get(2);
+        Category leaf = mapAll(OBSERVED_CATEGORIES_JSON).get(2);
 
         assertEquals(4, CategoryMapper.numericId(leaf.id()));
     }
@@ -74,20 +79,19 @@ class CategoryMapperTest {
         CategoryResponse[] raw = decode("[{\"id\":1,\"leaf\":true,\"breadcrumb\":[]}]");
 
         IllegalStateException failure =
-                assertThrows(IllegalStateException.class, () -> CategoryMapper.toDomainList(raw));
+                assertThrows(IllegalStateException.class, () -> CategoryMapper.toDomain(raw[0]));
 
         assertTrue(failure.getMessage().contains("name"), failure.getMessage());
     }
 
     @Test
-    void mapsEmptyAndNullToAnEmptyList() {
-        assertTrue(CategoryMapper.toDomainList(decode("[]")).isEmpty());
-        assertTrue(CategoryMapper.toDomainList(null).isEmpty());
+    void mapsAnEmptyPayloadToAnEmptyList() {
+        assertTrue(mapAll("[]").isEmpty());
     }
 
     @Test
     void returnsAnImmutableBreadcrumb() {
-        List<Category> categories = CategoryMapper.toDomainList(decode(OBSERVED_CATEGORIES_JSON));
+        List<Category> categories = mapAll(OBSERVED_CATEGORIES_JSON);
 
         assertThrows(UnsupportedOperationException.class, () -> categories.get(2).breadcrumb().clear());
     }

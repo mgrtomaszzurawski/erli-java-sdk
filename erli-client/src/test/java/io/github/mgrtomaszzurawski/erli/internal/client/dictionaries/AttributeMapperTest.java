@@ -10,6 +10,7 @@ import io.github.mgrtomaszzurawski.erli.rest.model.AttributeValuesResponseInner;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,9 +54,17 @@ class AttributeMapperTest {
         return new JsonCodec().read(json, AttributeValuesResponseInner[].class);
     }
 
+    private static List<Attribute> mapAttributes(String json) {
+        return Arrays.stream(decodeAttributes(json)).map(AttributeMapper::toAttribute).toList();
+    }
+
+    private static List<AttributeValues> mapAttributeValues(String json) {
+        return Arrays.stream(decodeValues(json)).map(AttributeMapper::toAttributeValues).toList();
+    }
+
     @Test
     void mapsADictionaryAttributeWithItsFlags() {
-        Attribute attribute = AttributeMapper.toAttributeList(decodeAttributes(OBSERVED_ATTRIBUTES_JSON)).get(0);
+        Attribute attribute = mapAttributes(OBSERVED_ATTRIBUTES_JSON).get(0);
 
         assertEquals(AttributeId.of("932"), attribute.id());
         assertEquals("Typ pokrycia", attribute.name());
@@ -69,7 +78,7 @@ class AttributeMapperTest {
 
     @Test
     void mapsARequiredAttribute() {
-        Attribute attribute = AttributeMapper.toAttributeList(decodeAttributes(OBSERVED_ATTRIBUTES_JSON)).get(1);
+        Attribute attribute = mapAttributes(OBSERVED_ATTRIBUTES_JSON).get(1);
 
         assertTrue(attribute.required());
         assertTrue(attribute.sameValueForcedOnVariants());
@@ -77,7 +86,7 @@ class AttributeMapperTest {
 
     @Test
     void mapsTheNumericBoundsAndUnitOfANumberAttribute() {
-        Attribute attribute = AttributeMapper.toAttributeList(decodeAttributes(OBSERVED_ATTRIBUTES_JSON)).get(2);
+        Attribute attribute = mapAttributes(OBSERVED_ATTRIBUTES_JSON).get(2);
 
         assertEquals(AttributeType.NUMBER, attribute.type());
         assertEquals(new BigDecimal("0.001"), attribute.min().orElseThrow());
@@ -92,7 +101,7 @@ class AttributeMapperTest {
         AttributeResponseInner[] raw =
                 decodeAttributes("[{\"id\":1,\"name\":\"Bez flag\",\"type\":\"string\",\"maxValues\":1}]");
 
-        Attribute attribute = AttributeMapper.toAttributeList(raw).get(0);
+        Attribute attribute = AttributeMapper.toAttribute(raw[0]);
 
         assertFalse(attribute.required());
         assertFalse(attribute.variantable());
@@ -105,7 +114,7 @@ class AttributeMapperTest {
         AttributeResponseInner[] raw = decodeAttributes("[{\"id\":1,\"name\":\"Bez typu\",\"maxValues\":1}]");
 
         IllegalStateException failure =
-                assertThrows(IllegalStateException.class, () -> AttributeMapper.toAttributeList(raw));
+                assertThrows(IllegalStateException.class, () -> AttributeMapper.toAttribute(raw[0]));
 
         assertTrue(failure.getMessage().contains("type"), failure.getMessage());
     }
@@ -113,7 +122,7 @@ class AttributeMapperTest {
     @Test
     void mapsAttributeValuesAndKeepsLabelsAlignedWithIds() {
         List<AttributeValues> values =
-                AttributeMapper.toAttributeValuesList(decodeValues(OBSERVED_ATTRIBUTE_VALUES_JSON));
+                mapAttributeValues(OBSERVED_ATTRIBUTE_VALUES_JSON);
 
         assertEquals(1, values.size());
         AttributeValues first = values.get(0);
@@ -130,16 +139,15 @@ class AttributeMapperTest {
         AttributeValuesResponseInner[] raw =
                 decodeValues("[{\"id\":1,\"values\":[\"a\",\"b\"],\"valueIds\":[10]}]");
 
-        AttributeValues values = AttributeMapper.toAttributeValuesList(raw).get(0);
+        AttributeValues values = AttributeMapper.toAttributeValues(raw[0]);
 
         assertEquals(1, values.pairCount());
         assertThrows(IndexOutOfBoundsException.class, () -> values.valueAt(1));
     }
 
     @Test
-    void mapsEmptyAndNullToAnEmptyList() {
-        assertTrue(AttributeMapper.toAttributeList(decodeAttributes("[]")).isEmpty());
-        assertTrue(AttributeMapper.toAttributeList(null).isEmpty());
-        assertTrue(AttributeMapper.toAttributeValuesList(null).isEmpty());
+    void mapsAnEmptyPayloadToAnEmptyList() {
+        assertTrue(mapAttributes("[]").isEmpty());
+        assertTrue(mapAttributeValues("[]").isEmpty());
     }
 }

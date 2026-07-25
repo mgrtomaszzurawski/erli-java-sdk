@@ -65,7 +65,6 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     private static final String PARAM_NAME = "name";
     private static final String PARAM_KIND = "kind";
 
-
     /** The largest page the API accepts for the category cursor; a larger limit is rejected with 400. */
     private static final int CATEGORY_PAGE_SIZE = 200;
 

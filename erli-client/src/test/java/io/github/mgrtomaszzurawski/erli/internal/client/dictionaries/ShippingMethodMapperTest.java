@@ -8,11 +8,13 @@ import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ShippingMethodMapperTest {
@@ -40,9 +42,13 @@ class ShippingMethodMapperTest {
         return new JsonCodec().read(json, io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod[].class);
     }
 
+    private static List<ShippingMethod> mapAll(String json) {
+        return Arrays.stream(decode(json)).map(ShippingMethodMapper::toDomain).toList();
+    }
+
     @Test
     void mapsTheBoxFormOfTheDimensionsAnyOf() {
-        ShippingMethod method = ShippingMethodMapper.toDomainList(decode(OBSERVED_SHIPPING_METHODS_JSON)).get(0);
+        ShippingMethod method = mapAll(OBSERVED_SHIPPING_METHODS_JSON).get(0);
 
         assertEquals(ShippingMethodId.of("erliPaczkomat"), method.id());
         assertEquals("ERLI InPost Paczkomaty 24/7", method.name());
@@ -69,7 +75,7 @@ class ShippingMethodMapperTest {
      */
     @Test
     void reportsTheGirthFormAsAbsentUntilTheCoreDiscriminatorIsFixed() {
-        ShippingMethod method = ShippingMethodMapper.toDomainList(decode(OBSERVED_SHIPPING_METHODS_JSON)).get(1);
+        ShippingMethod method = mapAll(OBSERVED_SHIPPING_METHODS_JSON).get(1);
 
         assertEquals(ShippingOperator.DPD, method.operator().orElseThrow());
         assertTrue(method.cashOnDelivery());
@@ -91,14 +97,14 @@ class ShippingMethodMapperTest {
                         "{\"longestSide\":300,\"dimensionsSum\":600,\"weight\":500000}",
                         io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensionsAnyOf.class);
 
-        assertEquals(null, boxBranch.getHeight());
-        assertEquals(null, boxBranch.getWidth());
-        assertEquals(null, boxBranch.getLength());
+        assertNull(boxBranch.getHeight());
+        assertNull(boxBranch.getWidth());
+        assertNull(boxBranch.getLength());
     }
 
     @Test
     void mapsTheMinimumAndPickupPointBoundsAndOmitsAbsentOnes() {
-        ShippingMethod method = ShippingMethodMapper.toDomainList(decode(OBSERVED_SHIPPING_METHODS_JSON)).get(2);
+        ShippingMethod method = mapAll(OBSERVED_SHIPPING_METHODS_JSON).get(2);
 
         assertTrue(method.groupId().isEmpty());
         assertTrue(method.maxDimensions().isEmpty());
@@ -112,15 +118,17 @@ class ShippingMethodMapperTest {
     }
 
     @Test
-    void mapsEmptyAndNullToAnEmptyList() {
-        assertTrue(ShippingMethodMapper.toDomainList(decode("[]")).isEmpty());
-        assertTrue(ShippingMethodMapper.toDomainList(null).isEmpty());
+    void mapsAnEmptyPayloadToAnEmptyList() {
+        assertTrue(mapAll("[]").isEmpty());
     }
 
     @Test
-    void mapsEveryLiveEntryWithoutLosingOne() {
-        List<ShippingMethod> methods = ShippingMethodMapper.toDomainList(decode(OBSERVED_SHIPPING_METHODS_JSON));
+    void keepsEveryEntryInTheOrderTheApiReturnedThem() {
+        List<ShippingMethod> methods = mapAll(OBSERVED_SHIPPING_METHODS_JSON);
 
-        assertEquals(3, methods.size());
+        assertEquals(
+                List.of(ShippingMethodId.of("erliPaczkomat"), ShippingMethodId.of("erliDPDKurier500kg"),
+                        ShippingMethodId.of("erliPocztexKurierS")),
+                methods.stream().map(ShippingMethod::id).toList());
     }
 }

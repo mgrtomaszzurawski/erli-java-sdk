@@ -22,13 +22,6 @@ final class AttributeMapper {
     private AttributeMapper() {
     }
 
-    static List<Attribute> toAttributeList(AttributeResponseInner[] rawAttributes) {
-        if (rawAttributes == null) {
-            return List.of();
-        }
-        return Arrays.stream(rawAttributes).map(AttributeMapper::toAttribute).toList();
-    }
-
     static Attribute toAttribute(AttributeResponseInner rawAttribute) {
         Objects.requireNonNull(rawAttribute, "raw AttributeResponseInner");
         return new Attribute(
@@ -45,13 +38,6 @@ final class AttributeMapper {
                 Optional.ofNullable(rawAttribute.getMax()),
                 Optional.ofNullable(rawAttribute.getPrecision()),
                 Optional.ofNullable(rawAttribute.getUnit()));
-    }
-
-    static List<AttributeValues> toAttributeValuesList(AttributeValuesResponseInner[] rawValues) {
-        if (rawValues == null) {
-            return List.of();
-        }
-        return Arrays.stream(rawValues).map(AttributeMapper::toAttributeValues).toList();
     }
 
     static AttributeValues toAttributeValues(AttributeValuesResponseInner rawValues) {

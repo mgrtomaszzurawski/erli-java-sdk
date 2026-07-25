@@ -25,14 +25,6 @@ final class ShippingMethodMapper {
     private ShippingMethodMapper() {
     }
 
-    static List<ShippingMethod> toDomainList(
-            io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod[] rawMethods) {
-        if (rawMethods == null) {
-            return List.of();
-        }
-        return Arrays.stream(rawMethods).map(ShippingMethodMapper::toDomain).toList();
-    }
-
     static ShippingMethod toDomain(io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod rawMethod) {
         Objects.requireNonNull(rawMethod, "raw ShippingMethod");
         return new ShippingMethod(

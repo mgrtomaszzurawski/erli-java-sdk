@@ -36,6 +36,11 @@ module io.github.mgrtomaszzurawski.erli {
     exports io.github.mgrtomaszzurawski.erli.domain.shipping;
     // --- APPEND BLOCK: bucket D Dictionaries ----------------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.dictionaries;
+    // The attach/detach response is undeclared by the spec, so bucket D hand-writes a DTO for it and
+    // Jackson binds that reflectively. Without this the two operations decode fine on the classpath
+    // (so every unit test passes) and fail on the module path — the same trap payments hit below.
+    // `opens` grants reflective access only: the package stays unexported and uncompilable against.
+    opens io.github.mgrtomaszzurawski.erli.internal.client.dictionaries to com.fasterxml.jackson.databind;
     // --- APPEND BLOCK: bucket E Finance ---------------------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.billing;
     exports io.github.mgrtomaszzurawski.erli.domain.campaigns;

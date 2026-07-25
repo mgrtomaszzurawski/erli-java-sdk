@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentRemoval;
@@ -28,11 +29,14 @@ import java.util.Optional;
  */
 final class AttachmentMapper {
 
+    private static final String ATTACHMENT_ID_LABEL = "attachment id";
+    private static final String PRODUCT_ID_LABEL = "product id";
+
     private AttachmentMapper() {
     }
 
     static Attachment toDomain(GetAttachmentsResponseInner rawAttachment) {
-        Objects.requireNonNull(rawAttachment, "raw GetAttachmentsResponseInner");
+        requireBody(rawAttachment, "GET /dictionaries/attachments");
         return build(
                 rawAttachment.getId(),
                 rawAttachment.getShopId(),
@@ -49,7 +53,7 @@ final class AttachmentMapper {
     }
 
     static Attachment toDomain(AttachmentResponse rawAttachment) {
-        Objects.requireNonNull(rawAttachment, "raw AttachmentResponse");
+        requireBody(rawAttachment, "the attachment endpoint");
         return build(
                 rawAttachment.getId(),
                 rawAttachment.getShopId(),
@@ -77,7 +81,7 @@ final class AttachmentMapper {
 
     static PatchAttachmentRequest toPatchRequest(AttachmentUpdate update) {
         Objects.requireNonNull(update, "update");
-        PatchAttachmentRequest request = new PatchAttachmentRequest().id(toIntId(update.id(), "attachment id"));
+        PatchAttachmentRequest request = new PatchAttachmentRequest().id(toIntId(update.id(), ATTACHMENT_ID_LABEL));
         if (update.filePath() != null) {
             request.filePath(update.filePath());
         }
@@ -87,9 +91,10 @@ final class AttachmentMapper {
         if (update.originalName() != null) {
             request.originalName(update.originalName());
         }
-        // The generated model initialises `markets` to an empty list, and on a PATCH an empty array is
-        // an explicit "clear the markets" rather than "leave them alone". Null it out when the caller
-        // did not set it so the codec's NON_NULL inclusion drops the key entirely.
+        // The generated model initialises `markets` to an empty list, which would be serialised as
+        // "markets":[] — a value the API rejects (minItems: 1). AttachmentUpdate refuses an empty list
+        // outright, so null here only ever means "the caller left markets alone"; nulling the field
+        // lets the codec's NON_NULL inclusion drop the key entirely.
         request.markets(update.markets() == null ? null : toMarketValues(update.markets()));
         return request;
     }
@@ -110,8 +115,18 @@ final class AttachmentMapper {
         }
         return new ManageAttachedProducts()
                 .action(action)
-                .attachmentId(toIntId(attachmentId, "attachment id"))
-                .productIds(productIds.stream().map(productId -> toIntId(productId, "product id")).toList());
+                .attachmentId(toIntId(attachmentId, ATTACHMENT_ID_LABEL))
+                .productIds(productIds.stream().map(productId -> toIntId(productId, PRODUCT_ID_LABEL)).toList());
+    }
+
+    /**
+     * An empty or 204 body decodes to {@code null}; surface that as a transport fault rather than
+     * letting it escape as a {@link NullPointerException} from a mapper.
+     */
+    private static void requireBody(Object body, String operation) {
+        if (body == null) {
+            throw new ErliTransportException(operation + " returned no response body");
+        }
     }
 
     /**
@@ -150,7 +165,9 @@ final class AttachmentMapper {
                                 error.getProductId() == null ? null : error.getProductId().longValue(),
                                 error.getError()))
                         .toList();
-        return new ProductAttachmentResult(Boolean.TRUE.equals(rawResult.getOk()), updated, errors);
+        // A body that omits `ok` but reports no errors is a success; only an explicit false is not.
+        boolean ok = rawResult.getOk() == null ? errors.isEmpty() : rawResult.getOk();
+        return new ProductAttachmentResult(ok, updated, errors);
     }
 
     /**
@@ -162,11 +179,11 @@ final class AttachmentMapper {
         if (attachmentIds.isEmpty()) {
             throw new IllegalArgumentException("attachmentIds must name at least one attachment");
         }
-        return attachmentIds.stream().map(attachmentId -> toIntId(attachmentId, "attachment id")).toList();
+        return attachmentIds.stream().map(attachmentId -> toIntId(attachmentId, ATTACHMENT_ID_LABEL)).toList();
     }
 
     static AttachmentRemoval toRemoval(DeleteAttachmentsResponse rawRemoval) {
-        Objects.requireNonNull(rawRemoval, "raw DeleteAttachmentsResponse");
+        requireBody(rawRemoval, "DELETE /dictionaries/attachments");
         List<Long> removed = rawRemoval.getRemovedAttachments() == null
                 ? List.of()
                 : rawRemoval.getRemovedAttachments().stream().map(Integer::longValue).toList();

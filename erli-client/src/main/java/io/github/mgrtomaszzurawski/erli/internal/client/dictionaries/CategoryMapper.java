@@ -22,13 +22,6 @@ final class CategoryMapper {
     private CategoryMapper() {
     }
 
-    static List<Category> toDomainList(CategoryResponse[] rawCategories) {
-        if (rawCategories == null) {
-            return List.of();
-        }
-        return Arrays.stream(rawCategories).map(CategoryMapper::toDomain).toList();
-    }
-
     static Category toDomain(CategoryResponse rawCategory) {
         Objects.requireNonNull(rawCategory, "raw CategoryResponse");
         return new Category(

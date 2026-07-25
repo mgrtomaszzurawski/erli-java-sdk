@@ -23,13 +23,6 @@ final class ResponsiblePartyMapper {
     private ResponsiblePartyMapper() {
     }
 
-    static List<ResponsibleParty> toDomainList(ResponsibleSchema[] rawParties) {
-        if (rawParties == null) {
-            return List.of();
-        }
-        return Arrays.stream(rawParties).map(ResponsiblePartyMapper::toDomain).toList();
-    }
-
     static ResponsibleParty toDomain(ResponsibleSchema rawParty) {
         Objects.requireNonNull(rawParty, "raw ResponsibleSchema");
         return new ResponsibleParty(

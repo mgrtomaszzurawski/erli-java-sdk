@@ -1,7 +1,5 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
-import java.util.Objects;
-
 /**
  * A partial update of a responsible person or producer
  * ({@code PATCH /dictionaries/responsible{Persons,Producers}/{id}}). Only the fields set on the
@@ -39,12 +37,13 @@ public record ResponsiblePartyUpdate(
         ResponsiblePartySource source) {
 
     private static final String REDACTED = "***";
+    private static final String COUNTRY_REQUIRED_MESSAGE =
+            "country is required on every responsible-party update: the API rejects a body without it, "
+                    + "even when the country is not the field being changed";
 
     public ResponsiblePartyUpdate {
         if (country == null) {
-            throw new IllegalArgumentException(
-                    "country is required on every responsible-party update: the API rejects a body "
-                            + "without it, even when the country is not the field being changed");
+            throw new IllegalArgumentException(COUNTRY_REQUIRED_MESSAGE);
         }
     }
 
@@ -91,7 +90,10 @@ public record ResponsiblePartyUpdate(
         private ResponsiblePartySource source;
 
         private Builder(CountryCode country) {
-            this.country = Objects.requireNonNull(country, "country");
+            if (country == null) {
+                throw new IllegalArgumentException(COUNTRY_REQUIRED_MESSAGE);
+            }
+            this.country = country;
         }
 
         public Builder name(String value) {

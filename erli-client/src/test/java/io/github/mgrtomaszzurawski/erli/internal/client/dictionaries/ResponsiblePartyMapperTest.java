@@ -7,10 +7,18 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartySour
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.CreateResponsibleSchema;
 import io.github.mgrtomaszzurawski.erli.rest.model.ResponsibleSchema;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyUpdate;
+import io.github.mgrtomaszzurawski.erli.rest.model.UpdateResponsibleSchema;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,9 +54,13 @@ class ResponsiblePartyMapperTest {
                 .email(EMAIL);
     }
 
+    private static List<ResponsibleParty> mapAll(String json) {
+        return Arrays.stream(decode(json)).map(ResponsiblePartyMapper::toDomain).toList();
+    }
+
     @Test
     void mapsEveryFieldOfAResponsibleParty() {
-        ResponsibleParty party = ResponsiblePartyMapper.toDomainList(decode(RESPONSIBLE_PARTY_JSON)).get(0);
+        ResponsibleParty party = mapAll(RESPONSIBLE_PARTY_JSON).get(0);
 
         assertEquals(7L, party.id());
         assertEquals("Importer PL", party.name());
@@ -65,7 +77,7 @@ class ResponsiblePartyMapperTest {
 
     @Test
     void redactsPersonalDataFromToString() {
-        ResponsibleParty party = ResponsiblePartyMapper.toDomainList(decode(RESPONSIBLE_PARTY_JSON)).get(0);
+        ResponsibleParty party = mapAll(RESPONSIBLE_PARTY_JSON).get(0);
 
         String rendered = party.toString();
 
@@ -82,7 +94,7 @@ class ResponsiblePartyMapperTest {
         ResponsibleSchema[] raw = decode("[{\"id\":7,\"name\":\"Importer PL\"}]");
 
         IllegalStateException failure =
-                assertThrows(IllegalStateException.class, () -> ResponsiblePartyMapper.toDomainList(raw));
+                assertThrows(IllegalStateException.class, () -> ResponsiblePartyMapper.toDomain(raw[0]));
 
         assertTrue(failure.getMessage().contains("idempotenceKey"), failure.getMessage());
     }
@@ -109,8 +121,8 @@ class ResponsiblePartyMapperTest {
     void omitsTheOptionalFieldsWhenTheyWereNotSupplied() {
         CreateResponsibleSchema request = ResponsiblePartyMapper.toCreateRequest(validParty().build());
 
-        assertEquals(null, request.getPhone());
-        assertEquals(null, request.getSource());
+        assertNull(request.getPhone());
+        assertNull(request.getSource());
     }
 
     @Test
@@ -132,34 +144,91 @@ class ResponsiblePartyMapperTest {
     /**
      * The real invariant behind the mapper's country guard: every domain {@link CountryCode} must
      * resolve to a generated one. Both are derived from the same vendored spec, so this fails only if
-     * the hand-written enum drifts — which is exactly what the guard exists to catch.
+     * the hand-written enum drifts. Parameterised so a drifted constant is reported by name and the
+     * remaining 248 still run — with a loop the first mismatch would hide every other one.
      */
-    @Test
-    void everyDomainCountryIsAcceptedByTheGeneratedRequestModel() {
-        for (CountryCode country : CountryCode.values()) {
-            NewResponsibleParty party = validParty().country(country).build();
+    @ParameterizedTest
+    @EnumSource(CountryCode.class)
+    void everyDomainCountryIsAcceptedByTheGeneratedRequestModel(CountryCode country) {
+        NewResponsibleParty party = validParty().country(country).build();
 
-            CreateResponsibleSchema request = ResponsiblePartyMapper.toCreateRequest(party);
+        CreateResponsibleSchema request = ResponsiblePartyMapper.toCreateRequest(party);
 
-            assertEquals(country.wireValue(), request.getCountry().getValue());
-        }
+        assertEquals(country.wireValue(), request.getCountry().getValue());
     }
 
     /** Same invariant for the integration-source enum. */
-    @Test
-    void everyDomainSourceIsAcceptedByTheGeneratedRequestModel() {
-        for (ResponsiblePartySource source : ResponsiblePartySource.values()) {
-            NewResponsibleParty party = validParty().source(source).build();
+    @ParameterizedTest
+    @EnumSource(ResponsiblePartySource.class)
+    void everyDomainSourceIsAcceptedByTheGeneratedRequestModel(ResponsiblePartySource source) {
+        NewResponsibleParty party = validParty().source(source).build();
 
-            CreateResponsibleSchema request = ResponsiblePartyMapper.toCreateRequest(party);
+        CreateResponsibleSchema request = ResponsiblePartyMapper.toCreateRequest(party);
 
-            assertEquals(source.wireValue(), request.getSource().getValue());
-        }
+        assertEquals(source.wireValue(), request.getSource().getValue());
     }
 
     @Test
-    void mapsEmptyAndNullToAnEmptyList() {
-        assertTrue(ResponsiblePartyMapper.toDomainList(decode("[]")).isEmpty());
-        assertTrue(ResponsiblePartyMapper.toDomainList(null).isEmpty());
+    void buildsTheUpdateRequestFromEveryFieldOfTheDomainRecord() {
+        UpdateResponsibleSchema request = ResponsiblePartyMapper.toUpdateRequest(
+                ResponsiblePartyUpdate.builder(CountryCode.DE)
+                        .name("Nowy importer")
+                        .idempotenceKey("imp-002")
+                        .properName("Nowy Importer GmbH")
+                        .address("Musterstr. 2")
+                        .postalCode("10115")
+                        .city("Berlin")
+                        .email("kontakt@example.de")
+                        .phone("+49301234567")
+                        .source(ResponsiblePartySource.MANUAL)
+                        .build());
+
+        assertEquals("Nowy importer", request.getName());
+        assertEquals("imp-002", request.getIdempotenceKey());
+        assertEquals("Nowy Importer GmbH", request.getProperName());
+        assertEquals(UpdateResponsibleSchema.CountryEnum.DE, request.getCountry());
+        assertEquals("Musterstr. 2", request.getAddress());
+        assertEquals("10115", request.getPostalCode());
+        assertEquals("Berlin", request.getCity());
+        assertEquals("kontakt@example.de", request.getEmail());
+        assertEquals("+49301234567", request.getPhone());
+        assertEquals(UpdateResponsibleSchema.SourceEnum.MANUAL, request.getSource());
+    }
+
+    @Test
+    void sendsOnlyTheUpdateFieldsThatWereSetPlusTheMandatoryCountry() {
+        UpdateResponsibleSchema request = ResponsiblePartyMapper.toUpdateRequest(
+                ResponsiblePartyUpdate.builder(CountryCode.PL).city("Kraków").build());
+
+        assertEquals("Kraków", request.getCity());
+        assertEquals(UpdateResponsibleSchema.CountryEnum.PL, request.getCountry());
+        assertNull(request.getName());
+        assertNull(request.getEmail());
+        assertNull(request.getPhone());
+    }
+
+    @Test
+    void rejectsAnUpdateWithoutACountry() {
+        // The API answers 400 "country is required" even for a one-field patch.
+        assertThrows(IllegalArgumentException.class, () -> ResponsiblePartyUpdate.builder(null));
+    }
+
+    @Test
+    void redactsPersonalDataFromAnUpdateToString() {
+        String rendered = ResponsiblePartyUpdate.builder(CountryCode.PL)
+                .address(ADDRESS)
+                .email(EMAIL)
+                .phone(PHONE)
+                .build()
+                .toString();
+
+        assertFalse(rendered.contains(ADDRESS), rendered);
+        assertFalse(rendered.contains(EMAIL), rendered);
+        assertFalse(rendered.contains(PHONE), rendered);
+    }
+
+    @Test
+    void mapsAnEmptyPayloadToAnEmptyList() {
+        assertTrue(mapAll("[]").isEmpty());
     }
 }
