@@ -57,6 +57,25 @@ try (ErliClient client = ErliClient.builder()
 }
 ```
 
+## Feature guides
+
+Guides are added as each domain lands.
+
+| Domain | Guide |
+|---|---|
+| Orders | [`docs/orders.md`](docs/orders.md) |
+
+```java
+try (ErliClient client = ErliClient.fromEnvironment()) {
+    client.orders()
+            .search(OrderSearchRequest.builder()
+                    .filter(OrderFilter.updatedAfter(lastSync))
+                    .build())
+            .limit(100)
+            .forEach(order -> System.out.println(order.id() + " " + order.sellerStatus()));
+}
+```
+
 ## License
 
 [AGPL-3.0-only](LICENSE.txt).
