@@ -33,11 +33,11 @@ final class DeliveryMethodMapper {
     }
 
     private static boolean requireCashOnDelivery(io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod rawMethod) {
-        Boolean cod = rawMethod.getCod();
-        if (cod == null) {
+        Boolean cashOnDelivery = rawMethod.getCod();
+        if (cashOnDelivery == null) {
             throw new IllegalStateException("DeliveryMethod is missing the required 'cod' field");
         }
-        return cod;
+        return cashOnDelivery;
     }
 
     private static DeliveryVendor requireVendor(io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod rawMethod) {

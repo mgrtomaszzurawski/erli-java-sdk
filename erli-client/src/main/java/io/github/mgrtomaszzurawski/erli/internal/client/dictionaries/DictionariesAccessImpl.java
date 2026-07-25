@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethodQuery;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
@@ -36,9 +37,10 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     @Override
     public List<DeliveryMethod> deliveryMethods(DeliveryMethodQuery query) {
         Objects.requireNonNull(query, "query");
+        DeliveryMethodId id = query.id();
         DeliveryVendor vendor = query.vendor();
         QueryParameters parameters = QueryParameters.builder()
-                .add(PARAM_ID, query.id())
+                .add(PARAM_ID, id == null ? null : id.value())
                 .addBoolean(PARAM_COD, query.cashOnDelivery())
                 .add(PARAM_VENDOR, vendor == null ? null : vendor.wireValue())
                 .build();

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DeliveryMethodMapperTest {
 
@@ -25,7 +26,7 @@ class DeliveryMethodMapperTest {
 
         assertEquals("courier-1", method.id().value());
         assertEquals("Kurier", method.name());
-        assertEquals(true, method.cashOnDelivery());
+        assertTrue(method.cashOnDelivery());
         assertEquals(DeliveryVendor.INPOST, method.vendor());
     }
 
@@ -44,6 +45,18 @@ class DeliveryMethodMapperTest {
     @Test
     void rejectsMissingRequiredCod() {
         io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod raw = raw().cod(null);
+        assertThrows(IllegalStateException.class, () -> DeliveryMethodMapper.toDomain(raw));
+    }
+
+    @Test
+    void rejectsMissingRequiredId() {
+        io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod raw = raw().id(null);
+        assertThrows(IllegalStateException.class, () -> DeliveryMethodMapper.toDomain(raw));
+    }
+
+    @Test
+    void rejectsMissingRequiredName() {
+        io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod raw = raw().name(null);
         assertThrows(IllegalStateException.class, () -> DeliveryMethodMapper.toDomain(raw));
     }
 }

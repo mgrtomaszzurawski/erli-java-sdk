@@ -58,14 +58,21 @@ public enum DeliveryVendor {
     /**
      * Resolve a wire string to a vendor.
      *
-     * @throws ErliTransportException if the value is unknown — a signal that the vendored spec is
-     *         behind the live API and Layer 1 should be regenerated, rather than silently dropping data.
+     * <p>On the live path this is only ever called with the wire value of an already-decoded Layer-1
+     * {@code VendorEnum}, so it always resolves — a wire value the API added but the vendored spec
+     * lacks fails earlier, at JSON decode (the generated enum's {@code @JsonCreator} throws, surfaced
+     * as an {@link ErliTransportException}; fail-loud is intentional, see
+     * {@code KNOWN-SERVER-BEHAVIORS.md}). This guard therefore fires only if this domain enum drifts
+     * out of sync with the generated one.
+     *
+     * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
      */
     public static DeliveryVendor fromWire(String wireValue) {
         DeliveryVendor vendor = BY_WIRE.get(wireValue);
         if (vendor == null) {
             throw new ErliTransportException(
-                    "Unknown delivery vendor '" + wireValue + "'; the vendored spec may be behind the API");
+                    "No DeliveryVendor constant maps wire value '" + wireValue
+                            + "'; this domain enum is out of sync with the generated model");
         }
         return vendor;
     }

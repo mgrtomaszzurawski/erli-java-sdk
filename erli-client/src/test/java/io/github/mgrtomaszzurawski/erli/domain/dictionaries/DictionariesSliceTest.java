@@ -9,10 +9,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,11 +55,12 @@ class DictionariesSliceTest {
         assertEquals("Kurier", methods.get(0).name());
         assertEquals(DeliveryVendor.INPOST, methods.get(0).vendor());
         assertFalse(methods.get(1).cashOnDelivery());
-        server.verify(getRequestedFor(urlPathEqualTo(PATH)));
+        // urlEqualTo matches the full URL, so this also asserts no query string was appended.
+        server.verify(getRequestedFor(urlEqualTo(PATH)));
     }
 
     @Test
-    void appliesFiltersAsQueryParameters() {
+    void appliesSetFiltersAndOmitsUnsetOnes() {
         server.stubFor(get(urlPathEqualTo(PATH)).willReturn(okJson(DELIVERY_METHODS_JSON)));
 
         client.dictionaries().deliveryMethods(DeliveryMethodQuery.builder()
@@ -67,6 +70,7 @@ class DictionariesSliceTest {
 
         server.verify(getRequestedFor(urlPathEqualTo(PATH))
                 .withQueryParam("cod", equalTo("true"))
-                .withQueryParam("vendor", equalTo("inpost")));
+                .withQueryParam("vendor", equalTo("inpost"))
+                .withQueryParam("id", absent()));
     }
 }

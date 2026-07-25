@@ -1,5 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
+
 /**
  * Optional filters for {@link DictionariesAccess#deliveryMethods(DeliveryMethodQuery)}. Every field is
  * nullable; a null field is simply omitted from the request. This is a plain, exported value object —
@@ -9,7 +11,7 @@ package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
  * @param cashOnDelivery filter by COD support, or {@code null}
  * @param vendor         filter by carrier, or {@code null}
  */
-public record DeliveryMethodQuery(String id, Boolean cashOnDelivery, DeliveryVendor vendor) {
+public record DeliveryMethodQuery(DeliveryMethodId id, Boolean cashOnDelivery, DeliveryVendor vendor) {
 
     private static final DeliveryMethodQuery NONE = new DeliveryMethodQuery(null, null, null);
 
@@ -25,14 +27,14 @@ public record DeliveryMethodQuery(String id, Boolean cashOnDelivery, DeliveryVen
     /** Builder for {@link DeliveryMethodQuery}. */
     public static final class Builder {
 
-        private String id;
+        private DeliveryMethodId id;
         private Boolean cashOnDelivery;
         private DeliveryVendor vendor;
 
         private Builder() {
         }
 
-        public Builder id(String value) {
+        public Builder id(DeliveryMethodId value) {
             this.id = value;
             return this;
         }
