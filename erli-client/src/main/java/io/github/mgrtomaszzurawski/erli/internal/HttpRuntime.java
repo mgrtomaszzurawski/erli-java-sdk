@@ -35,6 +35,8 @@ public final class HttpRuntime {
     private static final String HEADER_RETRY_AFTER = "Retry-After";
     private static final String MEDIA_TYPE_JSON = "application/json";
 
+    private static final String METHOD_POST = "POST";
+    private static final String METHOD_PUT = "PUT";
     private static final String METHOD_PATCH = "PATCH";
 
     private static final boolean IDEMPOTENT = true;
@@ -84,19 +86,19 @@ public final class HttpRuntime {
 
     /** {@code POST path} with a JSON body, decoding a JSON object into {@code responseType}. */
     public <T> T post(String path, Object requestBody, Class<T> responseType) {
-        return execute(bodyRequest("POST", path, requestBody), path, NON_IDEMPOTENT,
+        return execute(bodyRequest(METHOD_POST, path, requestBody), path, NON_IDEMPOTENT,
                 body -> decodeObject(body, responseType));
     }
 
     /** {@code POST path} with a JSON body, decoding a bare JSON array into a {@code List}. */
     public <T> List<T> postList(String path, Object requestBody, Class<T> elementType) {
-        return execute(bodyRequest("POST", path, requestBody), path, NON_IDEMPOTENT,
+        return execute(bodyRequest(METHOD_POST, path, requestBody), path, NON_IDEMPOTENT,
                 body -> decodeList(body, elementType));
     }
 
     /** {@code PUT path} with a JSON body. PUT is idempotent, so it participates in retries. */
     public <T> T put(String path, Object requestBody, Class<T> responseType) {
-        return execute(bodyRequest("PUT", path, requestBody), path, IDEMPOTENT,
+        return execute(bodyRequest(METHOD_PUT, path, requestBody), path, IDEMPOTENT,
                 body -> decodeObject(body, responseType));
     }
 
@@ -122,14 +124,12 @@ public final class HttpRuntime {
     private HttpRequest bodyRequest(String method, String path, Object requestBody) {
         HttpRequest.BodyPublisher publisher =
                 HttpRequest.BodyPublishers.ofString(codec.write(requestBody), StandardCharsets.UTF_8);
-        HttpRequest.Builder builder = baseRequest(baseUrl + path)
+        // Builder.method(name, publisher) is the general form of .POST()/.PUT() and also carries PATCH.
+        return baseRequest(baseUrl + path)
                 .header(HEADER_ACCEPT, MEDIA_TYPE_JSON)
-                .header(HEADER_CONTENT_TYPE, MEDIA_TYPE_JSON);
-        return switch (method) {
-            case "POST" -> builder.POST(publisher).build();
-            case "PUT" -> builder.PUT(publisher).build();
-            default -> builder.method(method, publisher).build();
-        };
+                .header(HEADER_CONTENT_TYPE, MEDIA_TYPE_JSON)
+                .method(method, publisher)
+                .build();
     }
 
     private HttpRequest.Builder baseRequest(String uri) {

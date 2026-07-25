@@ -132,7 +132,7 @@ class HttpRuntimeTest {
     }
 
     @Test
-    void getSendsUrlEncodedQueryParameters() {
+    void getListSendsQueryParametersOnTheWire() {
         String path = "/dictionaries/deliveryMethods";
         server.stubFor(get(urlPathEqualTo(path)).willReturn(okJson("[" + SHOP_JSON + "]")));
 
@@ -143,6 +143,34 @@ class HttpRuntimeTest {
         server.verify(getRequestedFor(urlPathEqualTo(path))
                 .withQueryParam("vendor", equalTo("inpost"))
                 .withQueryParam("cod", equalTo("true")));
+    }
+
+    @Test
+    void putIsRetriedOnServerErrorBecauseItIsIdempotent() {
+        String path = "/hooks/onOrder";
+        String scenario = "put-retry";
+        server.stubFor(put(urlEqualTo(path)).inScenario(scenario)
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("recovered"));
+        server.stubFor(put(urlEqualTo(path)).inScenario(scenario)
+                .whenScenarioStateIs("recovered")
+                .willReturn(okJson(SHOP_JSON)));
+
+        runtimeWith(fastRetry()).put(path, Map.of("url", "https://x"), ShopResponse.class);
+
+        server.verify(2, putRequestedFor(urlEqualTo(path)));
+    }
+
+    @Test
+    void patchIsNotRetriedOnServerErrorBecauseItIsNotIdempotent() {
+        String path = "/products/ABC";
+        server.stubFor(patch(urlEqualTo(path)).willReturn(aResponse().withStatus(500)));
+
+        // fastRetry allows 3 attempts, but PATCH is non-idempotent so it must not be retried.
+        assertThrows(ErliServerException.class,
+                () -> runtimeWith(fastRetry()).patch(path, Map.of("name", "x"), ShopResponse.class));
+        server.verify(1, patchRequestedFor(urlEqualTo(path)));
     }
 
     @Test
