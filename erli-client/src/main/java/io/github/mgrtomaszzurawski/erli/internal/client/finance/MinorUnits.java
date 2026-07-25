@@ -20,7 +20,12 @@ public final class MinorUnits {
     /** The Erli marketplace settles in Polish złoty; the API carries no currency field. */
     public static final Currency PLN = Currency.getInstance("PLN");
 
-    private static final int MINOR_UNIT_SCALE = 2;
+    /**
+     * Scale taken from the currency itself rather than a hard-coded 2, matching how the Orders bucket
+     * rebuilds {@code Money} (see {@code KNOWN-SERVER-BEHAVIORS.md}). PLN has two minor digits today;
+     * deriving it keeps the two buckets consistent if a non-decimal currency ever appears.
+     */
+    private static final int MINOR_UNIT_SCALE = PLN.getDefaultFractionDigits();
 
     private MinorUnits() {
     }
@@ -30,8 +35,19 @@ public final class MinorUnits {
         return new Money(BigDecimal.valueOf(grosze, MINOR_UNIT_SCALE), PLN);
     }
 
+    /**
+     * Convert a grosze amount the API typed as a JSON {@code number} rather than an integer (campaign
+     * costs). A fractional grosz is preserved rather than rounded — the caller decides what to do
+     * with it.
+     */
+    public static Money fromGroszeAmount(BigDecimal grosze) {
+        Objects.requireNonNull(grosze, "grosze");
+        return new Money(grosze.movePointLeft(MINOR_UNIT_SCALE), PLN);
+    }
+
     /** Convert an amount already expressed in złoty to {@link Money} (used by {@code Payment.amount}). */
     public static Money fromMajorUnits(BigDecimal zloty) {
+        Objects.requireNonNull(zloty, "zloty");
         return new Money(zloty, PLN);
     }
 

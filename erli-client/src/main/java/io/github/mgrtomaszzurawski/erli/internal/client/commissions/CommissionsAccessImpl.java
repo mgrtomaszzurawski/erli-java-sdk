@@ -22,8 +22,8 @@ public final class CommissionsAccessImpl implements CommissionsAccess {
 
     @Override
     public CommissionEstimate estimate(CommissionEstimateRequest request) {
-        EstimateCommissionResponse rawResponse = runtime.post(
-                ApiPaths.COMMISSIONS_ESTIMATE, CommissionMapper.toRaw(request), EstimateCommissionResponse.class);
+        EstimateCommissionResponse rawResponse = runtime.post(ApiPaths.COMMISSIONS_ESTIMATE,
+                CommissionMapper.toRaw(request), EstimateCommissionResponse.class);
         return CommissionMapper.toDomain(rawResponse);
     }
 }

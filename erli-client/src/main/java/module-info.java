@@ -35,6 +35,9 @@ module io.github.mgrtomaszzurawski.erli {
     // --- APPEND BLOCK: bucket D Dictionaries ----------------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.dictionaries;
     // --- APPEND BLOCK: bucket E Finance ---------------------------------------------------------
+    exports io.github.mgrtomaszzurawski.erli.domain.billing;
+    exports io.github.mgrtomaszzurawski.erli.domain.campaigns;
     exports io.github.mgrtomaszzurawski.erli.domain.commissions;
+    exports io.github.mgrtomaszzurawski.erli.domain.payments;
     // --- APPEND BLOCK: bucket F Comms & Automation ----------------------------------------------
 }
