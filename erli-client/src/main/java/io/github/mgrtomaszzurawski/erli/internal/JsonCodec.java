@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 
 import java.util.List;
@@ -20,7 +22,16 @@ public final class JsonCodec {
 
     public JsonCodec() {
         this.mapper = new ObjectMapper()
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                // Layer 1 maps every OpenAPI `date-time` property to java.time.OffsetDateTime, which a
+                // bare ObjectMapper refuses to handle. Erli states timestamps as ISO-8601 strings, so
+                // dates must also serialize as strings rather than epoch numbers.
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                // Keep the offset the API actually sent. Jackson otherwise rewrites every timestamp to
+                // UTC, which silently changes what OffsetDateTime.getOffset() reports; the instant is
+                // the same, but the SDK would be handing back a value the server never stated.
+                .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
     }
 
     /** Deserialize a response body into {@code type}, wrapping any failure as a transport error. */
