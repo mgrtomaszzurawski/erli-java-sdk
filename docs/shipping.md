@@ -1,9 +1,9 @@
 # Shipping
 
 Hand parcels to Erli's carrier integration, or register parcels you shipped yourself, through
-`client.shipping()`. Ten operations are covered: `GET`/`POST`/`DELETE` on `/shipping/parcels`,
-`POST /shipping/parcels/_search`, the four `/shipping/external` operations,
-`GET /shipping/pickupProtocols` and `GET /shipping/postingPoints`.
+`client.shipping()`. Ten operations are covered: `POST /shipping/parcels/`,
+`GET` and `DELETE` on `/shipping/parcels/{id}`, `POST /shipping/parcels/_search`, the four
+`/shipping/external` operations, `GET /shipping/pickupProtocols` and `GET /shipping/postingPoints`.
 
 Delivery *pricing* is a separate area — see [`docs/delivery.md`](delivery.md).
 
@@ -47,7 +47,7 @@ List<Parcel> created = client.shipping().createParcels(List.of(
                         OrderId.of("221201x12345"),
                         ShippingMethodId.of("erliKurier24InPost10kg"),
                         new ParcelDimensions(
-                                new BigDecimal("205"), new BigDecimal("100"), new BigDecimal("300"), 1500),
+                                new BigDecimal("200"), new BigDecimal("100"), new BigDecimal("300"), 1500),
                         receiver)
                 .additionalInformation("Leave at reception")
                 .build()));
@@ -85,9 +85,12 @@ refuses — cancel the pickup first, then the parcel.
 
 ## Externally shipped parcels
 
-`registerExternalParcels` is **per entry**, not all-or-nothing: Erli accepts each entry independently,
-so one bad row does not cost you the others. The result is a sealed type, which is why you cannot
+`registerExternalParcels` reports **per entry**: Erli validates each row independently, so one row it
+refuses does not discard the rows it accepted. The result is a sealed type, which is why you cannot
 accidentally read a parcel that was never created.
+
+One rule is still call-wide, though: like `createParcels`, this endpoint refuses the **whole** call if
+any referenced order is cancelled. Per-entry results are what you get once the call itself is accepted.
 
 ```java
 for (ExternalParcelResult result : client.shipping().registerExternalParcels(drafts)) {
@@ -116,8 +119,9 @@ Two consequences worth knowing:
 - **An absent status also reads as `UNRECOGNIZED`.** After decoding, a missing field and an unknown
   value are indistinguishable, so the SDK cannot tell them apart either.
 
-Every other enum in the package (`ParcelType`, `PickupType`, `ShippingCountry`, `PostingPointType`)
-keeps the opposite contract: there an unknown value means something is genuinely wrong, so it throws.
+The other wire-mapped enums (`ParcelType`, `PickupType`, `ShippingCountry`, `PostingPointType`) keep
+the opposite contract: there an unknown value means something is genuinely wrong, so it throws.
+`ParcelSearchField` and `ParcelSearchOperator` are request-only and never decode anything.
 
 ## Buyer personal data
 
@@ -126,9 +130,13 @@ e-mail. `toString()` on every record that touches it is hand-written to disclose
 content, so a parcel that reaches a log line or a stack trace does not leak buyer data:
 
 ```
-ShippingParty[firstName=***, lastName=***, street=***, city=***, zip=***, country=pl,
-              phoneNumber=***, email=***, pickupType=point, pointCode=WAW01A]
+ShippingParty[firstName=***, lastName=***, companyName=null, street=***, buildingNumber=***,
+              flatNumber=null, city=***, zip=***, country=pl, phoneNumber=***, email=***,
+              pickupType=point, pointCode=WAW01A]
 ```
+
+Every component is listed: `***` means present-but-withheld, `null` means genuinely absent — so the
+output still tells you whether a field arrived.
 
 Redaction also covers two things that are not obviously personal: `additionalInformation`, the free-text
 courier note, which routinely restates the address; and the `waybills` / `pickupProtocol` links, which

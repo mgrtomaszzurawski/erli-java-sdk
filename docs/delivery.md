@@ -42,13 +42,17 @@ in both directions so you never have to remember the scale.
 ```java
 DeliveryPrice price = new DeliveryPrice(
         new DeliveryMethodRef(
-                DeliveryMethodId.of("erliPaczkomat"),
+                DeliveryMethodId.of("erliDHL5kg"),
                 Optional.of(new DeliveryTime(DeliveryTimeUnit.DAYS, 1, 2))),
-        Money.ofMinorUnits(1049, "PLN"),   // 10.49 zł — cost of the first item
+        Money.ofMinorUnits(1500, "PLN"),   // 15.00 zł — cost of the first item
         Money.ofMinorUnits(800, "PLN"),    // 8.00 zł — surcharge per additional item
         Optional.of(new PackingLimit.Total(10)),
         false);
 ```
+
+`erliPaczkomat` is the exception: it needs a per-bracket limit rather than a `Total`, because a locker's
+compartments differ. See [Packing limits](#packing-limits) below — pairing it with a `Total` is accepted
+locally and refused by the server.
 
 `nextItemPrice` is the surcharge for each *additional* item in the same parcel, not a total.
 
@@ -117,8 +121,12 @@ mean a method Erli adds after this SDK version needs an SDK update before you ca
 
 `erliProEnabled` opts the products on a list into the free-delivery programme. The API caps the base
 price per method for lists that join it — `erliPaczkomat` at 10.49 zł, `erliKurier24InPost10kg` at
-12.69 zł, and so on — and requires at least one ERLI InPost method to be enabled. Exceeding a cap is
-answered with a validation error naming the method.
+12.69 zł, and so on — and requires at least one ERLI InPost method to be enabled
+(`erliPaczkomat`, `erliKurier24InPost10kg` or `erliKurier24InPost30kg`).
+
+The SDK does not check either rule locally, so both are enforced server-side. The spec does not
+document the response for an exceeded cap; expect a 4xx, which the SDK surfaces as
+`ErliValidationException`.
 
 ## Errors
 
@@ -137,6 +145,8 @@ made — an empty price set, a non-PLN or fractional amount, or an unknown deliv
 
 ## Optionality
 
-`PriceList.prices()` is never empty; the API requires at least one entry, and `PriceListDraft` and
-`PriceListUpdate` enforce that locally too. `updatedAt` is `Optional` — a list that has never been
+`PriceListDraft` and `PriceListUpdate` reject an empty price set locally, because the API requires at
+least one entry. On the read side `PriceList.prices()` is whatever the server sent — the SDK does not
+re-assert non-emptiness there, so treat an empty list as a server contract break rather than an
+impossibility. `updatedAt` is `Optional` — a list that has never been
 changed does not have one.
