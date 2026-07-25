@@ -42,7 +42,10 @@ import java.util.Optional;
  * @param ean                              the EAN barcode, when set
  * @param sku                              the seller's stock-keeping unit, when set
  * @param baseMarket                       the market the product's own content is authored for
- * @param markets                          the market the product is published to, when set
+ * @param markets                          the market the product is published to. The spec defaults
+ *                                         this to {@code pl}, so an omitted value reads back as
+ *                                         {@link Market#PL}; absent means the marketplace named a
+ *                                         market this SDK version cannot (see {@link Market})
  * @param importantFeatures                bullet points highlighted on the offer page (defensively copied)
  * @param images                           the product images, first one is the cover (defensively copied)
  * @param files                            files attached to the product (defensively copied)

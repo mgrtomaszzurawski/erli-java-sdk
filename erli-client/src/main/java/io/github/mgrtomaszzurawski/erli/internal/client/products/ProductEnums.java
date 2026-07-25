@@ -35,8 +35,20 @@ import java.util.function.Function;
  * on the wire value — the thing the spec actually defines, and what every Layer-1 enum exposes as
  * {@code getValue()} — collapses those four back into one mapping.
  *
- * <p>An unrecognised value throws rather than silently degrading, naming both the value and the enum so
- * a spec addition is obvious from the message. Internal: never exported.
+ * <p><strong>Where an unrecognised value actually surfaces (CORE-12).</strong> The shared codec decodes
+ * with {@code READ_UNKNOWN_ENUM_VALUES_AS_NULL}, so a value the SDK does not know never reaches this
+ * class when the API declares the field as an enum — Layer 1 hands the mapper a {@code null} first, and
+ * the mapper decides: an optional field becomes absent, a required one fails its {@code require(...)}
+ * check. The lookups here only see a raw value for the handful of properties the spec types as an
+ * array of enums, which Layer 1 exposes as {@code List<String>}.
+ *
+ * <p>Those are the ones that need a policy, because they arrive as a list: rejecting one unfamiliar
+ * entry would fail the whole product read. {@link #toMarketOrNull} and
+ * {@link #toProductFieldOrNull} therefore answer {@code null} rather than throwing, and their callers
+ * keep the raw value so a round trip loses nothing. Everything else stays fail-loud — reaching it with an unknown value would mean
+ * the codec's tolerance had been turned off, which is worth hearing about.
+ *
+ * <p>Internal: never exported.
  */
 final class ProductEnums {
 
@@ -80,8 +92,14 @@ final class ProductEnums {
         return lookup(BASE_MARKETS, wireValue, BaseMarket.class);
     }
 
-    static Market toMarket(String wireValue) {
-        return lookup(MARKETS, wireValue, Market.class);
+    /**
+     * The market a wire value denotes, or {@code null} when this SDK version does not know it — the
+     * caller keeps the raw value rather than losing it. Reached with a raw value only for
+     * {@code productAttachments[].markets}, which the spec types as an array of enums and Layer 1
+     * exposes as {@code List<String>}.
+     */
+    static Market toMarketOrNull(String wireValue) {
+        return wireValue == null ? null : MARKETS.get(wireValue);
     }
 
     static InvoiceType toInvoiceType(String wireValue) {
@@ -143,7 +161,8 @@ final class ProductEnums {
      * appeared.
      */
     static ProductField toProductFieldOrNull(String wireValue) {
-        return PRODUCT_FIELDS.get(wireValue);
+        // Null-guarded because these maps are Map.copyOf, whose get(null) throws rather than missing.
+        return wireValue == null ? null : PRODUCT_FIELDS.get(wireValue);
     }
 
     private static <T extends Enum<T>> Map<String, T> index(T[] constants, Function<T, String> wireName) {

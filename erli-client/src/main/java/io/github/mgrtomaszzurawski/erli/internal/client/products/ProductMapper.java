@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ExternalReference;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalResponsibleEntity;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalVariantGroup;
 import io.github.mgrtomaszzurawski.erli.domain.products.FrozenFields;
+import io.github.mgrtomaszzurawski.erli.domain.products.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.Packaging;
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAttachment;
@@ -68,7 +69,8 @@ import java.util.Set;
  *
  * <p>Fields the spec marks required are demanded here: a missing one throws rather than yielding a
  * {@code Product} with a silent {@code null}, because a product without a price or an id is not something
- * a caller can act on. Everything else degrades to an empty {@link Optional} or an empty list.
+ * a caller can act on. Everything else degrades to an empty {@link Optional} or an empty list. For an
+ * enum-backed field "missing" also covers "sent, but unrecognised" — see {@link #require}.
  *
  * <p>Kept in an internal package so no {@code *Raw} type ever appears in an exported signature.
  * Internal: never exported.
@@ -99,8 +101,10 @@ final class ProductMapper {
                 Optional.ofNullable(rawProduct.getSku()),
                 ProductValues.mapOptional(rawProduct.getBaseMarket(),
                         value -> ProductEnums.toBaseMarket(value.getValue())),
+                // Scalar here, despite the plural name: Layer 1 types it as an enum, so an unknown
+                // value has already become absent (CORE-12) and the lookup always resolves.
                 ProductValues.mapOptional(rawProduct.getMarkets(),
-                        value -> ProductEnums.toMarket(value.getValue())),
+                        value -> ProductEnums.toMarketOrNull(value.getValue())),
                 ProductValues.orEmpty(rawProduct.getImportantFeatures()),
                 ProductValues.mapEach(rawProduct.getImages(), ProductMapper::toImage),
                 ProductValues.mapEach(rawProduct.getFiles(), ProductMapper::toFile),
@@ -311,11 +315,39 @@ final class ProductMapper {
     }
 
     private static ProductAttachment toAttachment(ProductCreateProductAttachmentsInner rawAttachment) {
+        List<Market> knownMarkets = new ArrayList<>();
+        List<String> unrecognisedMarkets = new ArrayList<>();
+        splitMarkets(rawAttachment.getMarkets(), knownMarkets, unrecognisedMarkets);
         return new ProductAttachment(
                 Optional.ofNullable(rawAttachment.getId()),
                 ProductValues.mapOptional(rawAttachment.getKind(), value -> ProductEnums.toAttachmentKind(value.getValue())),
                 Optional.ofNullable(rawAttachment.getUrl()),
-                ProductValues.mapEach(rawAttachment.getMarkets(), ProductEnums::toMarket));
+                knownMarkets,
+                unrecognisedMarkets);
+    }
+
+    /**
+     * Split an attachment's market scope into the markets this SDK version can name and the raw wire
+     * values it cannot, in one pass.
+     *
+     * <p>Keeping the unnameable ones rather than dropping them is what lets a caller read a product,
+     * change something else and write it back without quietly narrowing the scope. Null entries are
+     * skipped: the spec types these items as non-nullable strings, but a lookup on a null key would
+     * throw, and one malformed entry must not fail the whole product read.
+     */
+    private static void splitMarkets(List<String> wireValues, List<Market> known,
+            List<String> unrecognised) {
+        for (String wireValue : ProductValues.orEmpty(wireValues)) {
+            if (wireValue == null) {
+                continue;
+            }
+            Market market = ProductEnums.toMarketOrNull(wireValue);
+            if (market == null) {
+                unrecognised.add(wireValue);
+            } else {
+                known.add(market);
+            }
+        }
     }
 
     private static Translations toTranslations(ProductResponseTranslations rawTranslations) {
@@ -398,9 +430,20 @@ final class ProductMapper {
         return String.valueOf(rawEnum);
     }
 
+    /**
+     * Demand a field the spec marks required.
+     *
+     * <p>The message names both causes on purpose. Since CORE-12 the codec decodes an unrecognised enum
+     * value to {@code null}, so for an enum-backed field this fires when the value was absent
+     * <em>or</em> when the marketplace sent one this SDK version does not know — and the two are
+     * indistinguishable by the time the payload reaches here. Staying loud is the right answer for a
+     * required field either way: a product whose status or dispatch time cannot be read is not
+     * something a caller can act on.
+     */
     private static <T> T require(T value, String field) {
         if (value == null) {
-            throw new IllegalStateException("ProductResponse is missing the required '" + field + "' field");
+            throw new IllegalStateException("ProductResponse is missing the required '" + field
+                    + "' field, or carries a value this SDK version does not recognise");
         }
         return value;
     }
