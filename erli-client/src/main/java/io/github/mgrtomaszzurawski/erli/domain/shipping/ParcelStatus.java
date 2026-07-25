@@ -1,7 +1,5 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
-import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -55,9 +53,20 @@ public enum ParcelStatus {
     /** A technical carrier state. */
     TECHNICAL("technical"),
     /** Tracking data is no longer available. */
-    TRACKING_EXPIRED("trackingExpired");
+    TRACKING_EXPIRED("trackingExpired"),
+
+    /**
+     * A status this release does not know. Erli's parcel statuses come from carrier integrations and
+     * grow as carriers are added, so a status minted after this SDK was built must not be able to fail
+     * a whole read: one unrecognised value in a 200-parcel search would otherwise cost the caller every
+     * other parcel. Branch on it if you need to; {@link #wireValue()} returns
+     * an empty string, because the real wire string is not carried here — read it from the raw payload
+     * if you need the exact value.
+     */
+    UNRECOGNIZED("");
 
     private static final Map<String, ParcelStatus> BY_WIRE = Stream.of(values())
+            .filter(status -> status != UNRECOGNIZED)
             .collect(Collectors.toUnmodifiableMap(ParcelStatus::wireValue, Function.identity()));
 
     private final String wireValue;
@@ -72,23 +81,18 @@ public enum ParcelStatus {
     }
 
     /**
-     * Resolve a wire string to a status.
+     * Resolve a wire string to a status, or {@link #UNRECOGNIZED} if this release does not know it.
      *
-     * <p>On the live path this receives the wire value of an already-decoded Layer-1 enum. Note the
-     * shared codec decodes an unknown enum value as {@code null} rather than throwing, so a status Erli
-     * adds after the vendored spec does not reach here at all: a required field then fails in the
-     * mapper naming the field, and an optional one reads as absent. This guard therefore fires only if
-     * this domain enum drifts out of sync with the generated one.
-     *
-     * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
+     * <p>Deliberately tolerant, unlike the smaller enums in this package. Those describe closed
+     * vocabularies where an unknown value means something is genuinely wrong; parcel status is an open,
+     * carrier-driven vocabulary where a new value is routine, and failing the read would punish the
+     * caller for Erli shipping with a new carrier. The shared codec already decodes an unknown enum as
+     * {@code null} (see {@code KNOWN-SERVER-BEHAVIORS.md}), so the null case lands here too.
      */
     public static ParcelStatus fromWire(String wireValue) {
-        ParcelStatus status = BY_WIRE.get(wireValue);
-        if (status == null) {
-            throw new ErliTransportException(
-                    "No ParcelStatus constant maps wire value '" + wireValue
-                            + "'; this domain enum is out of sync with the generated model");
+        if (wireValue == null) {
+            return UNRECOGNIZED;
         }
-        return status;
+        return BY_WIRE.getOrDefault(wireValue, UNRECOGNIZED);
     }
 }

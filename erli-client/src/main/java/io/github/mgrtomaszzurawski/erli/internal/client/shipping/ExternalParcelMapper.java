@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.shipping;
 
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.core.model.ParcelId;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ExternalParcel;
@@ -8,7 +9,6 @@ import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelError;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelStatus;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelStatusChange;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelType;
-import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingVendor;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.CreateExternalParcelInnerTrackingNumber;
@@ -56,14 +56,20 @@ final class ExternalParcelMapper {
      * <p>The API answers per entry with either the created parcel or the refused entry echoed back with
      * its errors, stated as an {@code anyOf} over the two shapes.
      *
-     * <p><strong>CORE-3 workaround — delete the tree dispatch when bucket B's PR lands.</strong> The
-     * generated {@code anyOf} deserializer takes the first branch that parses, and because the shared
-     * codec ignores unknown properties the "created" branch always parses — a refused entry would bind
-     * to it and arrive without its {@code error} list, which is the only thing that entry carries.
-     * Until the {@code normalizeSpec} composite-merge makes Layer 1 lossless, the discriminator is read
-     * off the raw tree ({@code error} is present only on a refusal) and the node is then bound to the
-     * right generated type by the shared codec — so every field still comes from Layer 1, not from
-     * hand-copied field names. Afterwards this collapses to a single {@code getActualInstance()} switch.
+     * <p><strong>Why the discriminator is read off the raw tree — do not "simplify" this away.</strong>
+     * The generated {@code anyOf} deserializer is first-match-wins, and the shared codec both ignores
+     * unknown properties and decodes an unknown enum value as {@code null}, so the "created" branch
+     * parses a refusal too and drops the {@code error} list that is the only thing that entry carries.
+     *
+     * <p>The {@code normalizeSpec} composite-merge (CORE-3) does <em>not</em> cover this schema and is
+     * not going to: it merges only composites whose branches agree on every shared property, and these
+     * two disagree on {@code orderId}, {@code status} and {@code trackingNumber}. That guard is correct
+     * — merging a discriminated union would destroy the discriminator. Verified against the vendored
+     * spec on 2026-07-25, when the merge reported the five {@code deliveryTracking} composites and
+     * nothing else.
+     *
+     * <p>The node is bound to the matching generated class by the shared codec, so every field still
+     * comes from Layer 1 rather than from hand-copied names.
      */
     static ExternalParcelResult toResult(JsonNode rawEntry, JsonCodec codec) {
         Objects.requireNonNull(rawEntry, "raw external parcel result");
@@ -81,7 +87,7 @@ final class ExternalParcelMapper {
                 OrderId.of(requireField(raw.getOrderId(), "orderId")),
                 Optional.ofNullable(raw.getVendor())
                         .map(CreateExternalParcelResponseAnyOf1.VendorEnum::getValue)
-                        .map(ShippingVendor::fromWire),
+                        .map(DeliveryVendor::fromWire),
                 Optional.ofNullable(raw.getTrackingNumber())
                         .map(CreateExternalParcelInnerTrackingNumber::getString),
                 toErrors(raw.getError()));
@@ -101,8 +107,8 @@ final class ExternalParcelMapper {
                 requireField(raw.getUpdatedAt(), "updatedAt"));
     }
 
-    private static ShippingVendor toVendor(ExternalParcelShipping rawShipping) {
-        return ShippingVendor.fromWire(requireField(rawShipping.getVendor(), "shipping.vendor").getValue());
+    private static DeliveryVendor toVendor(ExternalParcelShipping rawShipping) {
+        return DeliveryVendor.fromWire(requireField(rawShipping.getVendor(), "shipping.vendor").getValue());
     }
 
     private static List<ParcelStatusChange> toStatusHistory(List<ParcelStatusHistoryInner> rawHistory) {
