@@ -1,6 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.inbox;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InboxAccess;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Message;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.MessageQuery;
@@ -27,6 +28,8 @@ import java.util.Objects;
  * <p>Internal: never exported.
  */
 public final class InboxAccessImpl implements InboxAccess {
+
+    private static final String FIELD_ID = "id";
 
     private final HttpRuntime runtime;
     private final JsonCodec codec;
@@ -64,8 +67,26 @@ public final class InboxAccessImpl implements InboxAccess {
         if (rawMessages == null) {
             return List.of();
         }
-        return rawMessages.stream()
-                .map(messageNode -> MessageMapper.toDomain(messageNode, codec))
-                .toList();
+        return rawMessages.stream().map(this::toDomain).toList();
+    }
+
+    /**
+     * Failing the batch is deliberate — the fleet's decision is to fail loud on wire data the vendored
+     * spec does not describe, rather than silently drop a message a shop is expected to act on (see
+     * {@code KNOWN-SERVER-BEHAVIORS.md}). But an unacknowledged message is returned again by the next
+     * call, so a message this SDK version cannot map would stall the drain loop forever with no clue
+     * which one it was. Naming the offending id turns that dead end into something a caller can act on:
+     * acknowledge that id and carry on.
+     */
+    private Message toDomain(JsonNode messageNode) {
+        JsonNode idNode = messageNode.get(FIELD_ID);
+        try {
+            return MessageMapper.toDomain(messageNode, codec);
+        } catch (RuntimeException failure) {
+            String messageId = idNode == null ? "unknown" : idNode.asText();
+            throw new ErliTransportException(
+                    "Could not map inbox message " + messageId + "; acknowledge it with markRead to skip it",
+                    failure);
+        }
     }
 }

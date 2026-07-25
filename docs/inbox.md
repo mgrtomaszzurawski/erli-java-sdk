@@ -19,10 +19,17 @@ try (ErliClient client = ErliClient.fromEnvironment()) {
             handle(message);
         }
         // The batch is oldest-first, so acknowledging the last id acknowledges all of them.
-        client.inbox().markRead(ReadReceipt.upTo(batch.get(batch.size() - 1).id()));
+        int marked = client.inbox().markRead(ReadReceipt.upTo(batch.get(batch.size() - 1).id()));
+        if (marked == 0) {
+            // Nothing was acknowledged, so the next call would return the same batch forever.
+            throw new IllegalStateException("inbox did not advance");
+        }
     }
 }
 ```
+
+Ids sent to `markRead` must be exactly 24 characters (the API's own constraint), which `ReadReceipt`
+checks before a request goes out.
 
 If only some messages were processed successfully, acknowledge exactly those instead — the rest come
 back on the next call:
@@ -87,7 +94,7 @@ List<Message> everything = client.inbox().search(MessageQuery.all());   // same 
 The API's filter does **not** accept `ORDER_SELLER_STATUS_CHANGED`, even though messages of that type
 exist. `MessageQuery` rejects it immediately with an actionable message rather than letting the server
 answer with a validation error; fetch every type and filter client-side if you need it.
-`MessageType.filterable()` tells you which values the filter takes.
+`MessageType.filterable()` reports, per constant, whether the filter accepts it.
 
 ## Errors
 

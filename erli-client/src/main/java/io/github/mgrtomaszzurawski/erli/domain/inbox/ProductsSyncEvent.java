@@ -29,7 +29,7 @@ public record ProductsSyncEvent(
     }
 
     /** Whether the whole product needs re-synchronising rather than named fields. */
-    public boolean wholeProduct() {
+    public boolean isWholeProduct() {
         return fields.isEmpty();
     }
 }

@@ -2,12 +2,12 @@ package io.github.mgrtomaszzurawski.erli.internal.client.inbox;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Buyer;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Country;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Delivery;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryTracking;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddressType;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Message;
@@ -41,6 +41,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -230,7 +231,7 @@ class MessageMapperTest {
                 List.of(ProductExternalId.of("SKU-1"), ProductExternalId.of("SKU-2")),
                 sync.productIds());
         assertEquals(List.of("price", "stock"), sync.fields());
-        assertFalse(sync.wholeProduct());
+        assertFalse(sync.isWholeProduct());
     }
 
     /**
@@ -253,7 +254,7 @@ class MessageMapperTest {
         assertTrue(sync.id().isEmpty(), "the observed payload carries no id, and that must not throw");
         assertEquals(List.of(ProductExternalId.of("probe-1")), sync.productIds());
         assertEquals(List.of(), sync.fields());
-        assertTrue(sync.wholeProduct());
+        assertTrue(sync.isWholeProduct());
     }
 
     @Test
@@ -278,7 +279,7 @@ class MessageMapperTest {
 
     @Test
     void buildsTheSearchRequestOnlyWhenTypesAreRequested() {
-        assertTrue(MessageMapper.toRaw(MessageQuery.all()).getTypes() == null,
+        assertNull(MessageMapper.toRaw(MessageQuery.all()).getTypes(),
                 "an unfiltered query must leave 'types' absent, not send an empty array");
         assertEquals(
                 List.of("orderCreated", "productsNeedSync"),

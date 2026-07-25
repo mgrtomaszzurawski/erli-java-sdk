@@ -5,6 +5,7 @@ import io.github.mgrtomaszzurawski.erli.rest.model.HookSave;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,6 +47,8 @@ class JsonCodecNullablePropertiesTest {
         assertTrue(explicitNull.getStatus_JsonNullable().isPresent(),
                 "an explicit null must decode as present-but-null, not as absent");
         assertNull(explicitNull.getStatus());
+        assertFalse(absent.getStatus_JsonNullable().isPresent(),
+                "an absent property must stay absent, distinct from an explicit null");
         assertNull(absent.getStatus());
     }
 

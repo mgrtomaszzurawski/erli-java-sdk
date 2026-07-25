@@ -12,7 +12,7 @@ import java.util.List;
  * webhook subscriptions and drains-checks its inbox through the public accessors.
  *
  * <p>Run: {@code ./gradlew :erli-demo:runComms} with {@code ERLI_BASE_URL} and {@code ERLI_API_KEY} set
- * (sourced from {@code /workspace/shared/secrets/erli-sandbox.env}). The API key is never printed.
+ * in the environment. The API key is never printed.
  *
  * <p>Read-only by design. The write operations ({@code save}/{@code delete} a subscription, the two
  * hook test-fires, {@code mark-read}) change shop state or make Erli call an endpoint the sandbox shop

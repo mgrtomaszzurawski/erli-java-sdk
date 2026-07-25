@@ -37,14 +37,23 @@ class CommsDomainContractTest {
     private static final String BUYER_EMAIL = "buyer@example.com";
     private static final String BUYER_PHONE = "601234567";
     private static final String ACCOUNT_NUMBER = "12345678901234567890123456";
+    private static final String COMPANY_NAME = "Kowalska Sp. z o.o.";
+    private static final String COMPANY_TAX_ID = "5252445767";
     private static final int OVER_THE_PRODUCT_LIMIT = ProductSyncNotification.MAX_PRODUCT_IDS + 1;
 
     @Test
-    void hookRedactsItsAccessTokenButNotItsUrl() {
+    void hookRedactsItsAccessTokenAndAnythingCarriedInTheUrlQuery() {
         String described = Hook.of(HookKind.CHECK_BUYABILITY, URI.create(HOOK_URL), ACCESS_TOKEN).toString();
 
         assertFalse(described.contains(ACCESS_TOKEN), "the shop's own credential must not be printable");
-        assertTrue(described.contains(HOOK_URL), "the endpoint itself is not a secret and aids debugging");
+        assertTrue(described.contains("shop.example"), "the host aids debugging and is not a secret");
+
+        // A webhook URL commonly carries the shared secret as a query parameter, so the query goes too.
+        String withSecretInQuery = Hook.of(
+                HookKind.CHECK_BUYABILITY, URI.create(HOOK_URL + "?token=" + ACCESS_TOKEN)).toString();
+
+        assertFalse(withSecretInQuery.contains(ACCESS_TOKEN), "a secret in the query must not be printable");
+        assertTrue(withSecretInQuery.contains("/hook"), "the path is still useful and stays visible");
     }
 
     @Test
@@ -54,6 +63,20 @@ class CommsDomainContractTest {
                 () -> Hook.of(HookKind.ORDER_CREATED, URI.create(longPath)));
         assertThrows(IllegalArgumentException.class, () -> Hook.of(HookKind.ORDER_CREATED,
                 URI.create(HOOK_URL), "t".repeat(Hook.MAX_ACCESS_TOKEN_LENGTH + 1)));
+    }
+
+    /**
+     * Erli sends the access token and, for the {@code ORDER_*} kinds, the buyer's personal data to this
+     * endpoint, so a cleartext or credential-bearing URL is refused rather than merely discouraged.
+     */
+    @Test
+    void hookRejectsAnEndpointThatIsNotPlainHttps() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Hook.of(HookKind.ORDER_CREATED, URI.create("http://shop.example/hook")));
+        assertThrows(IllegalArgumentException.class,
+                () -> Hook.of(HookKind.ORDER_CREATED, URI.create("/relative/hook")));
+        assertThrows(IllegalArgumentException.class,
+                () -> Hook.of(HookKind.ORDER_CREATED, URI.create("https://user:pass@shop.example/hook")));
     }
 
     @Test
@@ -97,16 +120,20 @@ class CommsDomainContractTest {
     void buyerDataIsRedactedInEveryRecordThatCarriesIt() {
         DeliveryAddress delivery = new DeliveryAddress("Anna", "Kowalska", Optional.empty(),
                 "Prosta 12", "Prosta", "12", Optional.empty(), "00-838", "Warszawa", Country.PL, BUYER_PHONE);
-        InvoiceAddress invoice = new InvoiceAddress(InvoiceAddressType.PERSON, "Krucza 5", "Krucza", "5",
+        InvoiceAddress invoice = new InvoiceAddress(InvoiceAddressType.COMPANY, "Krucza 5", "Krucza", "5",
                 Optional.empty(), "00-548", "Warszawa", Country.PL, Optional.of("Anna"),
-                Optional.of("Kowalska"), Optional.empty(), Optional.empty());
+                Optional.of("Kowalska"), Optional.of(COMPANY_NAME), Optional.of(COMPANY_TAX_ID));
         Buyer buyer = new Buyer(BUYER_EMAIL, delivery, Optional.of(invoice));
 
         String described = buyer.toString();
         assertFalse(described.contains(BUYER_EMAIL), "e-mail must not be printable");
         assertFalse(described.contains("Kowalska"), "the buyer's name must not be printable");
         assertFalse(described.contains(BUYER_PHONE), "the buyer's phone must not be printable");
-        assertFalse(described.contains("Prosta"), "the street must not be printable");
+        assertFalse(described.contains("Prosta"), "the delivery street must not be printable");
+        // The invoice address is reached through Optional<InvoiceAddress>, so it must redact too.
+        assertFalse(described.contains("Krucza"), "the invoice street must not be printable");
+        assertFalse(described.contains(COMPANY_NAME), "the invoice company must not be printable");
+        assertFalse(described.contains(COMPANY_TAX_ID), "the invoice tax id must not be printable");
         // The non-identifying locality stays visible so a log line is still useful for diagnosis.
         assertTrue(described.contains("Warszawa"));
         assertTrue(described.contains("00-838"));

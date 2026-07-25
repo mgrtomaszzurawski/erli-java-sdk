@@ -8,7 +8,8 @@ import java.util.Optional;
 /**
  * One return registered against the order.
  *
- * @param lines       the returned positions, at least one
+ * @param lines       the returned positions (the API documents at least one; not enforced here,
+ *                    because a response is reported as it arrives)
  * @param bankAccount where to pay the refund, when the buyer supplied an account
  * @param reason      why the buyer returned the items
  * @param comment     the buyer's own words, when they left any

@@ -13,6 +13,13 @@ import java.util.Objects;
  */
 public sealed interface ReadReceipt {
 
+    /**
+     * The exact id length this operation accepts. Enforced on the request side only: a
+     * {@link MessageId} read back from the API is taken as it arrives, but an id sent here is checked
+     * so a malformed one is rejected locally rather than as a server-side validation error.
+     */
+    int REQUIRED_ID_LENGTH = 24;
+
     /** Acknowledge every message up to and including {@code lastMessageId}. */
     static ReadReceipt upTo(MessageId lastMessageId) {
         return new UpTo(lastMessageId);
@@ -31,7 +38,7 @@ public sealed interface ReadReceipt {
     record UpTo(MessageId lastMessageId) implements ReadReceipt {
 
         public UpTo {
-            Objects.requireNonNull(lastMessageId, "lastMessageId");
+            requireAcknowledgeable(lastMessageId);
         }
     }
 
@@ -47,7 +54,17 @@ public sealed interface ReadReceipt {
             if (ids.isEmpty()) {
                 throw new IllegalArgumentException("ids must name at least one message");
             }
+            ids.forEach(ReadReceipt::requireAcknowledgeable);
             ids = List.copyOf(ids);
+        }
+    }
+
+    private static void requireAcknowledgeable(MessageId id) {
+        Objects.requireNonNull(id, "messageId");
+        if (id.value().length() != REQUIRED_ID_LENGTH) {
+            throw new IllegalArgumentException(
+                    "A message id sent to mark-read must be exactly " + REQUIRED_ID_LENGTH
+                            + " characters, but was " + id.value().length() + ": " + id);
         }
     }
 }

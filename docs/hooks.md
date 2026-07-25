@@ -35,6 +35,11 @@ try (ErliClient client = ErliClient.fromEnvironment()) {
 }
 ```
 
+The URL must be `https` and must not carry credentials in its userinfo: Erli sends the access token
+and, for the three `ORDER_*` kinds, the buyer's personal data to this endpoint. `Hook.toString()`
+redacts the token *and* the URL's query string, since a webhook URL often carries the shared secret
+there.
+
 `save` creates or overwrites the subscription named by `hook.kind()` — there is one subscription per
 kind, so saving twice replaces rather than duplicates. `delete` succeeds even when nothing was
 registered.

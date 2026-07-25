@@ -18,6 +18,9 @@ import java.util.List;
  */
 public interface InboxAccess {
 
+    /** The API's cap on how many messages one call returns. */
+    int MAX_MESSAGES_PER_CALL = 500;
+
     /**
      * The oldest unread messages, up to the API's cap of {@value #MAX_MESSAGES_PER_CALL}
      * ({@code GET /inbox}).
@@ -43,7 +46,4 @@ public interface InboxAccess {
      * @return how many messages the API marked as read
      */
     int markRead(ReadReceipt receipt);
-
-    /** The API's cap on how many messages one call returns. */
-    int MAX_MESSAGES_PER_CALL = 500;
 }

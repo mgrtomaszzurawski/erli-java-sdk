@@ -5,6 +5,7 @@ import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliNotFoundException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InboxAccess;
@@ -112,10 +113,30 @@ class InboxAccessImplTest {
 
         assertEquals(1, unread.size());
         assertEquals(MessageType.PRODUCTS_NEED_SYNC, unread.get(0).type());
-        assertTrue(unread.get(0).productsSyncEvent().orElseThrow().wholeProduct());
+        assertTrue(unread.get(0).productsSyncEvent().orElseThrow().isWholeProduct());
         server.verify(getRequestedFor(urlEqualTo(INBOX_PATH))
                 .withHeader("Authorization", equalTo("Bearer " + TEST_KEY))
                 .withHeader("User-Agent", equalTo(USER_AGENT)));
+    }
+
+    /**
+     * A message this SDK version cannot map fails the batch — fail-loud on undescribed wire data is the
+     * fleet's decision. But an unacknowledged message comes back on the next call, so without the id the
+     * drain loop would stall forever with no way to tell which message caused it.
+     */
+    @Test
+    void namesTheOffendingMessageWhenOneCannotBeMapped() {
+        String unmappableCarrier = SYNC_MESSAGE_JSON.replace(
+                "\"payload\":{\"id\":\"hash-1\",\"externalProductIds\":[\"SKU-1\"],\"fields\":[]}",
+                "\"payload\":{\"id\":\"hash-1\"}");
+        server.stubFor(get(urlEqualTo(INBOX_PATH)).willReturn(okJson(unmappableCarrier)));
+
+        ErliTransportException thrown = assertThrows(ErliTransportException.class, () -> inbox().unread());
+
+        assertTrue(thrown.getMessage().contains(MESSAGE_ID),
+                "the failure must name the message so it can be acknowledged and skipped: "
+                        + thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("markRead"), thrown.getMessage());
     }
 
     @Test

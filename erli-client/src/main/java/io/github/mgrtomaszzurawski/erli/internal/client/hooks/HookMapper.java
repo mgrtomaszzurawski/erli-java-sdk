@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.hooks;
 
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.BuyabilityQuery;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.BuyabilityStatus;
@@ -28,12 +29,25 @@ final class HookMapper {
     private HookMapper() {
     }
 
+    /**
+     * The domain record validates what the API is documented to accept — an {@code https} URL within
+     * the length limits. That is the right guard on the write path, but here the data comes back
+     * <em>from</em> the server, so a stored subscription that predates those rules (or a malformed URL)
+     * would throw a bare {@link IllegalArgumentException} out of {@code list()} and fail the whole call
+     * outside the SDK's exception contract. The failure is translated instead, naming the subscription
+     * so the caller can fix or delete it.
+     */
     static Hook toDomain(HookResponseInner rawHook) {
         Objects.requireNonNull(rawHook, "raw HookResponseInner");
-        return new Hook(
-                toHookKind(rawHook.getHookName()),
-                URI.create(requireUrl(rawHook)),
-                Optional.ofNullable(rawHook.getAccessToken()));
+        HookKind kind = toHookKind(rawHook.getHookName());
+        String url = requireUrl(rawHook);
+        try {
+            return new Hook(kind, URI.create(url), Optional.ofNullable(rawHook.getAccessToken()));
+        } catch (IllegalArgumentException rejected) {
+            throw new ErliTransportException(
+                    "The " + kind.wireValue() + " subscription registered on this shop is not usable by the SDK",
+                    rejected);
+        }
     }
 
     static HookSave toRaw(Hook hook) {

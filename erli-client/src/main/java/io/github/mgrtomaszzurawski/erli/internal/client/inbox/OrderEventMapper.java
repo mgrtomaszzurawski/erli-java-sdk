@@ -12,7 +12,7 @@ import io.github.mgrtomaszzurawski.erli.domain.inbox.Country;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Delivery;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryTracking;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddressType;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.OrderEvent;
@@ -68,8 +68,9 @@ import java.util.Optional;
  */
 final class OrderEventMapper {
 
-    private static final String TRACKING_FIELD = "deliveryTracking";
-    private static final int MINOR_UNIT_SCALE = 2;
+    private static final String FIELD_DELIVERY_TRACKING = "deliveryTracking";
+    private static final String CURRENCY_CODE_PLN = "PLN";
+    private static final String CURRENCY_CODE_EUR = "EUR";
 
     private OrderEventMapper() {
     }
@@ -210,7 +211,7 @@ final class OrderEventMapper {
         if (payloadNode == null) {
             return Optional.empty();
         }
-        JsonNode trackingNode = payloadNode.get(TRACKING_FIELD);
+        JsonNode trackingNode = payloadNode.get(FIELD_DELIVERY_TRACKING);
         if (trackingNode == null || trackingNode.isNull()) {
             return Optional.empty();
         }
@@ -265,8 +266,13 @@ final class OrderEventMapper {
                 requireText(rawAccount.getName(), "bankAccount.name"));
     }
 
+    /**
+     * The payload states every amount as an integer count of minor units. The scale comes from the
+     * currency itself rather than a hard-coded 2, so a currency with a different fraction digit count
+     * cannot be silently mis-scaled if the API's enum grows one.
+     */
     private static Money toMoney(long minorUnits, Currency currency) {
-        return Money.of(BigDecimal.valueOf(minorUnits, MINOR_UNIT_SCALE), currency);
+        return Money.of(BigDecimal.valueOf(minorUnits, currency.getDefaultFractionDigits()), currency);
     }
 
     private static Currency toCurrency(MessagePayloadAnyOf rawPayload) {
@@ -275,8 +281,8 @@ final class OrderEventMapper {
             throw new IllegalStateException("order payload is missing the required 'currency' field");
         }
         return switch (rawCurrency) {
-            case PLN -> Currency.getInstance("PLN");
-            case EUR -> Currency.getInstance("EUR");
+            case PLN -> Currency.getInstance(CURRENCY_CODE_PLN);
+            case EUR -> Currency.getInstance(CURRENCY_CODE_EUR);
         };
     }
 
@@ -403,35 +409,13 @@ final class OrderEventMapper {
         };
     }
 
+    /**
+     * Mapped by wire value rather than a 26-arm switch: this is a large, growing reference enum, and
+     * the fleet convention is a {@code fromWire} lookup for those (see {@code KNOWN-SERVER-BEHAVIORS.md}).
+     * An unknown carrier already fails earlier, when the generated enum decodes it.
+     */
     private static DeliveryVendor toDeliveryVendor(OrderDeliveryTrackingAnyOf1.VendorEnum rawVendor) {
-        return switch (rawVendor) {
-            case INPOST -> DeliveryVendor.INPOST;
-            case POCZTA_POLSKA -> DeliveryVendor.POCZTA_POLSKA;
-            case DHL -> DeliveryVendor.DHL;
-            case DPD -> DeliveryVendor.DPD;
-            case DTS -> DeliveryVendor.DTS;
-            case FEDEX -> DeliveryVendor.FEDEX;
-            case POCZTEX24 -> DeliveryVendor.POCZTEX24;
-            case RHENUS -> DeliveryVendor.RHENUS;
-            case RABEN -> DeliveryVendor.RABEN;
-            case GLS -> DeliveryVendor.GLS;
-            case UPS -> DeliveryVendor.UPS;
-            case RUCH -> DeliveryVendor.RUCH;
-            case ORLEN -> DeliveryVendor.ORLEN;
-            case GEIS -> DeliveryVendor.GEIS;
-            case PATRON_SERVICE -> DeliveryVendor.PATRON_SERVICE;
-            case PEKAES -> DeliveryVendor.PEKAES;
-            case TNT_EXPRESS -> DeliveryVendor.TNT_EXPRESS;
-            case SCHENKER -> DeliveryVendor.SCHENKER;
-            case AMBRO_EXPRESS -> DeliveryVendor.AMBRO_EXPRESS;
-            case DSV -> DeliveryVendor.DSV;
-            case JAS_FBG -> DeliveryVendor.JAS_FBG;
-            case ROHLIG_SUUS -> DeliveryVendor.ROHLIG_SUUS;
-            case HELLMANN -> DeliveryVendor.HELLMANN;
-            case OWN_TRANSPORT -> DeliveryVendor.OWN_TRANSPORT;
-            case SELF_PICKUP -> DeliveryVendor.SELF_PICKUP;
-            case OTHER -> DeliveryVendor.OTHER;
-        };
+        return DeliveryVendor.fromWire(rawVendor.getValue());
     }
 
     private static PaymentStatus toPaymentStatus(OrderPayment.StatusEnum rawStatus) {

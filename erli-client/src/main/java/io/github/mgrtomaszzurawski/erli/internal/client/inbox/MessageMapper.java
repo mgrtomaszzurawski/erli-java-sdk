@@ -1,6 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.inbox;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Message;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.MessageId;
@@ -46,6 +47,15 @@ final class MessageMapper {
 
     static Message toDomain(JsonNode messageNode, JsonCodec codec) {
         Objects.requireNonNull(messageNode, "message node");
+        JsonNode payloadNode = messageNode.get(FIELD_PAYLOAD);
+        // Detach the payload before binding the envelope. The generated envelope declares `payload` as
+        // the anyOf wrapper, so leaving it in place makes Jackson deep-bind the whole order snapshot
+        // into a branch this mapper then discards and re-binds itself below — roughly half the mapping
+        // cost of a message, for a value that is thrown away. Safe to mutate: the tree is decoded per
+        // call by InboxAccessImpl and dropped as soon as this returns.
+        if (messageNode instanceof ObjectNode envelopeNode) {
+            envelopeNode.remove(FIELD_PAYLOAD);
+        }
         io.github.mgrtomaszzurawski.erli.rest.model.Message rawMessage = codec.convert(
                 messageNode, io.github.mgrtomaszzurawski.erli.rest.model.Message.class);
         String typeName = requireText(rawMessage.getType(), "type");
@@ -57,7 +67,7 @@ final class MessageMapper {
                 requirePresent(rawMessage.getRead(), "read"),
                 type,
                 typeName,
-                toPayload(type, messageNode.get(FIELD_PAYLOAD), codec));
+                toPayload(type, payloadNode, codec));
     }
 
     static MessageRequest toRaw(MessageQuery query) {
@@ -93,6 +103,12 @@ final class MessageMapper {
      * than a guess: binding it to a branch chosen at random would invent data.
      */
     private static Optional<MessagePayload> toPayload(MessageType type, JsonNode payloadNode, JsonCodec codec) {
+        // An unknown type is answered before the payload is even inspected: the SDK has nothing to say
+        // about a shape it does not know, so a message whose payload is missing or oddly shaped still
+        // reaches the caller as UNKNOWN rather than failing the whole page.
+        if (type == MessageType.UNKNOWN) {
+            return Optional.empty();
+        }
         if (payloadNode == null || payloadNode.isNull()) {
             throw new IllegalStateException("Message is missing the required 'payload' field");
         }
@@ -103,7 +119,8 @@ final class MessageMapper {
         if (type == MessageType.PRODUCTS_NEED_SYNC) {
             return Optional.of(toProductsSyncEvent(codec.convert(payloadNode, MessagePayloadAnyOf3.class)));
         }
-        return Optional.empty();
+        // Reached only if MessageType gains a constant without a payload shape being wired here.
+        throw new IllegalStateException("No payload mapping is wired for message type " + type);
     }
 
     private static ProductsSyncEvent toProductsSyncEvent(MessagePayloadAnyOf3 rawPayload) {
