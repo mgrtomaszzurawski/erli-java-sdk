@@ -43,15 +43,19 @@ public final class CursorPagination {
                 if (noMorePages) {
                     return false;
                 }
-                Page<T> page = fetcher.fetch(firstFetchDone ? nextCursor : null);
+                Cursor requestedCursor = firstFetchDone ? nextCursor : null;
+                Page<T> page = fetcher.fetch(requestedCursor);
                 firstFetchDone = true;
                 current = page.items().iterator();
-                nextCursor = page.nextCursor();
-                // Terminal when the server offers no further cursor or returns an empty page; the
-                // empty-page guard also prevents an infinite loop on a stale/repeating cursor.
-                if (nextCursor == null || page.items().isEmpty()) {
+                Cursor returnedCursor = page.nextCursor();
+                // Terminal when the server offers no further cursor, returns an empty page, or echoes
+                // back the very cursor we just sent (a non-empty repeat would otherwise loop forever).
+                if (returnedCursor == null
+                        || page.items().isEmpty()
+                        || returnedCursor.equals(requestedCursor)) {
                     noMorePages = true;
                 }
+                nextCursor = returnedCursor;
             }
             action.accept(current.next());
             return true;
