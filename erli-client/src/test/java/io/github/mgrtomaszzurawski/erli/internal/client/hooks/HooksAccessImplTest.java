@@ -5,6 +5,7 @@ import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliNotFoundException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
@@ -136,6 +137,22 @@ class HooksAccessImplTest {
         server.verify(getRequestedFor(urlEqualTo(HOOKS_PATH))
                 .withHeader("Authorization", equalTo("Bearer " + TEST_KEY))
                 .withHeader("User-Agent", equalTo(USER_AGENT)));
+    }
+
+    /**
+     * CORE-12 made this reachable from wire data: a hook name the API already serves but this SDK's
+     * spec does not describe decodes to {@code null}. The mapper rejects it, and that rejection must
+     * still arrive as an {@link io.github.mgrtomaszzurawski.erli.core.error.ErliException} — the
+     * documented contract is that catching one covers every failure of a call.
+     */
+    @Test
+    void reportsAnUnrepresentableStoredHookInsideTheExceptionContract() {
+        server.stubFor(get(urlEqualTo(HOOKS_PATH)).willReturn(
+                okJson("[{\"hookName\":\"somethingThisSdkDoesNotKnow\",\"url\":\"" + HOOK_URL + "\"}]")));
+
+        ErliTransportException thrown = assertThrows(ErliTransportException.class, () -> hooks().list());
+
+        assertTrue(thrown.getMessage().contains("cannot represent"), thrown.getMessage());
     }
 
     @Test

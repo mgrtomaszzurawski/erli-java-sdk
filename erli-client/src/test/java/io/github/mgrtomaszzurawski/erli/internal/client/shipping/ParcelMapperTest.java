@@ -169,14 +169,36 @@ class ParcelMapperTest {
         assertFalse(parcel.shipping().nonStandard());
     }
 
+    /**
+     * The point of the sentinel: it has to survive the whole decode path, not just the enum's own
+     * lookup. The codec turns a status this release does not know into {@code null} before the mapper
+     * sees it, so this asserts against a real payload rather than calling {@code fromWire} directly.
+     */
+    @Test
+    void degradesAStatusThisReleaseDoesNotKnowInsteadOfFailingTheWholeParcel() {
+        String futureStatus = ParcelFixtures.MINIMAL_PARCEL_JSON
+                .replace("\"status\": \"preparing\"", "\"status\": \"handedToDrone\"");
+
+        Parcel parcel = mapFrom(futureStatus);
+
+        assertEquals(ParcelStatus.UNRECOGNIZED, parcel.status());
+        // Everything else must still map — that is the whole reason not to fail.
+        assertEquals(OffsetDateTime.parse("2026-07-20T08:14:00Z"), parcel.createdAt());
+    }
+
+    /**
+     * Status is deliberately no longer in this category — it degrades to a sentinel, see above. The
+     * fields that carry no open vocabulary still name a contract break when the server omits them.
+     */
     @Test
     void rejectsAResponseMissingASpecRequiredField() {
-        String missingStatus = ParcelFixtures.MINIMAL_PARCEL_JSON.replace("\"status\": \"preparing\",", "");
+        String missingCreatedAt = ParcelFixtures.MINIMAL_PARCEL_JSON
+                .replace("\"createdAt\": \"2026-07-20T08:14:00Z\",", "");
 
         IllegalStateException failure =
-                assertThrows(IllegalStateException.class, () -> mapFrom(missingStatus));
+                assertThrows(IllegalStateException.class, () -> mapFrom(missingCreatedAt));
 
-        assertTrue(failure.getMessage().contains("status"), failure.getMessage());
+        assertTrue(failure.getMessage().contains("createdAt"), failure.getMessage());
     }
 
     @Test

@@ -4,6 +4,7 @@ import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -25,18 +26,23 @@ class ShippingEnumsTest {
     private static final String UNKNOWN_WIRE_VALUE = "somethingErliAddedLater";
 
     @Test
-    void everyParcelStatusRoundTripsThroughItsWireValue() {
+    void everyKnownParcelStatusRoundTripsThroughItsWireValue() {
         for (ParcelStatus status : ParcelStatus.values()) {
+            if (status == ParcelStatus.UNRECOGNIZED) {
+                continue;
+            }
             assertSame(status, ParcelStatus.fromWire(status.wireValue()), status.name());
         }
     }
 
     @Test
-    void parcelStatusWireValuesAreDistinctAndNonBlank() {
-        long distinct = Arrays.stream(ParcelStatus.values()).map(ParcelStatus::wireValue).distinct().count();
+    void knownParcelStatusWireValuesAreDistinctAndNonBlank() {
+        List<ParcelStatus> known = Arrays.stream(ParcelStatus.values())
+                .filter(status -> status != ParcelStatus.UNRECOGNIZED)
+                .toList();
 
-        assertEquals(ParcelStatus.values().length, distinct);
-        assertTrue(Arrays.stream(ParcelStatus.values()).noneMatch(status -> status.wireValue().isBlank()));
+        assertEquals(known.size(), known.stream().map(ParcelStatus::wireValue).distinct().count());
+        assertTrue(known.stream().noneMatch(status -> status.wireValue().isBlank()));
     }
 
     @Test
@@ -53,18 +59,29 @@ class ShippingEnumsTest {
     }
 
     /**
-     * The drift guard fires only if this domain enum falls out of sync with the generated one — an
-     * unknown value from the live API fails earlier, at JSON decode. It must still name what went
-     * wrong rather than return null and let a half-built record escape.
+     * Parcel status is an open, carrier-driven vocabulary: a value Erli mints after this release must
+     * degrade to a sentinel, because failing here would cost a caller every other parcel in the same
+     * search response.
      */
     @Test
-    void anUnmappedWireValueFailsLoudlyInsteadOfResolvingToNull() {
+    void anUnknownParcelStatusDegradesToTheSentinelRatherThanFailingTheRead() {
+        assertSame(ParcelStatus.UNRECOGNIZED, ParcelStatus.fromWire(UNKNOWN_WIRE_VALUE));
+        assertSame(ParcelStatus.UNRECOGNIZED, ParcelStatus.fromWire(null));
+    }
+
+    /**
+     * The closed vocabularies keep the opposite contract on purpose. For these an unknown value means
+     * something is genuinely wrong — a country the SDK cannot address, a pickup type it cannot honour —
+     * so it must name what happened rather than let a half-built record escape.
+     */
+    @Test
+    void anUnmappedValueOfAClosedEnumStillFailsLoudly() {
         ErliTransportException failure = assertThrows(
-                ErliTransportException.class, () -> ParcelStatus.fromWire(UNKNOWN_WIRE_VALUE));
+                ErliTransportException.class, () -> ParcelType.fromWire(UNKNOWN_WIRE_VALUE));
 
         assertTrue(failure.getMessage().contains(UNKNOWN_WIRE_VALUE), failure.getMessage());
-        assertThrows(ErliTransportException.class, () -> ParcelType.fromWire(UNKNOWN_WIRE_VALUE));
         assertThrows(ErliTransportException.class, () -> PickupType.fromWire(UNKNOWN_WIRE_VALUE));
         assertThrows(ErliTransportException.class, () -> ShippingCountry.fromWire(UNKNOWN_WIRE_VALUE));
+        assertThrows(ErliTransportException.class, () -> PostingPointType.fromWire(UNKNOWN_WIRE_VALUE));
     }
 }

@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 
 import java.util.List;
@@ -43,7 +44,7 @@ public sealed interface ExternalParcelResult
      */
     record Rejected(
             OrderId orderId,
-            Optional<ShippingVendor> vendor,
+            Optional<DeliveryVendor> vendor,
             Optional<String> trackingNumber,
             List<ParcelError> errors) implements ExternalParcelResult {
 

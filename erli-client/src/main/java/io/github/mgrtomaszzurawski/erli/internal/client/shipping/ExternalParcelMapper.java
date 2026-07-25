@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.shipping;
 
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.core.model.ParcelId;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ExternalParcel;
@@ -8,7 +9,6 @@ import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelError;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelStatus;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelStatusChange;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelType;
-import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingVendor;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.CreateExternalParcelInnerTrackingNumber;
@@ -42,7 +42,7 @@ final class ExternalParcelMapper {
                 OrderId.of(requireField(rawParcel.getOrderId(), "orderId")),
                 ParcelType.fromWire(requireField(rawParcel.getType(), "type").getValue()),
                 toVendor(requireField(rawParcel.getShipping(), "shipping")),
-                ParcelStatus.fromWire(requireField(rawParcel.getStatus(), "status").getValue()),
+                toStatus(rawParcel.getStatus()),
                 toStatusHistory(rawParcel.getStatusHistory()),
                 Optional.ofNullable(rawParcel.getTrackingNumber()),
                 Optional.ofNullable(rawParcel.getTrackingStoppedCause()),
@@ -56,14 +56,20 @@ final class ExternalParcelMapper {
      * <p>The API answers per entry with either the created parcel or the refused entry echoed back with
      * its errors, stated as an {@code anyOf} over the two shapes.
      *
-     * <p><strong>CORE-3 workaround — delete the tree dispatch when bucket B's PR lands.</strong> The
-     * generated {@code anyOf} deserializer takes the first branch that parses, and because the shared
-     * codec ignores unknown properties the "created" branch always parses — a refused entry would bind
-     * to it and arrive without its {@code error} list, which is the only thing that entry carries.
-     * Until the {@code normalizeSpec} composite-merge makes Layer 1 lossless, the discriminator is read
-     * off the raw tree ({@code error} is present only on a refusal) and the node is then bound to the
-     * right generated type by the shared codec — so every field still comes from Layer 1, not from
-     * hand-copied field names. Afterwards this collapses to a single {@code getActualInstance()} switch.
+     * <p><strong>Why the discriminator is read off the raw tree — do not "simplify" this away.</strong>
+     * The generated {@code anyOf} deserializer is first-match-wins, and the shared codec both ignores
+     * unknown properties and decodes an unknown enum value as {@code null}, so the "created" branch
+     * parses a refusal too and drops the {@code error} list that is the only thing that entry carries.
+     *
+     * <p>The {@code normalizeSpec} composite-merge (CORE-3) does <em>not</em> cover this schema and is
+     * not going to: it merges only composites whose branches agree on every shared property, and these
+     * two disagree on {@code orderId}, {@code status} and {@code trackingNumber}. That guard is correct
+     * — merging a discriminated union would destroy the discriminator. Verified against the vendored
+     * spec on 2026-07-25, when the merge reported the five {@code deliveryTracking} composites and
+     * nothing else.
+     *
+     * <p>The node is bound to the matching generated class by the shared codec, so every field still
+     * comes from Layer 1 rather than from hand-copied names.
      */
     static ExternalParcelResult toResult(JsonNode rawEntry, JsonCodec codec) {
         Objects.requireNonNull(rawEntry, "raw external parcel result");
@@ -81,7 +87,7 @@ final class ExternalParcelMapper {
                 OrderId.of(requireField(raw.getOrderId(), "orderId")),
                 Optional.ofNullable(raw.getVendor())
                         .map(CreateExternalParcelResponseAnyOf1.VendorEnum::getValue)
-                        .map(ShippingVendor::fromWire),
+                        .map(DeliveryVendor::fromWire),
                 Optional.ofNullable(raw.getTrackingNumber())
                         .map(CreateExternalParcelInnerTrackingNumber::getString),
                 toErrors(raw.getError()));
@@ -93,7 +99,7 @@ final class ExternalParcelMapper {
                 OrderId.of(requireField(raw.getOrderId(), "orderId")),
                 ParcelType.fromWire(requireField(raw.getType(), "type").getValue()),
                 toVendor(requireField(raw.getShipping(), "shipping")),
-                ParcelStatus.fromWire(requireField(raw.getStatus(), "status").getValue()),
+                toStatus(raw.getStatus()),
                 toStatusHistory(raw.getStatusHistory()),
                 Optional.ofNullable(raw.getTrackingNumber()),
                 Optional.ofNullable(raw.getTrackingStoppedCause()),
@@ -101,8 +107,8 @@ final class ExternalParcelMapper {
                 requireField(raw.getUpdatedAt(), "updatedAt"));
     }
 
-    private static ShippingVendor toVendor(ExternalParcelShipping rawShipping) {
-        return ShippingVendor.fromWire(requireField(rawShipping.getVendor(), "shipping.vendor").getValue());
+    private static DeliveryVendor toVendor(ExternalParcelShipping rawShipping) {
+        return DeliveryVendor.fromWire(requireField(rawShipping.getVendor(), "shipping.vendor").getValue());
     }
 
     private static List<ParcelStatusChange> toStatusHistory(List<ParcelStatusHistoryInner> rawHistory) {
@@ -115,7 +121,7 @@ final class ExternalParcelMapper {
                 throw new IllegalStateException("External parcel 'statusHistory' has a null element");
             }
             history.add(new ParcelStatusChange(
-                    ParcelStatus.fromWire(requireField(rawEntry.getStatus(), "statusHistory[].status").getValue()),
+                    toStatus(rawEntry.getStatus()),
                     Optional.ofNullable(rawEntry.getChanged())));
         }
         return List.copyOf(history);
@@ -134,6 +140,26 @@ final class ExternalParcelMapper {
             errors.add(new ParcelError(errorCode.intValue(), Optional.ofNullable(rawError.getErrorMessage())));
         }
         return List.copyOf(errors);
+    }
+
+    /**
+     * Tolerant like {@link ParcelMapper}: an unknown or absent status degrades to a sentinel.
+     *
+     * <p>Three generated enum types carry a parcel status, with no common supertype, so there is one
+     * overload each rather than an {@code Object} parameter — {@code getValue()} is the {@code @JsonValue}
+     * contract, whereas {@code toString()} agreeing with it today is a generator artifact, and an
+     * {@code Object} parameter would switch the compiler off for all three.
+     */
+    private static ParcelStatus toStatus(io.github.mgrtomaszzurawski.erli.rest.model.ExternalParcel.StatusEnum rawStatus) {
+        return rawStatus == null ? ParcelStatus.UNRECOGNIZED : ParcelStatus.fromWire(rawStatus.getValue());
+    }
+
+    private static ParcelStatus toStatus(CreateExternalParcelResponseAnyOf.StatusEnum rawStatus) {
+        return rawStatus == null ? ParcelStatus.UNRECOGNIZED : ParcelStatus.fromWire(rawStatus.getValue());
+    }
+
+    private static ParcelStatus toStatus(ParcelStatusHistoryInner.StatusEnum rawStatus) {
+        return rawStatus == null ? ParcelStatus.UNRECOGNIZED : ParcelStatus.fromWire(rawStatus.getValue());
     }
 
     private static <T> T requireField(T value, String fieldName) {

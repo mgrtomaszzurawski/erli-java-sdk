@@ -13,19 +13,21 @@ import java.util.Optional;
  * since CORE-12 an operator or group the marketplace adds but the vendored spec lacks decodes to
  * {@code null}, and degrading one field is better than failing the whole dictionary.
  *
- * <p><strong>{@link #maxDimensions()} is currently under-reported.</strong> The API states this bound
- * in two shapes and the generated discriminator cannot tell them apart (BACKLOG CORE-3), so for the
- * longest-side/dimensions-sum form — about 20 of the sandbox's 49 methods — the bound is reported as
- * absent rather than wrong. Treat an empty {@code maxDimensions} as "unknown", not as "unbounded",
- * until that lands.
+ * <p>{@link #maxDimensions()} is stated by the API in two different shapes and both occur in
+ * practice, so it is a sealed {@link ParcelDimensions} — switch over {@code Box} and {@code Girth}
+ * rather than assuming one. An empty {@code maxDimensions} means the API stated no bound.
  *
  * @param id the shipping-method identifier, e.g. {@code erliPaczkomat}
  * @param name the human-readable Polish label
  * @param groupId the delivery group this method belongs to, when stated
  * @param operator the logistics operator, when stated
  * @param cashOnDelivery whether the method supports cash on delivery (COD)
- * @param maxUnitPrice the API's {@code maxUnitPrice} verbatim; the spec states no unit, so it is
- *                     carried through unconverted rather than guessed at as {@code Money}
+ * @param maxUnitPrice the API's {@code maxUnitPrice} verbatim. Deliberately NOT converted with
+ *                     {@code Money.ofMinorUnits}, even though core now offers it: the spec gives this
+ *                     field no unit ("Maksymalna cena dostawy") and this dictionary carries no
+ *                     currency, while ERLI runs both a Polish and a German storefront. Building a
+ *                     {@code Money} would mean hardcoding PLN. Convert it when the spec names a
+ *                     currency, not before
  * @param minDimensions the lower dimension bound, when stated
  * @param maxDimensions the upper dimension bound, when stated
  * @param maxPointDimensions the upper dimension bound for pickup-point delivery, when stated
