@@ -10,13 +10,16 @@ import java.util.Optional;
 /**
  * An externally shipped parcel to register. Build one with {@link #builder(OrderId, DeliveryVendor)}.
  *
- * <p>{@code status} is only accepted for the carriers Erli cannot track itself (own transport, self
- * pickup, pallet forwarders); for the tracked ones Erli derives it. {@code deliveryMethod} narrows a
- * vendor that runs several services, e.g. DPD's domestic and German networks.
+ * <p>{@code status} is <em>required</em> — not merely permitted — for the sixteen carriers Erli cannot
+ * track itself (own transport, self pickup and the pallet forwarders); the spec says
+ * {@code wymagane gdy}, and distinguishes that from {@code dopuszczalne gdy} elsewhere on the same
+ * schema. For the tracked carriers Erli derives it, so leave it unset. The SDK does not enforce the
+ * pairing; omitting a required status is refused server-side. {@code deliveryMethod} narrows a vendor
+ * that runs several services, e.g. DPD's domestic and German networks.
  *
  * @param orderId        the order being shipped
  * @param vendor         the carrier the seller used
- * @param status         the status to set, for vendors Erli cannot track
+ * @param status         the status to set; required for the vendors Erli cannot track itself
  * @param trackingNumber the carrier tracking number, when there is one
  * @param deliveryMethod the vendor's specific service, when it has more than one
  */

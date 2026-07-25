@@ -63,11 +63,13 @@ Per-domain guides are added as each domain ships:
 
 | Guide | Accessor | What it covers |
 |---|---|---|
+| [`docs/delivery.md`](docs/delivery.md) | `client.delivery()` | delivery price lists, per-method pricing in grosze, packing limits, ErliPRO caps |
 | [`docs/finance.md`](docs/finance.md) | `client.payments()`, `client.billing()`, `client.commissions()`, `client.campaigns()` | payments and payouts, the settlement ledger, commission estimates, campaign spend |
 | [`docs/hooks.md`](docs/hooks.md) | `client.hooks()` | registering webhook subscriptions and firing them on demand |
 | [`docs/inbox.md`](docs/inbox.md) | `client.inbox()` | polling the event inbox, order/product-sync events, acknowledging messages |
 | [`docs/orders.md`](docs/orders.md) | `client.orders()` | searching orders with typed filters, cursor-resumed sync, seller-status updates, buyer-PII handling |
 | [`docs/products.md`](docs/products.md) | `client.products()` | publishing and updating offers, the three-state patch, catalog search, timed promotions |
+| [`docs/shipping.md`](docs/shipping.md) | `client.shipping()` | creating and cancelling parcels, externally shipped parcels, pickup protocols, posting points, buyer-PII handling |
 
 ```java
 // Incremental order sync: a lazy stream that fetches pages only as they are consumed.
