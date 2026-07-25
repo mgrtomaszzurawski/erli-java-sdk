@@ -66,7 +66,7 @@ class FinanceLiveE2eTest {
      *
      * <p>Note the 429 currently arrives as {@link ErliValidationException}: core maps every non-auth,
      * non-not-found 4xx to validation, which is why this has to check the status rather than the
-     * exception type. Raised as CORE-13.
+     * exception type. Raised as CORE-14.
      */
     private static <T> T liveCall(java.util.function.Supplier<T> call, String what) {
         try {

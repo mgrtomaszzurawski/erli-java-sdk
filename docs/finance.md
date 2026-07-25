@@ -166,7 +166,7 @@ All carry `traceId`/`spanId` and Erli's `polishMessage` for support tickets.
 > **Rate limiting reads as a validation error today.** Erli rate-limits, and a 429 currently surfaces
 > as `ErliValidationException` because the SDK maps every non-auth, non-not-found 4xx that way. The
 > remediation is the opposite of what that name suggests — back off and retry, do not change the
-> request. Check `details().httpStatus() == 429` to tell them apart. Tracked as CORE-13.
+> request. Check `details().httpStatus() == 429` to tell them apart. Tracked as CORE-14.
 
 Bad input is rejected before the wire: a non-PLN or sub-grosz amount, a page size above the API cap,
 or an inverted date range all raise `IllegalArgumentException`.
