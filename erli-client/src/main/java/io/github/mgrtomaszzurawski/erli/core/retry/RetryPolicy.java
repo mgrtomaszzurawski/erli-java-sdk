@@ -29,6 +29,7 @@ public final class RetryPolicy {
     private static final int HTTP_SERVER_ERROR_MAX = 599;
 
     private static final int SINGLE_ATTEMPT = 1;
+    private static final int JITTER_HALVING_DIVISOR = 2;
 
     private final int maxAttempts;
     private final Duration baseDelay;
@@ -100,7 +101,7 @@ public final class RetryPolicy {
             throw new IllegalArgumentException("retryIndex must be >= 0");
         }
         long cappedMillis = cappedExponentialMillis(retryIndex);
-        long halfMillis = cappedMillis / 2;
+        long halfMillis = cappedMillis / JITTER_HALVING_DIVISOR;
         long jitterMillis = halfMillis == 0 ? 0 : randomGenerator().nextLong(halfMillis + 1);
         Duration jittered = Duration.ofMillis(halfMillis + jitterMillis);
         if (retryAfterFloor != null && retryAfterFloor.compareTo(jittered) > 0) {
@@ -110,16 +111,16 @@ public final class RetryPolicy {
     }
 
     private long cappedExponentialMillis(int retryIndex) {
-        long base = baseDelay.toMillis();
-        long cap = maxDelay.toMillis();
-        long scaled = base;
+        long baseMillis = baseDelay.toMillis();
+        long capMillis = maxDelay.toMillis();
+        long scaledMillis = baseMillis;
         for (int step = 0; step < retryIndex; step++) {
-            scaled <<= 1;
-            if (scaled >= cap || scaled < 0) {
-                return cap;
+            scaledMillis <<= 1;
+            if (scaledMillis >= capMillis || scaledMillis < 0) {
+                return capMillis;
             }
         }
-        return Math.min(scaled, cap);
+        return Math.min(scaledMillis, capMillis);
     }
 
     private RandomGenerator randomGenerator() {

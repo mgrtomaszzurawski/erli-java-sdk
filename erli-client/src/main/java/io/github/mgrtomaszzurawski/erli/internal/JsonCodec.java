@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,7 +24,7 @@ public final class JsonCodec {
     public <T> T read(String body, Class<T> type) {
         try {
             return mapper.readValue(body, type);
-        } catch (Exception failure) {
+        } catch (JsonProcessingException failure) {
             throw new ErliTransportException("Failed to decode response body as " + type.getSimpleName(), failure);
         }
     }
@@ -44,7 +45,7 @@ public final class JsonCodec {
     public String write(Object value) {
         try {
             return mapper.writeValueAsString(value);
-        } catch (Exception failure) {
+        } catch (JsonProcessingException failure) {
             throw new ErliTransportException("Failed to encode request body", failure);
         }
     }

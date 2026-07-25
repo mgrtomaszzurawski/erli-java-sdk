@@ -37,10 +37,11 @@ class ShopMapperTest {
     }
 
     @Test
-    void mapsAbsentCompanyToEmptyOptionalAndNullActiveToFalse() {
+    void mapsAbsentCompanyToEmptyOptional() {
         ShopResponse raw = new ShopResponse()
                 .id((int) SHOP_ID)
                 .name(SHOP_NAME)
+                .active(false)
                 .externalMatchingPolicy(ShopResponse.ExternalMatchingPolicyEnum.DISABLED);
 
         Shop shop = ShopMapper.toDomain(raw);
@@ -53,6 +54,17 @@ class ShopMapperTest {
     @Test
     void rejectsResponseMissingRequiredId() {
         ShopResponse raw = new ShopResponse()
+                .name(SHOP_NAME)
+                .active(true)
+                .externalMatchingPolicy(ShopResponse.ExternalMatchingPolicyEnum.ENABLED);
+
+        assertThrows(IllegalStateException.class, () -> ShopMapper.toDomain(raw));
+    }
+
+    @Test
+    void rejectsResponseMissingRequiredActive() {
+        ShopResponse raw = new ShopResponse()
+                .id((int) SHOP_ID)
                 .name(SHOP_NAME)
                 .externalMatchingPolicy(ShopResponse.ExternalMatchingPolicyEnum.ENABLED);
 

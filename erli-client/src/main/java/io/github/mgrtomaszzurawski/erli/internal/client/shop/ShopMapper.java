@@ -18,34 +18,48 @@ final class ShopMapper {
     private ShopMapper() {
     }
 
-    static Shop toDomain(ShopResponse raw) {
-        Objects.requireNonNull(raw, "raw ShopResponse");
+    static Shop toDomain(ShopResponse rawShop) {
+        Objects.requireNonNull(rawShop, "raw ShopResponse");
         return new Shop(
-                requireId(raw),
-                raw.getName(),
-                Boolean.TRUE.equals(raw.getActive()),
-                Optional.ofNullable(raw.getCompany()).map(ShopMapper::toCompany),
-                toMatchingPolicy(raw));
+                requireId(rawShop),
+                rawShop.getName(),
+                requireActive(rawShop),
+                Optional.ofNullable(rawShop.getCompany()).map(ShopMapper::toCompany),
+                toMatchingPolicy(rawShop));
     }
 
-    private static long requireId(ShopResponse raw) {
-        Integer id = raw.getId();
-        if (id == null) {
+    private static long requireId(ShopResponse rawShop) {
+        Integer shopId = rawShop.getId();
+        if (shopId == null) {
             throw new IllegalStateException("ShopResponse is missing the required 'id' field");
         }
-        return id.longValue();
+        return shopId.longValue();
+    }
+
+    private static boolean requireActive(ShopResponse rawShop) {
+        Boolean active = rawShop.getActive();
+        if (active == null) {
+            throw new IllegalStateException("ShopResponse is missing the required 'active' field");
+        }
+        return active;
     }
 
     private static ShopCompany toCompany(ShopResponseCompany company) {
         return new ShopCompany(company.getNip(), company.getName());
     }
 
-    private static MatchingPolicy toMatchingPolicy(ShopResponse raw) {
-        ShopResponse.ExternalMatchingPolicyEnum policy = raw.getExternalMatchingPolicy();
+    private static MatchingPolicy toMatchingPolicy(ShopResponse rawShop) {
+        ShopResponse.ExternalMatchingPolicyEnum policy = rawShop.getExternalMatchingPolicy();
         if (policy == null) {
             throw new IllegalStateException(
                     "ShopResponse is missing the required 'externalMatchingPolicy' field");
         }
-        return MatchingPolicy.valueOf(policy.name());
+        // Explicit mapping (not valueOf(name())): decouples our enum from the generated constant
+        // names, and the exhaustive switch makes a future upstream enum value a compile error here
+        // rather than a runtime surprise — a deliberate signal to re-map when the spec grows.
+        return switch (policy) {
+            case ENABLED -> MatchingPolicy.ENABLED;
+            case DISABLED -> MatchingPolicy.DISABLED;
+        };
     }
 }

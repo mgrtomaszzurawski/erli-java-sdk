@@ -1,5 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Spliterator;
@@ -27,7 +29,7 @@ public final class CursorPagination {
 
         private final PageFetcher<T> fetcher;
         private Iterator<T> current = Collections.emptyIterator();
-        private io.github.mgrtomaszzurawski.erli.core.model.Cursor nextCursor;
+        private Cursor nextCursor;
         private boolean firstFetchDone;
         private boolean noMorePages;
 
