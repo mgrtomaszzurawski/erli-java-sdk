@@ -1,6 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
@@ -16,8 +17,8 @@ import io.github.mgrtomaszzurawski.erli.domain.products.DiscountRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.DispatchTime;
 import io.github.mgrtomaszzurawski.erli.domain.products.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
-import io.github.mgrtomaszzurawski.erli.domain.products.ProductAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAccess;
+import io.github.mgrtomaszzurawski.erli.domain.products.ProductAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductContent;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductDraft;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
@@ -29,7 +30,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSortField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductUpdateResult;
 import io.github.mgrtomaszzurawski.erli.domain.products.SortOrder;
-import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -595,6 +595,20 @@ class ProductAccessTest {
     }
 
     @Test
+    void skipsANullMarketEntryRatherThanFailingTheWholeRead() {
+        // A lookup on a null key throws rather than missing, so one malformed entry could otherwise
+        // fail the whole product read — the failure this split exists to prevent.
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(productBody("sku-1")
+                .replaceFirst("\\}$", ",\"productAttachments\":[{\"id\":7,"
+                        + "\"markets\":[\"pl\",null]}]}"))));
+
+        ProductAttachment attachment = products().get(SKU_1).orElseThrow().productAttachments().get(0);
+
+        assertEquals(List.of(Market.PL), attachment.markets());
+        assertTrue(attachment.unrecognisedMarkets().isEmpty());
+    }
+
+    @Test
     void writesBackAnUnknownMarketExactlyAsItArrived() {
         // The round trip is the point: reading a product, changing something else and writing it back
         // must not narrow an attachment's scope to the markets this SDK version happens to understand.
@@ -610,6 +624,7 @@ class ProductAccessTest {
                 .build());
 
         server.verify(patchRequestedFor(urlEqualTo(PRODUCT_PATH))
+                .withRequestBody(matchingJsonPath("$[?(@.productAttachments[0].markets.size() == 2)]"))
                 .withRequestBody(matchingJsonPath("$.productAttachments[0].markets[?(@ == 'pl')]"))
                 .withRequestBody(matchingJsonPath("$.productAttachments[0].markets[?(@ == 'cz')]")));
     }

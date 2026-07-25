@@ -315,31 +315,39 @@ final class ProductMapper {
     }
 
     private static ProductAttachment toAttachment(ProductCreateProductAttachmentsInner rawAttachment) {
+        List<Market> knownMarkets = new ArrayList<>();
+        List<String> unrecognisedMarkets = new ArrayList<>();
+        splitMarkets(rawAttachment.getMarkets(), knownMarkets, unrecognisedMarkets);
         return new ProductAttachment(
                 Optional.ofNullable(rawAttachment.getId()),
                 ProductValues.mapOptional(rawAttachment.getKind(), value -> ProductEnums.toAttachmentKind(value.getValue())),
                 Optional.ofNullable(rawAttachment.getUrl()),
-                knownMarkets(rawAttachment.getMarkets()),
-                unrecognisedMarkets(rawAttachment.getMarkets()));
-    }
-
-    /** The markets this SDK version can name. */
-    private static List<Market> knownMarkets(List<String> wireValues) {
-        return ProductValues.orEmpty(wireValues).stream()
-                .map(ProductEnums::toMarketOrNull)
-                .filter(Objects::nonNull)
-                .toList();
+                knownMarkets,
+                unrecognisedMarkets);
     }
 
     /**
-     * The wire values this SDK version cannot name, kept verbatim. Splitting them out rather than
-     * dropping them is what lets a caller read a product, change something else, and write it back
-     * without quietly narrowing an attachment's market scope.
+     * Split an attachment's market scope into the markets this SDK version can name and the raw wire
+     * values it cannot, in one pass.
+     *
+     * <p>Keeping the unnameable ones rather than dropping them is what lets a caller read a product,
+     * change something else and write it back without quietly narrowing the scope. Null entries are
+     * skipped: the spec types these items as non-nullable strings, but a lookup on a null key would
+     * throw, and one malformed entry must not fail the whole product read.
      */
-    private static List<String> unrecognisedMarkets(List<String> wireValues) {
-        return ProductValues.orEmpty(wireValues).stream()
-                .filter(wireValue -> ProductEnums.toMarketOrNull(wireValue) == null)
-                .toList();
+    private static void splitMarkets(List<String> wireValues, List<Market> known,
+            List<String> unrecognised) {
+        for (String wireValue : ProductValues.orEmpty(wireValues)) {
+            if (wireValue == null) {
+                continue;
+            }
+            Market market = ProductEnums.toMarketOrNull(wireValue);
+            if (market == null) {
+                unrecognised.add(wireValue);
+            } else {
+                known.add(market);
+            }
+        }
     }
 
     private static Translations toTranslations(ProductResponseTranslations rawTranslations) {

@@ -99,7 +99,7 @@ final class ProductEnums {
      * exposes as {@code List<String>}.
      */
     static Market toMarketOrNull(String wireValue) {
-        return MARKETS.get(wireValue);
+        return wireValue == null ? null : MARKETS.get(wireValue);
     }
 
     static InvoiceType toInvoiceType(String wireValue) {
@@ -161,7 +161,8 @@ final class ProductEnums {
      * appeared.
      */
     static ProductField toProductFieldOrNull(String wireValue) {
-        return PRODUCT_FIELDS.get(wireValue);
+        // Null-guarded because these maps are Map.copyOf, whose get(null) throws rather than missing.
+        return wireValue == null ? null : PRODUCT_FIELDS.get(wireValue);
     }
 
     private static <T extends Enum<T>> Map<String, T> index(T[] constants, Function<T, String> wireName) {

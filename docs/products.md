@@ -202,8 +202,9 @@ Write the attachment back unchanged and both halves go out again, so a read-modi
 narrows the scope to what this SDK happens to understand.
 
 Elsewhere the marketplace declares these fields as enums rather than lists, and the transport turns a
-value it cannot read into an absent one — so `product.markets()` being empty means "not set **or** not
-recognised". For required fields the SDK stays loud instead: an unreadable `status` or `dispatchTime`
+value it cannot read into an absent one. On `product.markets()` that is the *only* thing an empty
+`Optional` means — the spec defaults the field to `pl`, so a product that never mentions it still reads
+back as `PL`. For required fields the SDK stays loud instead: an unreadable `status` or `dispatchTime`
 fails the read rather than yielding a product you cannot trust.
 
 ## Errors
