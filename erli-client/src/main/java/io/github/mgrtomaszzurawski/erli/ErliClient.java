@@ -10,6 +10,7 @@ import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionsAccess;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentsAccess;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.HooksAccess;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InboxAccess;
+import io.github.mgrtomaszzurawski.erli.domain.orders.OrderAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shop.ShopAccess;
 import io.github.mgrtomaszzurawski.erli.internal.ErrorMapper;
@@ -22,6 +23,7 @@ import io.github.mgrtomaszzurawski.erli.internal.client.commissions.CommissionsA
 import io.github.mgrtomaszzurawski.erli.internal.client.payments.PaymentsAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.hooks.HooksAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.inbox.InboxAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.orders.OrderAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shipping.ShippingAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shop.ShopAccessImpl;
 
@@ -51,6 +53,7 @@ public final class ErliClient implements AutoCloseable {
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final ShopAccess shop;
+    private final OrderAccess orders;
     private final ShippingAccess shipping;
     private final DictionariesAccess dictionaries;
     private final CommissionsAccess commissions;
@@ -75,6 +78,7 @@ public final class ErliClient implements AutoCloseable {
                 codec,
                 new ErrorMapper(codec));
         this.shop = new ShopAccessImpl(runtime);
+        this.orders = new OrderAccessImpl(runtime);
         this.shipping = new ShippingAccessImpl(runtime);
         this.dictionaries = new DictionariesAccessImpl(runtime);
         this.commissions = new CommissionsAccessImpl(runtime);
@@ -105,6 +109,12 @@ public final class ErliClient implements AutoCloseable {
 
     // --- APPEND BLOCK: bucket A Products accessor -------------------------------------------------
     // --- APPEND BLOCK: bucket B Orders accessor --------------------------------------------------
+    /** Access to the shop's orders ({@code /orders}). */
+    public OrderAccess orders() {
+        ensureOpen();
+        return orders;
+    }
+
     // --- APPEND BLOCK: bucket C Shipping & Delivery accessor -------------------------------------
     /** Access to parcels, external parcels, posting points and pickup protocols ({@code /shipping/*}). */
     public ShippingAccess shipping() {
