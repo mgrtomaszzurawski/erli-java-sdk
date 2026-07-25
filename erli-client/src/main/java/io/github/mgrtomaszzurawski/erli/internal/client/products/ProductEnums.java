@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
+import io.github.mgrtomaszzurawski.erli.core.model.TaxRate;
 import io.github.mgrtomaszzurawski.erli.domain.products.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.products.BaseMarket;
 import io.github.mgrtomaszzurawski.erli.domain.products.DescriptionItemType;
@@ -15,9 +16,7 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductStatus;
 import io.github.mgrtomaszzurawski.erli.domain.products.ReferencePriceType;
 import io.github.mgrtomaszzurawski.erli.domain.products.ResponsibleEntitySource;
-import io.github.mgrtomaszzurawski.erli.domain.products.TaxRate;
 import io.github.mgrtomaszzurawski.erli.domain.products.VariantGroupSource;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;

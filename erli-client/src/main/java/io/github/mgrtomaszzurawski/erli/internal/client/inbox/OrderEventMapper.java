@@ -13,6 +13,7 @@ import io.github.mgrtomaszzurawski.erli.core.model.PaymentStatus;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.core.model.ReturnReason;
 import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
+import io.github.mgrtomaszzurawski.erli.core.model.TaxRate;
 import io.github.mgrtomaszzurawski.erli.core.model.TrackingStatus;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.BankAccount;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Buyer;
@@ -28,7 +29,6 @@ import io.github.mgrtomaszzurawski.erli.domain.inbox.PickupPlace;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.PickupProvider;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Rebate;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.ReturnedLine;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.TaxRate;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.MessagePayloadAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDelivery;
@@ -305,8 +305,8 @@ final class OrderEventMapper {
             case TAX_8 -> TaxRate.TAX_8;
             case TAX_19 -> TaxRate.TAX_19;
             case TAX_23 -> TaxRate.TAX_23;
-            case TAX_NP -> TaxRate.TAX_NOT_APPLICABLE;
-            case TAX_ZW -> TaxRate.TAX_EXEMPT;
+            case TAX_NP -> TaxRate.TAX_NP;
+            case TAX_ZW -> TaxRate.TAX_ZW;
         };
     }
 

@@ -2,7 +2,7 @@ package io.github.mgrtomaszzurawski.erli.domain.orders;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
-
+import io.github.mgrtomaszzurawski.erli.core.model.TaxRate;
 import java.math.BigDecimal;
 import java.util.Optional;
 
