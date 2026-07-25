@@ -1,0 +1,120 @@
+{
+  "id": "5f9e1b3b0f0b9b0001c3e0a0",
+  "shopId": 100007,
+  "created": "2026-07-25T10:15:30+02:00",
+  "read": false,
+  "type": "orderCreated",
+  "payload": {
+    "id": "ORD-1",
+    "externalOrderId": "SHOP-77",
+    "status": "purchased",
+    "user": {
+      "email": "buyer@example.com",
+      "deliveryAddress": {
+        "firstName": "Anna",
+        "lastName": "Kowalska",
+        "companyName": "Kowalska Sp. z o.o.",
+        "address": "Prosta 12/3",
+        "street": "Prosta",
+        "buildingNumber": "12",
+        "flatNumber": "3",
+        "zip": "00-838",
+        "city": "Warszawa",
+        "country": "pl",
+        "phone": "601234567"
+      },
+      "invoiceAddress": {
+        "type": "company",
+        "address": "Krucza 5",
+        "street": "Krucza",
+        "buildingNumber": "5",
+        "flatNumber": "10",
+        "zip": "00-548",
+        "city": "Warszawa",
+        "country": "pl",
+        "firstName": "Anna",
+        "lastName": "Kowalska",
+        "companyName": "Kowalska Sp. z o.o.",
+        "nip": "5252445767"
+      }
+    },
+    "items": [
+      {
+        "id": 9001,
+        "externalId": "SKU-1",
+        "quantity": 2,
+        "weight": 1.25,
+        "unitPrice": 4999,
+        "unitPriceBeforeRebate": 5999,
+        "name": "Kubek termiczny",
+        "slug": "kubek-termiczny",
+        "ean": "5901234123457",
+        "sku": "KT-500",
+        "taxRate": "TAX_23"
+      }
+    ],
+    "rebate": {
+      "id": 55,
+      "name": "Lato 2026",
+      "code": "LATO10"
+    },
+    "delivery": {
+      "name": "Paczkomat InPost",
+      "typeId": "inpost-locker",
+      "price": 1299,
+      "cancelled": 0,
+      "cod": false,
+      "sourceMarket": "pl",
+      "targetMarket": "pl",
+      "pickupPlace": {
+        "id": 4242,
+        "externalId": "WAW01A",
+        "heading": "Paczkomat WAW01A",
+        "type": "locker",
+        "provider": "inpost",
+        "name": "WAW01A",
+        "description": "Przy wejsciu do sklepu",
+        "address": "Prosta 51",
+        "city": "Warszawa",
+        "country": "pl",
+        "open24h": true,
+        "zip": "00-838"
+      }
+    },
+    "comment": "Prosze zapakowac na prezent",
+    "totalPrice": 11297,
+    "currency": "PLN",
+    "deliveryTracking": {
+      "status": "sent",
+      "vendor": "inpost",
+      "trackingNumber": "628012345678"
+    },
+    "payment": {
+      "id": 7788,
+      "status": "COMPLETED"
+    },
+    "returns": [
+      {
+        "items": [
+          {
+            "index": 0,
+            "quentity": 1
+          }
+        ],
+        "bankAccount": {
+          "number": "12345678901234567890123456",
+          "name": "Anna Kowalska"
+        },
+        "reason": "doesNotFit",
+        "comment": "Za maly",
+        "created": "2026-07-26T08:00:00+02:00"
+      }
+    ],
+    "calculatedParcelsCount": 1,
+    "sellerStatus": "readyToProcess",
+    "created": "2026-07-25T10:15:00+02:00",
+    "updated": "2026-07-25T11:00:00+02:00",
+    "purchasedAt": "2026-07-25T10:16:00+02:00",
+    "cursor": "1774432500;id9001"
+  }
+}

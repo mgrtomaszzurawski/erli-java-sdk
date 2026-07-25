@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import org.openapitools.jackson.nullable.JsonNullableModule;
 
 import java.util.List;
 
@@ -40,7 +42,15 @@ public final class JsonCodec {
                 // Keep the offset the API actually sent. Jackson otherwise rewrites every timestamp to
                 // UTC, which silently changes what OffsetDateTime.getOffset() reports; the instant is
                 // the same, but the SDK would be handing back a value the server never stated.
-                .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
+                .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
+                // Layer 1 maps every `nullable: true` property to JsonNullable<T> (100 of them across
+                // the spec, mostly the product schemas). Without this module such a property cannot be
+                // decoded at all when it carries a value, and throws when it carries an explicit null.
+                .registerModule(new JsonNullableModule())
+                // An unset optional field must be omitted from a write body, not sent as an explicit
+                // null: the API's request schemas are additionalProperties:false and treat a null as a
+                // value to store. This also lets JsonNullable's "undefined" state stay off the wire.
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
     /** Deserialize a response body into {@code type}, wrapping any failure as a transport error. */
@@ -63,6 +73,24 @@ public final class JsonCodec {
         } catch (JsonProcessingException failure) {
             throw new ErliTransportException(
                     "Failed to decode response body as List<" + elementType.getSimpleName() + ">", failure);
+        }
+    }
+
+    /**
+     * Bind an already-parsed JSON subtree to {@code type}.
+     *
+     * <p>Needed wherever the SDK must choose the target class itself instead of letting Jackson choose.
+     * The generated {@code anyOf} wrappers try their branches in declaration order and accept the first
+     * that does not throw; with unknown properties ignored (see the class javadoc) the first branch
+     * always wins, so a payload whose real shape is a later branch binds to the wrong class and loses
+     * its fields silently. A caller that knows the discriminator — for inbox messages the sibling
+     * {@code type} field — reads the tree and binds the correct branch through this method.
+     */
+    public <T> T convert(JsonNode node, Class<T> type) {
+        try {
+            return mapper.treeToValue(node, type);
+        } catch (JsonProcessingException failure) {
+            throw new ErliTransportException("Failed to bind JSON to " + type.getSimpleName(), failure);
         }
     }
 

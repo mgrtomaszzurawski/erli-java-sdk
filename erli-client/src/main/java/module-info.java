@@ -14,6 +14,7 @@ module io.github.mgrtomaszzurawski.erli {
     // Internal-only dependencies (never re-exported): transport JSON and the generated Layer-1 models.
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.datatype.jsr310;
+    requires org.openapitools.jackson.nullable;
     requires io.github.mgrtomaszzurawski.erli.rest.models;
 
     // Entry point.
@@ -34,4 +35,6 @@ module io.github.mgrtomaszzurawski.erli {
     exports io.github.mgrtomaszzurawski.erli.domain.dictionaries;
     // --- APPEND BLOCK: bucket E Finance ---------------------------------------------------------
     // --- APPEND BLOCK: bucket F Comms & Automation ----------------------------------------------
+    exports io.github.mgrtomaszzurawski.erli.domain.hooks;
+    exports io.github.mgrtomaszzurawski.erli.domain.inbox;
 }

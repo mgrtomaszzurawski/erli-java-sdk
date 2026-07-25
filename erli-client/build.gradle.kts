@@ -25,6 +25,9 @@ dependencies {
     // the day Layer 1 narrows that dependency — and the JPMS gate would not catch it, because the
     // consumer's compile classpath never resolves erli-client's transitive requires.
     implementation(libs.jackson.datatype.jsr310)
+    // Same reasoning for the nullable module: `nullable: true` properties are generated as
+    // JsonNullable<T>, and JsonCodec registers the module that decodes them.
+    implementation(libs.jackson.databind.nullable)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
