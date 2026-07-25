@@ -39,6 +39,9 @@ import java.util.Set;
  */
 final class ProductSearchMapper {
 
+    private static final String BOOLEAN_TRUE = "true";
+    private static final String BOOLEAN_FALSE = "false";
+
     private ProductSearchMapper() {
     }
 
@@ -87,15 +90,20 @@ final class ProductSearchMapper {
     }
 
     /**
-     * The cursor as the request's polymorphic {@code after}. It is sent as text: the SDK never parses a
-     * cursor, and the marketplace compares it against the sort field's own type.
+     * The cursor as the request's polymorphic {@code after}, in the JSON type the sort field takes.
+     *
+     * <p>The SDK does not interpret a cursor's meaning, but it must state its type: {@code after} is
+     * compared against the sort column, so a numeric column given a quoted value does not compare and
+     * the walk ends after one page. A cursor supplied by the caller to resume a persisted walk is
+     * therefore parsed here, and a malformed one is reported against the sort field rather than
+     * escaping as a bare parse error.
      */
     private static ProductSearchPaginationAfter afterValue(Cursor cursor, ProductSortField sortField) {
         if (sortField.cursorKind() == FilterValueKind.NUMBER) {
-            return new ProductSearchPaginationAfter(new BigDecimal(cursor.value()));
+            return new ProductSearchPaginationAfter(parseNumber(sortField, cursor.value()));
         }
         if (sortField.cursorKind() == FilterValueKind.DATE_TIME) {
-            return new ProductSearchPaginationAfter(OffsetDateTime.parse(cursor.value()));
+            return new ProductSearchPaginationAfter(parseTimestamp(sortField, cursor.value()));
         }
         return new ProductSearchPaginationAfter(cursor.value());
     }
@@ -111,7 +119,7 @@ final class ProductSearchMapper {
                     ? ProductFilterAnyOf2.OperatorEnum.IN
                     : ProductFilterAnyOf2.OperatorEnum.NIN);
             rawFilter.setValue(membership.values().stream()
-                    .map(value -> typedValue(membership.field().valueKind(), value))
+                    .map(value -> typedValue(membership.field(), value))
                     .toList());
             return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawFilter);
         }
@@ -182,27 +190,35 @@ final class ProductSearchMapper {
         return new ProductFilterAnyOfValue(value);
     }
 
-    /** A membership entry in the field's own JSON type; the branch is free-form at Layer 1. */
-    private static Object typedValue(FilterValueKind kind, String value) {
-        return kind == FilterValueKind.NUMBER ? new BigDecimal(value) : value;
+    /**
+     * A membership entry in the field's own JSON type; the branch is free-form at Layer 1. Validated the
+     * same way as a comparison value — a set filter is no less type-sensitive than a scalar one.
+     */
+    private static Object typedValue(ProductFilterField field, String value) {
+        return switch (field.valueKind()) {
+            case NUMBER -> parseNumber(field, value);
+            case DATE_TIME -> parseTimestamp(field, value);
+            case BOOLEAN -> parseBoolean(field, value);
+            case TEXT -> value;
+        };
     }
 
-    private static BigDecimal parseNumber(ProductFilterField field, String value) {
+    private static BigDecimal parseNumber(Enum<?> field, String value) {
         try {
             return new BigDecimal(value);
         } catch (NumberFormatException notNumeric) {
             throw new IllegalArgumentException(
-                    "Filter field '" + field + "' compares a number, but '" + value + "' is not one",
+                    "'" + field + "' takes a number, but '" + value + "' is not one",
                     notNumeric);
         }
     }
 
-    private static OffsetDateTime parseTimestamp(ProductFilterField field, String value) {
+    private static OffsetDateTime parseTimestamp(Enum<?> field, String value) {
         try {
             return OffsetDateTime.parse(value);
         } catch (DateTimeParseException notATimestamp) {
             throw new IllegalArgumentException(
-                    "Filter field '" + field + "' compares a timestamp, but '" + value
+                    "'" + field + "' takes a timestamp, but '" + value
                             + "' is not an ISO-8601 instant", notATimestamp);
         }
     }
@@ -211,16 +227,16 @@ final class ProductSearchMapper {
      * A boolean filter value. Rejects anything other than {@code true}/{@code false} rather than letting
      * {@link Boolean#valueOf} turn a typo into {@code false} and return the wrong products.
      */
-    private static boolean parseBoolean(ProductFilterField field, String value) {
-        if ("true".equalsIgnoreCase(value)) {
+    private static boolean parseBoolean(Enum<?> field, String value) {
+        if (BOOLEAN_TRUE.equalsIgnoreCase(value)) {
             return true;
         }
-        if ("false".equalsIgnoreCase(value)) {
+        if (BOOLEAN_FALSE.equalsIgnoreCase(value)) {
             return false;
         }
         throw new IllegalArgumentException(
-                "Filter field '" + field + "' compares a boolean, but '" + value + "' is neither"
-                        + " 'true' nor 'false'");
+                "'" + field + "' takes a boolean, but '" + value + "' is neither"
+                        + " '" + BOOLEAN_TRUE + "' nor '" + BOOLEAN_FALSE + "'");
     }
 
 

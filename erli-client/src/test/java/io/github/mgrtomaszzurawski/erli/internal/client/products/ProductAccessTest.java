@@ -254,8 +254,9 @@ class ProductAccessTest {
                 .withRequestBody(matchingJsonPath("$.fields[0]", equalTo("name")))
                 .withRequestBody(matchingJsonPath("$.filter.operator", equalTo("and")))
                 .withRequestBody(matchingJsonPath("$.filter.value[0].field", equalTo("status")))
-                // archived is a boolean on the wire, not the string "true".
-                .withRequestBody(matchingJsonPath("$.filter.value[1].value.value", equalTo("true")))
+                // A JSONPath equality against an unquoted literal matches only a real JSON boolean,
+                // which the string "true" would not satisfy.
+                .withRequestBody(matchingJsonPath("$.filter.value[1].value[?(@.value == true)]"))
                 .withRequestBody(matchingJsonPath("$.filter.value[2].operator", equalTo("in"))));
     }
 

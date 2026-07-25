@@ -20,8 +20,11 @@ import java.util.List;
  *         ProductFilter.greaterThan(ProductFilterField.STOCK, "0"));
  * }</pre>
  *
- * <p>Values are carried as text because Erli's filter values are polymorphic (string, number, date or
- * boolean depending on the field); the marketplace parses them against the field's own type.
+ * <p>Values are carried as text because one filter can compare a name, a price, a timestamp or a flag.
+ * Erli, however, types the value per field and rejects a mismatch, so the SDK converts the text to the
+ * field's own JSON type on the way out — see {@link FilterValueKind}. A value that cannot be converted
+ * is rejected with the field named, rather than being sent as a string that would silently match
+ * nothing.
  */
 public sealed interface ProductFilter {
 

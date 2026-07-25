@@ -140,8 +140,14 @@ public final class ProductAccessImpl implements ProductAccess {
             // to discover an empty page.
             return new Page<>(products, null);
         }
-        return new Page<>(products,
-                ProductSearchMapper.cursorOf(products.get(products.size() - 1), page.sortField()).orElse(null));
+        Product lastRow = products.get(products.size() - 1);
+        Cursor next = ProductSearchMapper.cursorOf(lastRow, page.sortField())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Cannot continue a search sorted by " + page.sortField() + ": the last product on"
+                                + " a full page (" + lastRow.externalId() + ") has no value for that"
+                                + " field, so there is no cursor to page from. Sort by EXTERNAL_ID or"
+                                + " MARKETPLACE_ID, which every product has."));
+        return new Page<>(products, next);
     }
 
     /**
