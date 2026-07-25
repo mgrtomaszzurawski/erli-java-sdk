@@ -210,11 +210,17 @@ final class OrderMapper {
      *
      * <p>One consequence of CORE-12 is worth knowing: the codec decodes an unrecognised enum value to
      * {@code null} instead of throwing, and {@code vendor} is optional, so a carrier Erli adds after
-     * this SDK was built is indistinguishable here from a payload that carried no carrier at all —
-     * both surface as an empty {@code vendor}. An {@code UNRECOGNIZED} sentinel would mislabel the
-     * genuinely-absent case, so it is deliberately not used; recovering the real value would mean
-     * reading {@code vendor} from the JSON tree, which is filed in {@code BACKLOG.md} rather than done
-     * here. {@code status}, by contrast, is required, so a {@code null} there still fails loudly.
+     * this SDK was built surfaces as an empty {@code vendor} — the same as a payload that carried no
+     * carrier at all. Only the carrier's identity is lost; {@code trackingNumber} still tells the two
+     * cases apart for a caller (see {@code docs/orders.md}).
+     *
+     * <p>{@code KNOWN-SERVER-BEHAVIORS.md} suggests an {@code UNRECOGNIZED} sentinel for growing
+     * enums. <strong>It is not used for this field</strong>, because the field is optional: Jackson
+     * yields {@code null} for absent and unrecognised alike, so a sentinel would relabel every
+     * genuinely-absent vendor as unrecognised — worse than what it fixes. That reasoning is specific
+     * to optional fields and is not a fleet-wide ruling; recovering the real value would mean reading
+     * {@code vendor} from the JSON tree, filed in {@code BACKLOG.md}. {@code status}, being required,
+     * still fails loudly on {@code null}.
      */
     private static DeliveryTracking toDeliveryTracking(OrderDeliveryTracking rawTracking) {
         return new DeliveryTracking(
@@ -357,8 +363,9 @@ final class OrderMapper {
     /**
      * Mapped by wire value rather than an exhaustive switch: the carrier list is a growing reference
      * set, the fleet convention for which is a {@code fromWire} lookup (see
-     * {@code KNOWN-SERVER-BEHAVIORS.md}). The type is core's, shared with Shipping, Comms and
-     * Dictionaries, so no bucket mints its own copy (CORE-7).
+     * {@code KNOWN-SERVER-BEHAVIORS.md}). The type is core's, shared with Comms and Dictionaries
+     * (CORE-7). Shipping still carries its own {@code domain.shipping.ShippingVendor}; folding that
+     * one in is bucket C's follow-up, not something to work around here.
      */
     private static DeliveryVendor toDeliveryVendor(OrderDeliveryTracking.VendorEnum rawVendor) {
         return DeliveryVendor.fromWire(rawVendor.getValue());

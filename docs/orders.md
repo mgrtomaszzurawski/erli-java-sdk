@@ -142,16 +142,26 @@ or `trackingUrl` are populated depending on what the carrier reported.
 
 ## Carriers
 
-`DeliveryTracking.vendor()` is a `core.model.DeliveryVendor` — the shared carrier type, the same one
-the shipping, dictionaries and inbox APIs use, so a carrier means the same thing everywhere:
+`DeliveryTracking.vendor()` is a `core.model.DeliveryVendor` — the carrier type shared with the inbox
+and dictionaries APIs:
 
 ```java
 tracking.vendor().ifPresent(vendor -> myErp.setCarrier(vendor.wireValue()));
 if (tracking.vendor().filter(DeliveryVendor.INPOST::equals).isPresent()) { ... }
 ```
 
+> The shipping API still takes its own `domain.shipping.ShippingVendor` on `ExternalParcelDraft` and
+> friends, so you cannot pass this value straight into it yet. Translate via `wireValue()` until the
+> two are folded together.
+
 One caveat worth knowing. Erli's carrier list grows, and the SDK vendors the API spec — so a carrier
-added after your SDK version was built decodes to *no vendor* rather than failing. Because `vendor` is
-also legitimately absent on URL-only tracking, the two cases are indistinguishable from this record.
-If a parcel has a `trackingNumber` but no `vendor`, suspect a carrier newer than your SDK and upgrade;
-do not treat an empty `vendor` as "shipped without a carrier".
+added after your SDK version was built decodes to *no vendor* rather than failing: you lose the
+carrier's identity, not the rest of the order. An empty `vendor` therefore has two causes, which
+`trackingNumber` tells apart:
+
+| `vendor` | `trackingNumber` | meaning |
+|---|---|---|
+| empty | empty | URL-only tracking — read `trackingUrl` |
+| empty | present | a carrier newer than your SDK version — upgrade to name it |
+
+So do not read an empty `vendor` as "shipped without a carrier".

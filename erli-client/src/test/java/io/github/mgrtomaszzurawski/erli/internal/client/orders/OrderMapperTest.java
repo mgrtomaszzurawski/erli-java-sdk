@@ -23,6 +23,7 @@ import io.github.mgrtomaszzurawski.erli.domain.orders.SellerStatus;
 import io.github.mgrtomaszzurawski.erli.domain.orders.TaxRate;
 import io.github.mgrtomaszzurawski.erli.domain.orders.TrackingStatus;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
+import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryTracking;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -318,29 +319,46 @@ class OrderMapperTest {
      */
     @Test
     void survivesACarrierThisSdkDoesNotKnow() {
-        String futureCarrier = """
+        DeliveryTracking unknownCarrier = trackingOf("\"carrierAddedNextYear\"");
+
+        assertEquals(TrackingStatus.SENT, unknownCarrier.status());
+        assertEquals("TRK-1", unknownCarrier.trackingNumber().orElseThrow());
+        // The carrier itself is lost — AS_NULL does not preserve the wire value. Documented in
+        // docs/orders.md so an empty vendor is not read as "shipped without a carrier".
+        assertTrue(unknownCarrier.vendor().isEmpty());
+
+        // The control: identical payload but a known carrier. Without it this test would still pass if
+        // the mapper simply hardcoded an empty vendor, which is the mistake it exists to catch.
+        assertEquals(DeliveryVendor.INPOST, trackingOf("\"inpost\"").vendor().orElseThrow());
+    }
+
+    /** An order whose {@code deliveryTracking} carries the given raw JSON {@code vendor} value. */
+    private DeliveryTracking trackingOf(String rawVendorJson) {
+        String json = """
                 {"id":"221206x1","status":"purchased","items":[],"currency":"PLN","totalPrice":1000,
                  "sellerStatus":"sent","created":"2026-07-23T10:00:00Z","updated":"2026-07-23T10:00:00Z",
                  "delivery":{"name":"Kurier","typeId":"courier","price":0,"cod":false},
-                 "deliveryTracking":{"status":"sent","vendor":"carrierAddedNextYear",
-                                     "trackingNumber":"TRK-1"}}""";
+                 "deliveryTracking":{"status":"sent","vendor":%s,"trackingNumber":"TRK-1"}}"""
+                .formatted(rawVendorJson);
 
-        Order order = OrderMapper.toDomain(
-                codec.read(futureCarrier, io.github.mgrtomaszzurawski.erli.rest.model.Order.class));
-
-        DeliveryTracking tracking = order.deliveryTracking().orElseThrow();
-        assertEquals(TrackingStatus.SENT, tracking.status());
-        assertEquals("TRK-1", tracking.trackingNumber().orElseThrow());
-        // The carrier itself is lost — AS_NULL does not preserve the wire value. Documented in
-        // docs/orders.md so an empty vendor is not read as "shipped without a carrier".
-        assertTrue(tracking.vendor().isEmpty());
+        return OrderMapper
+                .toDomain(codec.read(json, io.github.mgrtomaszzurawski.erli.rest.model.Order.class))
+                .deliveryTracking().orElseThrow();
     }
 
+    /**
+     * Every carrier the generated model can produce must resolve through the shared core enum. Without
+     * this, drift between the vendored spec and {@code core.model.DeliveryVendor} would not surface
+     * until {@code fromWire} threw at runtime — sinking a whole page of orders, with no compile error
+     * to warn anyone. Here it fails the build instead.
+     */
     @Test
-    void mapsAKnownCarrierToTheSharedCoreVendorType() {
-        DeliveryTracking tracking = mapFixture(FULL_FIXTURE).deliveryTracking().orElseThrow();
+    void everyGeneratedCarrierResolvesThroughTheSharedCoreEnum() {
+        for (OrderDeliveryTracking.VendorEnum generated : OrderDeliveryTracking.VendorEnum.values()) {
+            DeliveryVendor resolved = DeliveryVendor.fromWire(generated.getValue());
 
-        assertEquals(DeliveryVendor.INPOST, tracking.vendor().orElseThrow());
+            assertEquals(generated.getValue(), resolved.wireValue());
+        }
     }
 
     @Test
