@@ -18,6 +18,17 @@ public final class ApiPaths {
     public static final String ME = "/me";
 
     // --- APPEND BLOCK: bucket A Products ----------------------------------------------------------
+    /** {@code PATCH /products/batch-update} — update many products in one call. */
+    public static final String PRODUCTS_BATCH_UPDATE = "/products/batch-update";
+
+    /** {@code POST /products/_search} — search the seller's catalog (body cursor). */
+    public static final String PRODUCTS_SEARCH = "/products/_search";
+
+    /** {@code GET|POST|PATCH /products/{externalId}} — read, create or update one product. */
+    public static final String PRODUCT_BY_EXTERNAL_ID = "/products/{externalId}";
+
+    /** {@code GET|POST /products/{externalId}/discount} — read or start a timed discount. */
+    public static final String PRODUCT_DISCOUNT = "/products/{externalId}/discount";
 
     // --- APPEND BLOCK: bucket B Orders ------------------------------------------------------------
     /** {@code GET /orders/{id}} — one order; also {@code PATCH} for a partial update. */
@@ -30,8 +41,28 @@ public final class ApiPaths {
     public static final String ORDERS_SEARCH = "/orders/_search";
 
     // --- APPEND BLOCK: bucket C Shipping & Delivery -----------------------------------------------
-    /** {@code GET /shipping/parcels/{id}} — one parcel by id. */
+    /** {@code GET|DELETE /shipping/parcels/{id}} — one parcel by id, or cancel it. */
     public static final String SHIPPING_PARCEL_BY_ID = "/shipping/parcels/{id}";
+    /** {@code POST /shipping/parcels/} — hand parcels to Erli's carrier integration. */
+    public static final String SHIPPING_PARCELS = "/shipping/parcels/";
+    /** {@code POST /shipping/parcels/_search} — search parcels. */
+    public static final String SHIPPING_PARCELS_SEARCH = "/shipping/parcels/_search";
+    /** {@code POST /shipping/external} — register externally shipped parcels. */
+    public static final String SHIPPING_EXTERNAL = "/shipping/external";
+    /** {@code GET|PATCH|DELETE /shipping/external/{id}} — one external parcel by id. */
+    public static final String SHIPPING_EXTERNAL_BY_ID = "/shipping/external/{id}";
+    /** {@code GET /shipping/pickupProtocols} — courier pickup confirmations for a set of parcels. */
+    public static final String SHIPPING_PICKUP_PROTOCOLS = "/shipping/pickupProtocols";
+    /** {@code GET /shipping/postingPoints} — the shop's defined posting points. */
+    public static final String SHIPPING_POSTING_POINTS = "/shipping/postingPoints";
+    /** {@code POST /delivery/priceList} — create a delivery price list. */
+    public static final String DELIVERY_PRICE_LIST = "/delivery/priceList";
+    /** {@code PATCH /delivery/priceList/{id}} — replace a price list's content. */
+    public static final String DELIVERY_PRICE_LIST_BY_ID = "/delivery/priceList/{id}";
+    /** {@code GET /delivery/priceLists} — price lists, id and name only. */
+    public static final String DELIVERY_PRICE_LISTS = "/delivery/priceLists";
+    /** {@code GET /delivery/priceListsDetails} — price lists with their priced entries. */
+    public static final String DELIVERY_PRICE_LISTS_DETAILS = "/delivery/priceListsDetails";
 
     // --- APPEND BLOCK: bucket D Dictionaries ------------------------------------------------------
     /** Name of the {@link #DICTIONARIES_DELIVERY_METHODS_BY_PRICE_LIST} placeholder, for {@link PathTemplate#expand}. */
