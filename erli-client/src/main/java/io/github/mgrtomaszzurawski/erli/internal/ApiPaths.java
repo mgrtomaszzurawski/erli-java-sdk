@@ -22,8 +22,20 @@ public final class ApiPaths {
     // --- APPEND BLOCK: bucket B Orders ------------------------------------------------------------
 
     // --- APPEND BLOCK: bucket C Shipping & Delivery -----------------------------------------------
-    /** {@code GET /shipping/parcels/{id}} — one parcel by id. */
+    /** {@code GET|DELETE /shipping/parcels/{id}} — one parcel by id, or cancel it. */
     public static final String SHIPPING_PARCEL_BY_ID = "/shipping/parcels/{id}";
+    /** {@code POST /shipping/parcels/} — hand parcels to Erli's carrier integration. */
+    public static final String SHIPPING_PARCELS = "/shipping/parcels/";
+    /** {@code POST /shipping/parcels/_search} — search parcels. */
+    public static final String SHIPPING_PARCELS_SEARCH = "/shipping/parcels/_search";
+    /** {@code POST /shipping/external} — register externally shipped parcels. */
+    public static final String SHIPPING_EXTERNAL = "/shipping/external";
+    /** {@code GET|PATCH|DELETE /shipping/external/{id}} — one external parcel by id. */
+    public static final String SHIPPING_EXTERNAL_BY_ID = "/shipping/external/{id}";
+    /** {@code GET /shipping/pickupProtocols} — courier pickup confirmations for a set of parcels. */
+    public static final String SHIPPING_PICKUP_PROTOCOLS = "/shipping/pickupProtocols";
+    /** {@code GET /shipping/postingPoints} — the shop's defined posting points. */
+    public static final String SHIPPING_POSTING_POINTS = "/shipping/postingPoints";
     /** {@code POST /delivery/priceList} — create a delivery price list. */
     public static final String DELIVERY_PRICE_LIST = "/delivery/priceList";
     /** {@code PATCH /delivery/priceList/{id}} — replace a price list's content. */
