@@ -73,6 +73,15 @@ final class ShippingMethodMapper {
      * time the mapper runs, {@code longestSide} and {@code dimensionsSum} are already gone, so no
      * mapping can recover them.
      *
+     * <p><strong>CORE-3's {@code normalizeSpec} composite-merge does NOT cover this schema, and is
+     * right not to.</strong> That rule refuses to merge when a property is declared twice with
+     * different definitions, and here {@code weight} is {@code maximum: 700000} on the box branch but
+     * {@code maximum: 50000} on the girth branch. Merging would silently keep one bound and misstate
+     * the other — worse than the current under-reporting. Verified against the merged rule on
+     * {@code develop}: it merges five tracking-shaped composites and leaves this one alone. **So this
+     * workaround must not be deleted as part of a CORE-3 cleanup.** It goes when core discriminates
+     * the branches properly (the strict-branch mix-in in the BACKLOG), not before.
+     *
      * <p>A box branch with no linear dimension at all is therefore a mis-bound girth payload rather
      * than a real bound, and is reported as absent instead of as a box whose dimensions are all
      * unknown — an absent bound is checked by callers, a zero-dimension box silently is not. Roughly

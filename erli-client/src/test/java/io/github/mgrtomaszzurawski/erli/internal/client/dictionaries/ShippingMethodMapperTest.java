@@ -1,5 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ParcelDimensions;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingMethod;
@@ -8,12 +10,14 @@ import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -83,6 +87,30 @@ class ShippingMethodMapperTest {
         assertTrue(method.maxDimensions().isEmpty(),
                 "Expected the mis-bound girth payload to be reported as absent rather than as an "
                         + "all-null box; got: " + method.maxDimensions());
+    }
+
+    /**
+     * Pins the reason CORE-3's {@code normalizeSpec} composite-merge leaves this schema alone: the two
+     * branches declare {@code weight} with different bounds, which trips the merge rule's
+     * conflicting-definition guard. If the upstream spec ever aligns them, this test fails and the
+     * composite becomes mergeable — at which point the workaround in
+     * {@link ShippingMethodMapper} can go and this class's girth test should assert a real
+     * {@link ParcelDimensions.Girth}.
+     */
+    @Test
+    void theTwoDimensionBranchesDisagreeOnWeightWhichIsWhyTheCompositeIsNotMerged() throws Exception {
+        JsonNode maxDimensions = new ObjectMapper()
+                .readTree(Path.of("..", "openapi", "swagger.json").toFile())
+                .path("components").path("schemas").path("ShippingMethod")
+                .path("properties").path("maxDimensions").path("anyOf");
+
+        JsonNode boxWeight = maxDimensions.get(0).path("properties").path("weight");
+        JsonNode girthWeight = maxDimensions.get(1).path("properties").path("weight");
+
+        assertEquals(2, maxDimensions.size());
+        assertNotEquals(boxWeight, girthWeight,
+                "The branches now agree on `weight`, so normalizeSpec would merge this composite — "
+                        + "drop the ShippingMethodMapper workaround and assert a real Girth instead");
     }
 
     /**
