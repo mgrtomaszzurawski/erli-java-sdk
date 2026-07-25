@@ -14,6 +14,9 @@ import io.github.mgrtomaszzurawski.erli.domain.products.BatchUpdateOutcome;
 import io.github.mgrtomaszzurawski.erli.domain.products.Discount;
 import io.github.mgrtomaszzurawski.erli.domain.products.DiscountRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.DispatchTime;
+import io.github.mgrtomaszzurawski.erli.domain.products.Market;
+import io.github.mgrtomaszzurawski.erli.domain.products.Product;
+import io.github.mgrtomaszzurawski.erli.domain.products.ProductAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAccess;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductContent;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductDraft;
@@ -21,8 +24,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilter;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilterField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductImage;
-import io.github.mgrtomaszzurawski.erli.domain.products.Market;
-import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductPatch;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSortField;
@@ -127,6 +128,13 @@ class ProductAccessTest {
                 // `updated` is present so a walk sorted by it can derive a cursor and therefore reach
                 // the paging guard; without it the stream would simply end after page one.
                 + "\"updated\":\"2026-07-25T09:00:00.000+02:00\"}";
+    }
+
+    /** A product whose single attachment is scoped to one known market and one this SDK cannot name. */
+    private static String bodyWithNewMarket() {
+        return productBody("sku-1").replaceFirst("\\}$",
+                ",\"productAttachments\":[{\"id\":7,\"kind\":\"energyLabel\","
+                        + "\"markets\":[\"pl\",\"cz\"]}]}");
     }
 
     private ProductAccess products() {
@@ -574,25 +582,36 @@ class ProductAccessTest {
     }
 
     @Test
-    void survivesAMarketCodeThisSdkVersionDoesNotKnow() {
+    void keepsAMarketCodeThisSdkVersionDoesNotKnowInsteadOfFailing() {
         // One new market on one attachment must not fail the product read — and on a search, the page.
-        String withNewMarket = productBody("sku-1").replaceFirst("\\}$",
-                ",\"productAttachments\":[{\"id\":7,\"kind\":\"energyLabel\","
-                        + "\"markets\":[\"pl\",\"cz\"]}]}");
-        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(withNewMarket)));
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(bodyWithNewMarket())));
 
-        Product product = products().get(SKU_1).orElseThrow();
+        ProductAttachment attachment = products().get(SKU_1).orElseThrow().productAttachments().get(0);
 
-        // The scope keeps its true size; the unknown entry is visible rather than silently dropped.
-        assertEquals(List.of(Market.PL, Market.UNRECOGNIZED),
-                product.productAttachments().get(0).markets());
+        assertEquals(List.of(Market.PL), attachment.markets());
+        // The raw value survives, so the true scope is still two markets, not one.
+        assertEquals(List.of("cz"), attachment.unrecognisedMarkets());
+        assertEquals(2, attachment.marketCount());
     }
 
     @Test
-    void refusesToWriteBackAMarketItCannotName() {
-        IllegalStateException failure =
-                assertThrows(IllegalStateException.class, Market.UNRECOGNIZED::wireName);
-        assertTrue(failure.getMessage().contains("upgrade the SDK"), failure.getMessage());
+    void writesBackAnUnknownMarketExactlyAsItArrived() {
+        // The round trip is the point: reading a product, changing something else and writing it back
+        // must not narrow an attachment's scope to the markets this SDK version happens to understand.
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(bodyWithNewMarket())));
+        server.stubFor(patch(urlEqualTo(PRODUCT_PATH)).willReturn(okJson("{\"updatedFields\":[\"stock\"]}")));
+
+        ProductAttachment readBack = products().get(SKU_1).orElseThrow().productAttachments().get(0);
+        products().update(SKU_1, ProductPatch.builder()
+                .content(ProductContent.builder()
+                        .stock(3)
+                        .productAttachments(List.of(readBack))
+                        .build())
+                .build());
+
+        server.verify(patchRequestedFor(urlEqualTo(PRODUCT_PATH))
+                .withRequestBody(matchingJsonPath("$.productAttachments[0].markets[?(@ == 'pl')]"))
+                .withRequestBody(matchingJsonPath("$.productAttachments[0].markets[?(@ == 'cz')]")));
     }
 
     @Test

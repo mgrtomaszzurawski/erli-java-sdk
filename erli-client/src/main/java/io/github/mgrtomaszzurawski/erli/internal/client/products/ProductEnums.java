@@ -21,7 +21,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.VariantGroupSource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Translates between the products domain enums and the wire values the Erli API uses.
@@ -44,9 +43,9 @@ import java.util.stream.Stream;
  * array of enums, which Layer 1 exposes as {@code List<String>}.
  *
  * <p>Those are the ones that need a policy, because they arrive as a list: rejecting one unfamiliar
- * entry would fail the whole product read. {@link #toMarket} therefore degrades to
- * {@link Market#UNRECOGNIZED} rather than throwing. {@link #toProductFieldOrNull} answers {@code null}
- * for the same reason. Everything else stays fail-loud — reaching it with an unknown value would mean
+ * entry would fail the whole product read. {@link #toMarketOrNull} and
+ * {@link #toProductFieldOrNull} therefore answer {@code null} rather than throwing, and their callers
+ * keep the raw value so a round trip loses nothing. Everything else stays fail-loud — reaching it with an unknown value would mean
  * the codec's tolerance had been turned off, which is worth hearing about.
  *
  * <p>Internal: never exported.
@@ -55,11 +54,7 @@ final class ProductEnums {
 
     private static final Map<String, ProductStatus> PRODUCT_STATUSES = index(ProductStatus.values(), ProductStatus::wireName);
     private static final Map<String, BaseMarket> BASE_MARKETS = index(BaseMarket.values(), BaseMarket::wireName);
-    // UNRECOGNIZED has no wire value, so it is excluded from the read index rather than asked for one.
-    private static final Map<String, Market> MARKETS = index(
-            Stream.of(Market.values()).filter(market -> market != Market.UNRECOGNIZED)
-                    .toArray(Market[]::new),
-            Market::wireName);
+    private static final Map<String, Market> MARKETS = index(Market.values(), Market::wireName);
     private static final Map<String, InvoiceType> INVOICE_TYPES = index(InvoiceType.values(), InvoiceType::wireName);
     private static final Map<String, TaxRate> TAX_RATES = index(TaxRate.values(), TaxRate::wireName);
     private static final Map<String, ReferencePriceType> REFERENCE_PRICE_TYPES =
@@ -98,12 +93,13 @@ final class ProductEnums {
     }
 
     /**
-     * The market a wire value denotes, or {@link Market#UNRECOGNIZED} when this SDK version does not
-     * know it. Reached with a raw value only for {@code productAttachments[].markets}, which the spec
-     * types as an array of enums and Layer 1 exposes as {@code List<String>}.
+     * The market a wire value denotes, or {@code null} when this SDK version does not know it — the
+     * caller keeps the raw value rather than losing it. Reached with a raw value only for
+     * {@code productAttachments[].markets}, which the spec types as an array of enums and Layer 1
+     * exposes as {@code List<String>}.
      */
-    static Market toMarket(String wireValue) {
-        return MARKETS.getOrDefault(wireValue, Market.UNRECOGNIZED);
+    static Market toMarketOrNull(String wireValue) {
+        return MARKETS.get(wireValue);
     }
 
     static InvoiceType toInvoiceType(String wireValue) {

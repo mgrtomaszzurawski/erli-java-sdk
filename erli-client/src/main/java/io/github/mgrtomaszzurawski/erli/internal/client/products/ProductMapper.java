@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ExternalReference;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalResponsibleEntity;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalVariantGroup;
 import io.github.mgrtomaszzurawski.erli.domain.products.FrozenFields;
+import io.github.mgrtomaszzurawski.erli.domain.products.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.Packaging;
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAttachment;
@@ -100,8 +101,10 @@ final class ProductMapper {
                 Optional.ofNullable(rawProduct.getSku()),
                 ProductValues.mapOptional(rawProduct.getBaseMarket(),
                         value -> ProductEnums.toBaseMarket(value.getValue())),
+                // Scalar here, despite the plural name: Layer 1 types it as an enum, so an unknown
+                // value has already become absent (CORE-12) and the lookup always resolves.
                 ProductValues.mapOptional(rawProduct.getMarkets(),
-                        value -> ProductEnums.toMarket(value.getValue())),
+                        value -> ProductEnums.toMarketOrNull(value.getValue())),
                 ProductValues.orEmpty(rawProduct.getImportantFeatures()),
                 ProductValues.mapEach(rawProduct.getImages(), ProductMapper::toImage),
                 ProductValues.mapEach(rawProduct.getFiles(), ProductMapper::toFile),
@@ -316,7 +319,27 @@ final class ProductMapper {
                 Optional.ofNullable(rawAttachment.getId()),
                 ProductValues.mapOptional(rawAttachment.getKind(), value -> ProductEnums.toAttachmentKind(value.getValue())),
                 Optional.ofNullable(rawAttachment.getUrl()),
-                ProductValues.mapEach(rawAttachment.getMarkets(), ProductEnums::toMarket));
+                knownMarkets(rawAttachment.getMarkets()),
+                unrecognisedMarkets(rawAttachment.getMarkets()));
+    }
+
+    /** The markets this SDK version can name. */
+    private static List<Market> knownMarkets(List<String> wireValues) {
+        return ProductValues.orEmpty(wireValues).stream()
+                .map(ProductEnums::toMarketOrNull)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * The wire values this SDK version cannot name, kept verbatim. Splitting them out rather than
+     * dropping them is what lets a caller read a product, change something else, and write it back
+     * without quietly narrowing an attachment's market scope.
+     */
+    private static List<String> unrecognisedMarkets(List<String> wireValues) {
+        return ProductValues.orEmpty(wireValues).stream()
+                .filter(wireValue -> ProductEnums.toMarketOrNull(wireValue) == null)
+                .toList();
     }
 
     private static Translations toTranslations(ProductResponseTranslations rawTranslations) {
