@@ -7,6 +7,7 @@ import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.domain.payments.Market;
 import io.github.mgrtomaszzurawski.erli.domain.payments.Payment;
+import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentOperator;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentSearch;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentSortField;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentStatus;
@@ -334,6 +335,23 @@ class PaymentsAccessImplTest {
         assertEquals(81L, payment.id());
         assertEquals(Money.ofPln("25.00"), payment.amount());
         assertEquals(PaymentStatus.COMPLETED, payment.status());
+    }
+
+    @Test
+    void keepsAPaymentSettledByAnOperatorThisSdkDoesNotKnow() {
+        // CORE-12 hardening: the operator list is Erli's to grow. One new provider must not fail the
+        // read of every payment the shop has.
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(aResponse().withStatus(200).withBody("""
+                        [{"id":83,"orderIds":[1239],"amount":30.00,"status":"COMPLETED",
+                          "createdAt":"2026-07-24T12:00:00.000+02:00",
+                          "completedAt":"2026-07-24T12:01:00.000+02:00",
+                          "operator":"PRZELEWY24","methodCode":"PAYU.blik"}]""")));
+
+        Payment payment = client.payments().searchPayments(PaymentSearch.all()).findFirst().orElseThrow();
+
+        assertEquals(PaymentOperator.UNRECOGNIZED, payment.operator());
+        assertEquals(Money.ofPln("30.00"), payment.amount(), "the rest of the payment still maps");
     }
 
     @Test

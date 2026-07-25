@@ -44,6 +44,8 @@ public final class JpmsRuntimeCheck {
     private static final String ENCODE_FAILURE_MARKER = "Failed to encode request body";
     private static final String REACHED_TRANSPORT_MARKER = "Request to ";
     private static final int FAILURE_EXIT_CODE = 1;
+    private static final long ATTACHMENT_ID = 1L;
+    private static final long PRODUCT_ID = 1L;
 
     private JpmsRuntimeCheck() {
     }
@@ -81,6 +83,13 @@ public final class JpmsRuntimeCheck {
                     client.payments().searchPayouts(PayoutSearch.all()).findFirst());
             check(failures, "payments.searchReturns", () -> client.payments().searchReturns(
                     ReturnSearch.between(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31))).findFirst());
+            // Bucket D: attachProducts is the one operation in the SDK whose RESPONSE is bound to a
+            // hand-written DTO, so its package needs `opens`. Encoding is what this gate can prove;
+            // the decode path is guarded by that `opens` line in module-info.
+            check(failures, "dictionaries.attachProducts", () ->
+                    client.dictionaries().attachProducts(ATTACHMENT_ID, List.of(PRODUCT_ID)));
+            check(failures, "dictionaries.deleteAttachments", () ->
+                    client.dictionaries().deleteAttachments(List.of(ATTACHMENT_ID)));
         }
         return failures;
     }

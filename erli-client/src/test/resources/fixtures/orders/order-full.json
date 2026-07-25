@@ -1,0 +1,121 @@
+{
+  "id": "221201x12345",
+  "externalOrderId": "erp-1001",
+  "status": "purchased",
+  "user": {
+    "email": "buyer-221201x12345@proxy.erli.pl",
+    "deliveryAddress": {
+      "firstName": "Anna",
+      "lastName": "Kowalska",
+      "companyName": "Kowalska Sp. z o.o.",
+      "address": "Kwiatowa 12/3",
+      "street": "Kwiatowa",
+      "buildingNumber": "12",
+      "flatNumber": "3",
+      "zip": "00-950",
+      "city": "Warszawa",
+      "country": "pl",
+      "phone": "600100200"
+    },
+    "invoiceAddress": {
+      "type": "company",
+      "address": "Fabryczna 7",
+      "street": "Fabryczna",
+      "buildingNumber": "7",
+      "flatNumber": "2",
+      "zip": "31-553",
+      "city": "Krakow",
+      "country": "pl",
+      "firstName": "Anna",
+      "lastName": "Kowalska",
+      "companyName": "Kowalska Sp. z o.o.",
+      "nip": "1234563218"
+    }
+  },
+  "items": [
+    {
+      "id": 987654,
+      "externalId": "SKU-RED-42",
+      "quantity": 2,
+      "weight": 1.25,
+      "unitPrice": 4999,
+      "unitPriceBeforeRebate": 5999,
+      "name": "Czerwony kubek",
+      "slug": "czerwony-kubek",
+      "ean": "5901234123457",
+      "sku": "RED-42",
+      "taxRate": "TAX_23"
+    },
+    {
+      "id": 987655,
+      "externalId": "SKU-BLUE-7",
+      "quantity": 1,
+      "unitPrice": 1499,
+      "name": "Niebieski kubek",
+      "slug": "niebieski-kubek"
+    }
+  ],
+  "rebate": {
+    "id": 55,
+    "name": "Wiosenna promocja",
+    "code": "WIOSNA10"
+  },
+  "delivery": {
+    "name": "InPost Paczkomat",
+    "typeId": "inpost-locker",
+    "price": 1290,
+    "cancelled": 0,
+    "cod": true,
+    "sourceMarket": "pl",
+    "targetMarket": "pl",
+    "pickupPlace": {
+      "id": 4242,
+      "externalId": "KRA01M",
+      "heading": "Paczkomat KRA01M",
+      "type": "locker",
+      "provider": "inpost",
+      "name": "KRA01M",
+      "description": "Przy wejsciu do sklepu",
+      "address": "Fabryczna 7",
+      "city": "Krakow",
+      "country": "pl",
+      "open24h": true,
+      "zip": "31-553"
+    }
+  },
+  "comment": "Prosze zapakowac na prezent",
+  "totalPrice": 12787,
+  "currency": "PLN",
+  "deliveryTracking": {
+    "status": "onTheWay",
+    "vendor": "inpost",
+    "trackingNumber": "6231979280641"
+  },
+  "payment": {
+    "id": 778899,
+    "status": "COMPLETED"
+  },
+  "returns": [
+    {
+      "items": [
+        {
+          "index": 0,
+          "quentity": 1
+        }
+      ],
+      "bankAccount": {
+        "number": "12345678901234567890123456",
+        "name": "Anna Kowalska"
+      },
+      "reason": "itemsQuality",
+      "comment": "Ukruszone ucho",
+      "created": "2026-07-22T14:05:00Z"
+    }
+  ],
+  "calculatedParcelsCount": 2,
+  "sellerStatus": "sent",
+  "created": "2026-07-20T08:15:30Z",
+  "updated": "2026-07-22T14:05:00Z",
+  "purchasedAt": "2026-07-20T08:20:00Z",
+  "cursor": "1753178730;221201x12345"
+}

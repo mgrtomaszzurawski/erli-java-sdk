@@ -41,6 +41,52 @@ val normalizeSpec by tasks.registering {
         fun isArrayBranch(branch: Any?): Boolean =
             branch is Map<*, *> && (branch["type"] == "array" || branch.containsKey("items"))
 
+        fun isPlainObjectBranch(branch: Any?): Boolean =
+            branch is Map<*, *> &&
+                branch["type"] == "object" &&
+                branch["properties"] is Map<*, *> &&
+                !branch.containsKey("\$ref") &&
+                !branch.containsKey("oneOf") &&
+                !branch.containsKey("anyOf")
+
+        // A composite is mergeable when every branch is a plain object, no property name is declared
+        // twice with different definitions, AND every branch shares at least one required property.
+        //
+        // Both guards keep the rule narrow, and each one protects a real schema:
+        //   - the conflicting-definition guard leaves `OrderFilter` alone, whose branches each define
+        //     `operator` differently;
+        //   - the shared-required guard leaves an exclusive-choice schema alone. `MarkRead`
+        //     (POST /inbox/mark-read) is "either lastMessageId or ids", so the branches' required sets
+        //     are disjoint. Merging would intersect them to nothing and hand the Comms bucket a request
+        //     model where no field is required — silently discarding the XOR contract. A shared
+        //     required property is what distinguishes "one shape with optional extras"
+        //     (Order.deliveryTracking, always `status`) from "pick exactly one shape".
+        fun isMergeableObjectComposite(branches: List<*>): Boolean {
+            if (branches.size < 2 || !branches.all { isPlainObjectBranch(it) }) {
+                return false
+            }
+            val seen = mutableMapOf<String, Any?>()
+            var sharedRequired: MutableSet<String>? = null
+            for (branch in branches) {
+                @Suppress("UNCHECKED_CAST")
+                val branchMap = branch as Map<String, Any?>
+                @Suppress("UNCHECKED_CAST")
+                val properties = branchMap["properties"] as Map<String, Any?>
+                for ((name, definition) in properties) {
+                    if (seen.containsKey(name) && seen[name] != definition) {
+                        return false
+                    }
+                    seen[name] = definition
+                }
+                @Suppress("UNCHECKED_CAST")
+                val required = ((branchMap["required"] as? List<String>) ?: emptyList()).toMutableSet()
+                sharedRequired = sharedRequired?.apply { retainAll(required) } ?: required
+            }
+            return !sharedRequired.isNullOrEmpty()
+        }
+
+        val mergedComposites = mutableListOf<String>()
+
         fun scrub(node: Any?) {
             when (node) {
                 is MutableMap<*, *> -> {
@@ -54,6 +100,44 @@ val normalizeSpec by tasks.registering {
                         if (description != null) {
                             map["description"] = description
                         }
+                        return
+                    }
+                    // Object-only composites are merged into one object holding the union of the
+                    // branches' properties, required narrowed to the properties every branch
+                    // requires. The generator's anyOf deserializer is first-match-wins, and because
+                    // the SDK's codec ignores unknown properties (forward compatibility), the first
+                    // branch swallows any payload — so Order.deliveryTracking's
+                    // {status, vendor, trackingNumber} shape silently decoded as the
+                    // {status, trackingUrl} branch and lost the carrier and consignment number.
+                    // Merging makes Layer 1 lossless; the domain layer re-applies the real optionality.
+                    if (branches != null && isMergeableObjectComposite(branches)) {
+                        val mergedProperties = linkedMapOf<String, Any?>()
+                        var alwaysRequired: MutableSet<String>? = null
+                        for (branch in branches) {
+                            @Suppress("UNCHECKED_CAST")
+                            val branchMap = branch as Map<String, Any?>
+                            @Suppress("UNCHECKED_CAST")
+                            mergedProperties.putAll(branchMap["properties"] as Map<String, Any?>)
+                            @Suppress("UNCHECKED_CAST")
+                            val required = ((branchMap["required"] as? List<String>) ?: emptyList()).toMutableSet()
+                            alwaysRequired = alwaysRequired?.apply { retainAll(required) } ?: required
+                        }
+                        val description = map["description"]
+                        map.remove(composedKey)
+                        // The branch titles are Polish prose; the generator turns them into class
+                        // names, so they are dropped along with the composite.
+                        map.remove("title")
+                        map["type"] = "object"
+                        map["properties"] = mergedProperties
+                        if (!alwaysRequired.isNullOrEmpty()) {
+                            map["required"] = alwaysRequired.toList()
+                        }
+                        map["additionalProperties"] = false
+                        if (description != null) {
+                            map["description"] = description
+                        }
+                        mergedComposites += mergedProperties.keys.joinToString(",")
+                        map.values.toList().forEach { scrub(it) }
                         return
                     }
                     // Array item enums are dropped at Layer 1: the generator's dead-code
@@ -71,6 +155,7 @@ val normalizeSpec by tasks.registering {
         }
 
         scrub(root)
+        logger.lifecycle("normalizeSpec: merged ${mergedComposites.size} object-only composite(s): $mergedComposites")
         val target = normalizedSpec.get().asFile
         target.parentFile.mkdirs()
         target.writeText(JsonOutput.toJson(root))

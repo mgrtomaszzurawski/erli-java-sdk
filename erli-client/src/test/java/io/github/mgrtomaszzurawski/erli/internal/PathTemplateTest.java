@@ -28,6 +28,24 @@ class PathTemplateTest {
                 PathTemplate.expand("/hooks/{hookName}", Map.of("hookName", "on order")));
     }
 
+    /**
+     * Carried over from the Orders bucket's own path-encoding tests. Seller-supplied identifiers are
+     * routinely Polish, so the UTF-8 byte encoding is a real case rather than a theoretical one.
+     */
+    @Test
+    void encodesNonAsciiAsUtf8Bytes() {
+        assertEquals("/orders/%C5%82%C3%B3d%C5%BA",
+                PathTemplate.expand("/orders/{id}", Map.of("id", "łódź")));
+    }
+
+    /**
+     * A literal {@code +} must survive as {@code %2B} and not be confused with the encoded-space fix.
+     */
+    @Test
+    void encodesALiteralPlusRatherThanTreatingItAsASpace() {
+        assertEquals("/orders/a%2Bb", PathTemplate.expand("/orders/{id}", Map.of("id", "a+b")));
+    }
+
     @Test
     void rejectsDotAndDotDotSegments() {
         assertThrows(IllegalArgumentException.class,

@@ -31,7 +31,6 @@ final class PaymentMapper {
     private static final String FIELD_STATUS = "status";
     private static final String FIELD_CREATED_AT = "createdAt";
     private static final String FIELD_COMPLETED_AT = "completedAt";
-    private static final String FIELD_OPERATOR = "operator";
     private static final String FIELD_ORDER_IDS = "orderIds";
     private static final String RAW_PAYMENT_NAME = "raw Payment";
     private static final String RAW_PAYOUT_NAME = "raw Payout";
@@ -50,7 +49,7 @@ final class PaymentMapper {
                 toStatus(require(rawPayment.getStatus(), FIELD_STATUS)),
                 require(rawPayment.getCreatedAt(), FIELD_CREATED_AT),
                 Optional.ofNullable(rawPayment.getCompletedAt()),
-                toOperator(require(rawPayment.getOperator(), FIELD_OPERATOR).getValue()),
+                toOperator(rawPayment.getOperator()),
                 // CORE-12: an unrecognised operator method decodes to null rather than throwing, and
                 // this enum grows without a spec release — so absence here is expected, not an error.
                 Optional.ofNullable(rawPayment.getMethodCode())
@@ -66,7 +65,7 @@ final class PaymentMapper {
                 require(rawPayout.getId(), FIELD_ID).longValue(),
                 MinorUnits.fromGrosze(require(rawPayout.getAmount(), FIELD_AMOUNT)),
                 require(rawPayout.getCreatedAt(), FIELD_CREATED_AT),
-                toOperator(require(rawPayout.getOperator(), FIELD_OPERATOR).getValue()));
+                toOperator(rawPayout.getOperator()));
     }
 
     static Transaction toTransaction(io.github.mgrtomaszzurawski.erli.rest.model.Transaction rawTransaction) {
@@ -178,12 +177,19 @@ final class PaymentMapper {
         };
     }
 
-    /** The spec lists a single operator; anything else is a spec change we want to hear about. */
-    private static PaymentOperator toOperator(String operator) {
-        if (PaymentOperator.PAYU.name().equalsIgnoreCase(operator)) {
-            return PaymentOperator.PAYU;
+    /**
+     * Map the operator, tolerating one Erli adds later. CORE-12 decodes an unknown enum value to
+     * null, so null here means "a provider this SDK does not know" — a growing enum, so it takes the
+     * sentinel rather than failing the whole page. Contrast {@link #toStatus}, a closed lifecycle
+     * that stays fail-loud.
+     */
+    private static <T extends Enum<T>> PaymentOperator toOperator(T operator) {
+        if (operator == null) {
+            return PaymentOperator.UNRECOGNIZED;
         }
-        throw new IllegalStateException("Unknown payment operator '" + operator + "'");
+        return PaymentOperator.PAYU.name().equalsIgnoreCase(operator.name())
+                ? PaymentOperator.PAYU
+                : PaymentOperator.UNRECOGNIZED;
     }
 
     private static <T> T require(T value, String fieldName) {

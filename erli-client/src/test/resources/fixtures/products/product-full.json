@@ -1,0 +1,152 @@
+{
+  "externalId": "sku-winter-jacket-1",
+  "marketplaceId": 987654,
+  "name": "Kurtka zimowa z kapturem",
+  "slug": "kurtka-zimowa-z-kapturem",
+  "status": "active",
+  "stock": 10,
+  "price": 10000,
+  "mobilePrice": 9500,
+  "cataloguePrice": 20000,
+  "referencePriceType": "cataloguePrice",
+  "description": {
+    "sections": [
+      {
+        "items": [
+          { "type": "TEXT", "content": "<h1>Kurtka zimowa z kapturem</h1>" },
+          { "type": "IMAGE", "url": "https://example.com/section.jpg" }
+        ]
+      }
+    ]
+  },
+  "externalDescription": "Ciepła kurtka na zimę",
+  "externalDescriptionHash": "b1946ac92492d2347c6235b4d2611184",
+  "ean": "5901234123457",
+  "sku": "SKU123",
+  "baseMarket": "pl",
+  "markets": "pl",
+  "importantFeatures": ["wodoodporna", "ocieplana"],
+  "images": [
+    {
+      "url": "https://example.com/image.jpg",
+      "isVariantImage": true,
+      "isLifestyleImage": false,
+      "isFrozenImage": true,
+      "originalExternalUrl": "https://shop.example.com/orig.jpg",
+      "appliedTransformation": "clean-watermark",
+      "internalUrl": "https://cdn.erli.pl/image.jpg"
+    }
+  ],
+  "files": [{ "url": "https://example.com/spec.pdf" }],
+  "externalReferences": [
+    {
+      "id": "8885579723",
+      "kind": "allegro",
+      "url": "https://allegro.pl/oferta/8885579723",
+      "source": "api"
+    }
+  ],
+  "externalAttributes": [
+    {
+      "id": "Kolor",
+      "name": "Kolor",
+      "source": "allegro",
+      "type": "string",
+      "index": 0,
+      "values": ["Czarny"]
+    },
+    {
+      "id": "Rozmiar",
+      "name": "Rozmiar",
+      "source": "shop",
+      "type": "range",
+      "index": 1,
+      "values": { "from": 38, "to": 44 },
+      "unit": "cm"
+    }
+  ],
+  "externalCategories": [
+    {
+      "source": "allegro",
+      "index": 0,
+      "breadcrumb": [
+        { "id": "1", "name": "Odzież, Obuwie, Dodatki" },
+        { "id": "2", "name": "Odzież damska" }
+      ]
+    }
+  ],
+  "externalVariantGroup": {
+    "id": "variant-group-7",
+    "source": "integration",
+    "attributes": ["Kolor", "Rozmiar"]
+  },
+  "externalResponsibleProducer": [{ "externalId": "producer-1", "source": "api" }],
+  "externalResponsiblePerson": [{ "externalId": "person-1", "source": "manual" }],
+  "externalMetaProductId": "meta-1",
+  "externalProductSets": {
+    "items": [{ "externalMetaProductId": "meta-2", "quantity": 2 }]
+  },
+  "attributes": [
+    {
+      "id": 501,
+      "name": "Kolor",
+      "values": [{ "id": 9001, "name": "Czarny" }],
+      "valueIds": [9001],
+      "unit": "szt"
+    }
+  ],
+  "categories": [
+    [
+      { "id": 10, "name": "Odzież" },
+      { "id": 11, "name": "Kurtki" }
+    ]
+  ],
+  "productSets": { "items": [{ "metaProductId": 4242, "quantity": 3 }] },
+  "productAttachments": [
+    {
+      "id": 77,
+      "kind": "energyLabel",
+      "url": "https://example.com/label.pdf",
+      "markets": ["pl", "de"]
+    }
+  ],
+  "translations": {
+    "pl": {
+      "name": "Kurtka zimowa z kapturem",
+      "descriptionId": 3001,
+      "attributes": [
+        { "key": "kolor", "name": "Kolor", "values": ["Czarny"], "unit": "szt" }
+      ]
+    },
+    "de": {
+      "name": "Winterjacke mit Kapuze",
+      "descriptionId": 3002,
+      "attributes": [{ "key": "farbe", "name": "Farbe", "values": ["Schwarz"] }]
+    }
+  },
+  "dispatchTime": { "unit": "day", "period": 1 },
+  "deliveryPriceList": "standard",
+  "weight": 1.25,
+  "packaging": { "tags": ["karton"], "weight": 1.5 },
+  "basketLimit": 5,
+  "invoiceType": "vatInvoice",
+  "taxRate": "TAX_23",
+  "obligatoryIdentifier": "OBL-1",
+  "voluntaryIdentifier": "VOL-1",
+  "returnIdentifier": "RET-1",
+  "energyLabel": "https://example.com/energy.pdf",
+  "instructionWithSafetyInformation": "https://example.com/safety.pdf",
+  "informationCard": "https://example.com/card.pdf",
+  "producerId": 601,
+  "producerIds": [601, 602],
+  "responsiblePersonId": 701,
+  "responsiblePersonIds": [701],
+  "sourceFulfillmentProductId": 808,
+  "automaticDiscountRuleId": 909,
+  "archived": false,
+  "archivedAt": null,
+  "frozen": { "price": true, "stock": true, "name": false },
+  "buyableProblems": [],
+  "created": "2026-07-24T13:50:23.961+02:00",
+  "updated": "2026-07-25T09:00:00.000+02:00"
+}

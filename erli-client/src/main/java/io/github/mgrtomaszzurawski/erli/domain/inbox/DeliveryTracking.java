@@ -1,6 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.inbox;
 
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 
 import java.util.Objects;
 import java.util.Optional;

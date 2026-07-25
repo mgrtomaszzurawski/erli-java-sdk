@@ -67,7 +67,7 @@ public final class ErrorMapper {
                 textOrNull(body, FIELD_POLISH_MESSAGE),
                 textOrNull(body, FIELD_TRACE_ID),
                 textOrNull(body, FIELD_SPAN_ID),
-                textOrNull(body, FIELD_PAYLOAD),
+                payloadOrNull(body),
                 rawBody);
     }
 
@@ -77,6 +77,23 @@ public final class ErrorMapper {
         }
         JsonNode value = body.get(field);
         return value != null && value.isValueNode() ? value.asText() : null;
+    }
+
+    /**
+     * The {@code payload} field, preserved whatever its JSON shape (CORE-8). The API sends it as a
+     * scalar on some errors ({@code "payload":"Invalid API key"}) but as an object carrying per-field
+     * validation detail on others ({@code "payload":{"details":{...}}}). A plain text extraction would
+     * drop the object form; this keeps it as its compact JSON string so no diagnostic detail is lost.
+     */
+    private static String payloadOrNull(JsonNode body) {
+        if (body == null) {
+            return null;
+        }
+        JsonNode value = body.get(FIELD_PAYLOAD);
+        if (value == null || value.isNull()) {
+            return null;
+        }
+        return value.isValueNode() ? value.asText() : value.toString();
     }
 
     private static Integer intOrNull(JsonNode body, String field) {
