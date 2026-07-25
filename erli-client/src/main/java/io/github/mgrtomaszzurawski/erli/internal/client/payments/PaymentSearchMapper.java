@@ -24,7 +24,6 @@ final class PaymentSearchMapper {
     static final String TYPE_PAYOUT = "payout";
     static final String TYPE_RETURN = "return";
 
-
     // Wire names for the sortable/filterable fields, exactly as the API spells them.
     private static final String FIELD_ID = "id";
     private static final String FIELD_CREATED_AT = "createdAt";
