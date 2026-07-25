@@ -3,10 +3,12 @@ package io.github.mgrtomaszzurawski.erli;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliConfigurationException;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DictionaryAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shop.ShopAccess;
 import io.github.mgrtomaszzurawski.erli.internal.ErrorMapper;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
+import io.github.mgrtomaszzurawski.erli.internal.client.dictionaries.DictionaryAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shop.ShopAccessImpl;
 
 import java.net.http.HttpClient;
@@ -35,6 +37,7 @@ public final class ErliClient implements AutoCloseable {
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final ShopAccess shop;
+    private final DictionaryAccess dictionaries;
 
     private ErliClient(Builder builder) {
         HttpClient httpClient = builder.httpClient != null
@@ -51,6 +54,7 @@ public final class ErliClient implements AutoCloseable {
                 codec,
                 new ErrorMapper(codec));
         this.shop = new ShopAccessImpl(runtime);
+        this.dictionaries = new DictionaryAccessImpl(runtime);
     }
 
     public static Builder builder() {
@@ -75,6 +79,13 @@ public final class ErliClient implements AutoCloseable {
     // --- APPEND BLOCK: bucket B Orders accessor --------------------------------------------------
     // --- APPEND BLOCK: bucket C Shipping & Delivery accessor -------------------------------------
     // --- APPEND BLOCK: bucket D Dictionaries accessor --------------------------------------------
+    /** Access to the marketplace reference dictionaries ({@code /dictionaries}). */
+    public DictionaryAccess dictionaries() {
+        ensureOpen();
+        return dictionaries;
+    }
+
+
     // --- APPEND BLOCK: bucket E Finance accessor -------------------------------------------------
     // --- APPEND BLOCK: bucket F Comms & Automation accessor --------------------------------------
 

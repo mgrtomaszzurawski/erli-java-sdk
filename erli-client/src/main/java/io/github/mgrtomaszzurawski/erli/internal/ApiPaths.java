@@ -24,6 +24,8 @@ public final class ApiPaths {
     // --- APPEND BLOCK: bucket C Shipping & Delivery -----------------------------------------------
 
     // --- APPEND BLOCK: bucket D Dictionaries ------------------------------------------------------
+    /** {@code GET /dictionaries/deliveryMethods} — delivery methods that may appear on an order. */
+    public static final String DICTIONARIES_DELIVERY_METHODS = "/dictionaries/deliveryMethods";
 
     // --- APPEND BLOCK: bucket E Finance -----------------------------------------------------------
 
