@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.core.model.ParcelId;
 
@@ -30,7 +31,7 @@ public record ExternalParcel(
         ParcelId id,
         OrderId orderId,
         ParcelType type,
-        ShippingVendor vendor,
+        DeliveryVendor vendor,
         ParcelStatus status,
         List<ParcelStatusChange> statusHistory,
         Optional<String> trackingNumber,

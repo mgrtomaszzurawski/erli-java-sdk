@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
 
@@ -7,7 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * An externally shipped parcel to register. Build one with {@link #builder(OrderId, ShippingVendor)}.
+ * An externally shipped parcel to register. Build one with {@link #builder(OrderId, DeliveryVendor)}.
  *
  * <p>{@code status} is only accepted for the carriers Erli cannot track itself (own transport, self
  * pickup, pallet forwarders); for the tracked ones Erli derives it. {@code deliveryMethod} narrows a
@@ -21,7 +22,7 @@ import java.util.Optional;
  */
 public record ExternalParcelDraft(
         OrderId orderId,
-        ShippingVendor vendor,
+        DeliveryVendor vendor,
         Optional<ParcelStatus> status,
         Optional<String> trackingNumber,
         Optional<ShippingMethodId> deliveryMethod) {
@@ -34,7 +35,7 @@ public record ExternalParcelDraft(
         Objects.requireNonNull(deliveryMethod, "deliveryMethod");
     }
 
-    public static Builder builder(OrderId orderId, ShippingVendor vendor) {
+    public static Builder builder(OrderId orderId, DeliveryVendor vendor) {
         return new Builder(orderId, vendor);
     }
 
@@ -42,12 +43,12 @@ public record ExternalParcelDraft(
     public static final class Builder {
 
         private final OrderId orderId;
-        private final ShippingVendor vendor;
+        private final DeliveryVendor vendor;
         private ParcelStatus status;
         private String trackingNumber;
         private ShippingMethodId deliveryMethod;
 
-        private Builder(OrderId orderId, ShippingVendor vendor) {
+        private Builder(OrderId orderId, DeliveryVendor vendor) {
             this.orderId = Objects.requireNonNull(orderId, "orderId");
             this.vendor = Objects.requireNonNull(vendor, "vendor");
         }

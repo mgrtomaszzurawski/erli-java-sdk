@@ -28,12 +28,18 @@ import java.util.Optional;
  * generator emits one class per shape with no common supertype, so this mapper dispatches on the branch
  * the payload bound to and fills the branch-specific fields from it.
  *
- * <p><strong>Why the discriminator is read off the raw tree.</strong> The generated {@code anyOf}
- * deserializer takes the first branch that parses, and the shared codec both ignores unknown properties
- * and decodes unknown enum values as {@code null} — so the base {@code address} branch parses a
- * {@code point} payload too, silently dropping the point detail that is the whole reason the branch
- * exists. Erli does discriminate, on {@code type}, so that is what this reads; the node is then bound
- * to the matching generated class by the shared codec, keeping every field coming from Layer 1.
+ * <p><strong>Why the discriminator is read off the raw tree — do not "simplify" this away.</strong>
+ * The generated {@code anyOf} deserializer is first-match-wins, and the shared codec both ignores
+ * unknown properties and decodes an unknown enum value as {@code null}, so the base {@code address}
+ * branch parses a {@code point} payload too and silently drops the point detail that is the whole
+ * reason the branch exists.
+ *
+ * <p>The {@code normalizeSpec} composite-merge (CORE-3) deliberately leaves this schema alone: it
+ * refuses composites whose branches define a shared property differently, and all three define
+ * {@code type} with a different single-valued enum. That is exactly right — {@code type} <em>is</em>
+ * the discriminator, and merging would destroy it. So this reads {@code type} and binds the node to the
+ * matching generated class with the shared codec, keeping every field coming from Layer 1. Verified
+ * against the vendored spec on 2026-07-25.
  */
 final class PostingPointMapper {
 

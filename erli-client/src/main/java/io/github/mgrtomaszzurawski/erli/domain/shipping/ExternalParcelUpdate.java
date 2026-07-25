@@ -1,12 +1,13 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
 
 import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Changes to apply to a registered external parcel. Build one with {@link #builder(ShippingVendor)}.
+ * Changes to apply to a registered external parcel. Build one with {@link #builder(DeliveryVendor)}.
  *
  * <p>The vendor is required on every update — the API treats the patch body as the parcel's new
  * carriage description, not as a partial diff. A parcel that has already been dispatched or cancelled
@@ -18,7 +19,7 @@ import java.util.Optional;
  * @param deliveryMethod the vendor's specific service, when it has more than one
  */
 public record ExternalParcelUpdate(
-        ShippingVendor vendor,
+        DeliveryVendor vendor,
         Optional<ParcelStatus> status,
         Optional<String> trackingNumber,
         Optional<ShippingMethodId> deliveryMethod) {
@@ -30,19 +31,19 @@ public record ExternalParcelUpdate(
         Objects.requireNonNull(deliveryMethod, "deliveryMethod");
     }
 
-    public static Builder builder(ShippingVendor vendor) {
+    public static Builder builder(DeliveryVendor vendor) {
         return new Builder(vendor);
     }
 
     /** Builder for {@link ExternalParcelUpdate}. */
     public static final class Builder {
 
-        private final ShippingVendor vendor;
+        private final DeliveryVendor vendor;
         private ParcelStatus status;
         private String trackingNumber;
         private ShippingMethodId deliveryMethod;
 
-        private Builder(ShippingVendor vendor) {
+        private Builder(DeliveryVendor vendor) {
             this.vendor = Objects.requireNonNull(vendor, "vendor");
         }
 
