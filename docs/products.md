@@ -137,8 +137,10 @@ those products would never be returned.
 
 Only `EXTERNAL_ID` (the default) and `MARKETPLACE_ID` are unique per product. Sorting by anything else —
 `UPDATED`, `NAME`, `EAN` — always returns the first page, but the stream throws `IllegalStateException`
-if you ask it to continue, rather than paging on and silently returning an incomplete answer. Note
-`updateAll` stamps the same `updated` on every product it touches, so that field ties readily.
+if you ask it to continue, rather than paging on and silently returning an incomplete answer. (In the
+one case where the last row has no value for the sort field at all — say `ARCHIVED_AT` over products
+that were never archived — there is no cursor to page from, so the stream simply ends after that page.)
+Note `updateAll` stamps the same `updated` on every product it touches, so that field ties readily.
 
 ```java
 // Fine: the first page only, any sort. `limit` at or below the page size never asks for page two.

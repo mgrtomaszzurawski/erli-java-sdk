@@ -121,11 +121,15 @@ public final class ProductAccessImpl implements ProductAccess {
      * than spending a request to discover an empty page.
      */
     private Page<Product> fetchPage(ProductSearchRequest request, Cursor after) {
-        if (after != null) {
-            // Only a request for a *further* page can skip products; the first page never can. Checking
-            // here rather than when the first page comes back full means a caller who reads one page —
+        if (after != null || request.after().isPresent()) {
+            // Only a continuation can skip products; a walk's own first page never can. Checking here
+            // rather than when that page comes back full means a caller who reads one page —
             // `search(...).limit(pageSize)` — is never refused, and the stream is lazy, so this runs only
             // once the consumer has actually asked to go past page one.
+            //
+            // A request that arrives already carrying a cursor is a continuation as well: the caller is
+            // resuming a persisted walk, and on a repeatable sort field products may have been skipped
+            // before this call was even made.
             requireUniqueSortForPaging(request.sortField());
         }
         ProductSearchRequest page = after == null ? request : request.after(after);
@@ -140,7 +144,7 @@ public final class ProductAccessImpl implements ProductAccess {
             // to discover an empty page.
             return new Page<>(products, null);
         }
-        return new Page<>(products, nextCursor(products, page.sortField()));
+        return new Page<>(products, nextCursor(products.get(products.size() - 1), page.sortField()));
     }
 
     /**
@@ -158,8 +162,8 @@ public final class ProductAccessImpl implements ProductAccess {
      * a throw would discard the page the caller has already paid for. It is unreachable for the two sort
      * fields a walk may actually continue on — both are present on every product.
      */
-    private static Cursor nextCursor(List<Product> products, ProductSortField sortField) {
-        return ProductSearchMapper.cursorOf(products.get(products.size() - 1), sortField).orElse(null);
+    private static Cursor nextCursor(Product lastRow, ProductSortField sortField) {
+        return ProductSearchMapper.cursorOf(lastRow, sortField).orElse(null);
     }
 
     /**

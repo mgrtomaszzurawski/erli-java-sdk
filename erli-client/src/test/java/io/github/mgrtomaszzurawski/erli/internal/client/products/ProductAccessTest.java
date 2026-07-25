@@ -447,7 +447,8 @@ class ProductAccessTest {
                 .sortBy(ProductSortField.ARCHIVED_AT, SortOrder.DESC)
                 .build()).toList();
 
-        assertEquals(2, page.size());
+        assertEquals(List.of("sku-a", "sku-b"),
+                page.stream().map(product -> product.externalId().value()).toList());
         server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
     }
 
@@ -493,6 +494,20 @@ class ProductAccessTest {
         // A numeric column compared against a quoted cursor would end the walk after one page.
         server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
                 .withRequestBody(matchingJsonPath("$.pagination[?(@.after == 987654)]")));
+    }
+
+    @Test
+    void refusesToResumeAPersistedWalkOnASortFieldThatCanRepeat() {
+        // A request seeded with a cursor is already a continuation: products may have been skipped
+        // before this call was made, so it must be refused like any other continuation.
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+                () -> products().search(ProductSearchRequest.builder()
+                        .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
+                        .after(io.github.mgrtomaszzurawski.erli.core.model.Cursor.of("2026-07-25T09:00:00Z"))
+                        .build()).toList());
+
+        assertTrue(failure.getMessage().contains("UPDATED"), failure.getMessage());
+        server.verify(0, postRequestedFor(urlEqualTo(SEARCH_PATH)));
     }
 
     @Test
