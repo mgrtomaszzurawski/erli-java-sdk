@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliNotFoundException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
@@ -15,7 +16,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.BatchUpdateOutcome;
 import io.github.mgrtomaszzurawski.erli.domain.products.Discount;
 import io.github.mgrtomaszzurawski.erli.domain.products.DiscountRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.DispatchTime;
-import io.github.mgrtomaszzurawski.erli.domain.products.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAccess;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAttachment;
@@ -30,14 +30,13 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSortField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductUpdateResult;
 import io.github.mgrtomaszzurawski.erli.domain.products.SortOrder;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -588,7 +587,7 @@ class ProductAccessTest {
 
         ProductAttachment attachment = products().get(SKU_1).orElseThrow().productAttachments().get(0);
 
-        assertEquals(List.of(Market.PL), attachment.markets());
+        assertEquals(List.of(Market.POLAND), attachment.markets());
         // The raw value survives, so the true scope is still two markets, not one.
         assertEquals(List.of("cz"), attachment.unrecognisedMarkets());
         assertEquals(2, attachment.marketCount());
@@ -604,7 +603,7 @@ class ProductAccessTest {
 
         ProductAttachment attachment = products().get(SKU_1).orElseThrow().productAttachments().get(0);
 
-        assertEquals(List.of(Market.PL), attachment.markets());
+        assertEquals(List.of(Market.POLAND), attachment.markets());
         assertTrue(attachment.unrecognisedMarkets().isEmpty());
     }
 

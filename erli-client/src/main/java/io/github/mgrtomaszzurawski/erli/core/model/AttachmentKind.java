@@ -1,16 +1,15 @@
-package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * What an {@link Attachment} document is — a user manual, an energy label, a safety data sheet and so
- * on. Several kinds are required by EU product regulations, which is why the list grows; mapped by
- * wire string via {@link #fromWire} per the fleet enum guideline.
+ * What an attachment document is — a user manual, an energy label, a safety data sheet and so on.
+ * Several kinds are required by EU product regulations, which is why the list grows; mapped by wire
+ * string via {@link #fromWire} per the fleet enum guideline.
  */
 public enum AttachmentKind {
 

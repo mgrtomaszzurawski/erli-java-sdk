@@ -1,6 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsibleParty;
@@ -9,7 +10,6 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyUpda
 import io.github.mgrtomaszzurawski.erli.rest.model.CreateResponsibleSchema;
 import io.github.mgrtomaszzurawski.erli.rest.model.ResponsibleSchema;
 import io.github.mgrtomaszzurawski.erli.rest.model.UpdateResponsibleSchema;
-
 import java.util.Objects;
 import java.util.Optional;
 

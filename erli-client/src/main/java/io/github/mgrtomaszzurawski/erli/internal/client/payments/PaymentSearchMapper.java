@@ -1,8 +1,8 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.payments;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
-import io.github.mgrtomaszzurawski.erli.domain.payments.Market;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentSearch;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentSortField;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PayoutSearch;
@@ -10,12 +10,10 @@ import io.github.mgrtomaszzurawski.erli.domain.payments.PayoutSortField;
 import io.github.mgrtomaszzurawski.erli.domain.payments.ReturnSearch;
 import io.github.mgrtomaszzurawski.erli.domain.payments.SortOrder;
 import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
-
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Builds the {@code POST /payments/operations/_search} body from a domain search. Internal.
@@ -177,8 +175,8 @@ final class PaymentSearchMapper {
         };
     }
 
-    /** The marketplace discriminator; the API spells it lowercase. */
+    /** The marketplace discriminator, as the API's lowercase wire token ({@code pl}/{@code de}). */
     private static String wireMarket(Market market) {
-        return market.name().toLowerCase(Locale.ROOT);
+        return market.wireValue();
     }
 }

@@ -1,10 +1,10 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
+import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attachment;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentRemoval;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentUpdate;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Market;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ProductAttachmentResult;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
@@ -13,12 +13,11 @@ import io.github.mgrtomaszzurawski.erli.rest.model.DeleteAttachmentsResponse;
 import io.github.mgrtomaszzurawski.erli.rest.model.GetAttachmentsResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ManageAttachedProducts;
 import io.github.mgrtomaszzurawski.erli.rest.model.PatchAttachmentRequest;
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-
-import java.time.OffsetDateTime;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

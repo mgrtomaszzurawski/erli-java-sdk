@@ -3,10 +3,10 @@ package io.github.mgrtomaszzurawski.erli.internal.client.payments;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.core.model.PaymentStatus;
-import io.github.mgrtomaszzurawski.erli.domain.payments.Market;
 import io.github.mgrtomaszzurawski.erli.domain.payments.Payment;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentOperator;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentSearch;
@@ -202,7 +202,7 @@ class PaymentsAccessImplTest {
 
         client.payments().searchReturns(ReturnSearch.builder(
                         LocalDate.of(2026, 1, 1), LocalDate.of(2026, 7, 20))
-                .market(Market.PL)
+                .market(Market.POLAND)
                 .types(List.of("PAYOUT"))
                 .pageSize(10)
                 .build()).toList();

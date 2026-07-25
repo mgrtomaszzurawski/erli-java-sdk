@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.payments;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -80,7 +81,7 @@ public record ReturnSearch(
         private LocalDate creationDateFrom;
         private LocalDate creationDateTo;
         private List<String> types = List.of();
-        private Market market = Market.PL;
+        private Market market = Market.POLAND;
         private int pageSize = DEFAULT_PAGE_SIZE;
 
         private Builder(LocalDate eventDateFrom, LocalDate eventDateTo) {

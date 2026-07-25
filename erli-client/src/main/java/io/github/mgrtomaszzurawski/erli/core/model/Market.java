@@ -1,16 +1,14 @@
-package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A marketplace storefront an {@link Attachment} applies to — ERLI runs a Polish and a German one.
- * Mapped by wire string via {@link #fromWire}, like every other dictionary enum, so each wire value
- * is written exactly once.
+ * A marketplace storefront — ERLI runs a Polish and a German one. Mapped by wire string via
+ * {@link #fromWire}, like every other wire-carrying enum, so each wire value is written exactly once.
  */
 public enum Market {
 

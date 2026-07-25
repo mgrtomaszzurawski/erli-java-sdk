@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import java.util.List;
 
 /**
