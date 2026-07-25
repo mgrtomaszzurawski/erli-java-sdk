@@ -57,6 +57,14 @@ try (ErliClient client = ErliClient.builder()
 }
 ```
 
+## Guides
+
+Per-feature guides land with the domain they document.
+
+| Guide | Covers |
+|---|---|
+| [Finance](docs/finance.md) | payments, payouts, billing ledger, commission estimates, campaign spend |
+
 ## License
 
 [AGPL-3.0-only](LICENSE.txt).
