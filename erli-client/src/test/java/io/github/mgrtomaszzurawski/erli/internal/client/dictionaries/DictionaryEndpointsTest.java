@@ -111,7 +111,7 @@ class DictionaryEndpointsTest {
                 Duration.ofSeconds(5),
                 codec,
                 new ErrorMapper(codec));
-        return new DictionariesAccessImpl(runtime);
+        return new DictionariesAccessImpl(runtime, codec);
     }
 
     @Test

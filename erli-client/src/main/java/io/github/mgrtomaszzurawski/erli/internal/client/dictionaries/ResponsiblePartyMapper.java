@@ -75,10 +75,25 @@ final class ResponsiblePartyMapper {
         return value;
     }
 
+    /**
+     * Fails loud rather than degrading to an {@code UNRECOGNIZED} sentinel, which CORE-12 offers for
+     * large reference enums. Two reasons this one stays strict: {@code country} is spec-required, and
+     * ISO 3166-1 is a stable external standard rather than a vendor list that grows between releases
+     * (contrast {@code PaymentMethodCode}, ~44 PayU codes). Since CORE-12 the codec decodes an
+     * unrecognised value to {@code null}, so an absent country and an unknown one are
+     * indistinguishable here — a sentinel would trade a loud failure for silently reporting a missing
+     * required field as "unrecognised". These dictionaries hold a handful of shop-owned entries, so
+     * knowing beats guessing. The growing enums in this bucket ({@code ShippingOperator},
+     * {@code AttachmentKind}, {@code ResponsiblePartySource}) are all {@code Optional}-wrapped and
+     * already degrade to empty instead of failing.
+     */
     private static CountryCode requireCountry(ResponsibleSchema rawParty) {
         ResponsibleSchema.CountryEnum country = rawParty.getCountry();
         if (country == null) {
-            throw new IllegalStateException("ResponsibleParty is missing the required 'country' field");
+            throw new IllegalStateException(
+                    "ResponsibleParty's 'country' is absent or is a value this SDK version does not "
+                            + "know (CORE-12 decodes an unrecognised enum to null); re-vendor the spec "
+                            + "if the marketplace has added a country");
         }
         return CountryCode.fromWire(country.getValue());
     }

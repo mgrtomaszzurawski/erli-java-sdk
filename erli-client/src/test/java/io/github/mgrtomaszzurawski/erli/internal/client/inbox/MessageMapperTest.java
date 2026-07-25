@@ -56,6 +56,7 @@ class MessageMapperTest {
     private static final String ORDER_FIXTURE = "/fixtures/inbox/order-created-message.json";
     private static final String TRACKING_URL = "https://inpost.pl/sledzenie-przesylek?number=628012345678";
     private static final String SYNC_FIXTURE = "/fixtures/inbox/products-need-sync-message.json";
+    private static final String EXPECTED_TRACKING_NUMBER = "628012345678";
     private static final String OBSERVED_SYNC_FIXTURE =
             "/fixtures/inbox/observed-products-need-sync-message.json";
 
@@ -193,7 +194,7 @@ class MessageMapperTest {
 
         assertEquals(TrackingStatus.SENT, tracking.status());
         assertEquals(DeliveryVendor.INPOST, tracking.vendor().orElseThrow());
-        assertEquals("628012345678", tracking.trackingNumber().orElseThrow());
+        assertEquals(EXPECTED_TRACKING_NUMBER, tracking.trackingNumber().orElseThrow());
         assertTrue(tracking.trackingUrl().isEmpty());
     }
 
@@ -310,6 +311,47 @@ class MessageMapperTest {
         assertEquals(List.of(ProductExternalId.of("probe-1")), sync.productIds());
         assertEquals(List.of(), sync.fields());
         assertTrue(sync.isWholeProduct());
+    }
+
+    /**
+     * CORE-12 changed what an unrecognised enum value does: the codec decodes it to {@code null}
+     * instead of failing the whole response. For an <em>optional</em> property that means the message
+     * still maps and the property is simply absent — the rest of the order must survive intact.
+     */
+    @Test
+    void keepsMappingWhenAnOptionalEnumHoldsAValueThisVersionDoesNotKnow() {
+        String withFutureCarrier = readFixture(ORDER_FIXTURE)
+                .replace("\"vendor\": \"inpost\"", "\"vendor\": \"quantumPost\"");
+
+        OrderEvent order = MessageMapper.toDomain(codec.readTreeLenient(withFutureCarrier), codec)
+                .orderEvent().orElseThrow();
+
+        DeliveryTracking tracking = order.deliveryTracking().orElseThrow();
+        assertTrue(tracking.vendor().isEmpty(), "an unrecognised carrier must read as absent, not throw");
+        // Everything around it still maps — the point is that one new carrier does not cost the order.
+        assertEquals(TrackingStatus.SENT, tracking.status());
+        assertEquals(EXPECTED_TRACKING_NUMBER, tracking.trackingNumber().orElseThrow());
+        assertEquals(EXPECTED_LINE_ID, order.lines().get(0).id());
+    }
+
+    /**
+     * For a <em>required</em> property the mapping still stops — the domain record cannot be built
+     * without it. What matters is that the message no longer claims the field was "missing", because
+     * after CORE-12 a null there means absent <em>or</em> unrecognised and the SDK cannot tell which.
+     */
+    @Test
+    void reportsARequiredEnumAsAbsentOrUnrecognisedRatherThanMissing() {
+        String withFutureSellerStatus = readFixture(ORDER_FIXTURE)
+                .replace("\"sellerStatus\": \"readyToProcess\"", "\"sellerStatus\": \"teleported\"");
+
+        IllegalStateException thrown = assertThrows(IllegalStateException.class,
+                () -> MessageMapper.toDomain(codec.readTreeLenient(withFutureSellerStatus), codec));
+
+        assertTrue(thrown.getMessage().contains("sellerStatus"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("does not recognise"),
+                "the message must offer the unrecognised-value explanation: " + thrown.getMessage());
+        assertFalse(thrown.getMessage().contains("missing"),
+                "the message must not assert the property was missing: " + thrown.getMessage());
     }
 
     @Test

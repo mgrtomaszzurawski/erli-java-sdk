@@ -104,11 +104,14 @@ final class HookMapper {
         return productId;
     }
 
-    // Explicit mapping rather than valueOf(name()): the exhaustive switch turns a future upstream enum
-    // value into a compile error here instead of a runtime surprise. Same convention as ShopMapper.
+    // Explicit mapping rather than valueOf(name()): the exhaustive switch turns a hook name added by a
+    // future spec regeneration into a compile error here instead of a runtime surprise. Same convention
+    // as ShopMapper. Note the null branch covers two cases since CORE-12 — an absent hookName, or one
+    // the API already serves but this SDK's spec does not describe (the codec decodes that to null).
     private static HookKind toHookKind(HookResponseInner.HookNameEnum rawName) {
         if (rawName == null) {
-            throw new IllegalStateException("HookResponseInner is missing the required 'hookName' field");
+            throw new IllegalStateException(
+                    "hook is missing its 'hookName', or names a hook this SDK version does not recognise");
         }
         return switch (rawName) {
             case CHECK_BUYABILITY -> HookKind.CHECK_BUYABILITY;
