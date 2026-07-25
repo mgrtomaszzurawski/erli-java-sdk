@@ -12,6 +12,7 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductDraft;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductPatch;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
+import io.github.mgrtomaszzurawski.erli.domain.products.ProductSortField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductUpdateResult;
 import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.CursorPagination;
@@ -62,9 +63,9 @@ public final class ProductAccessImpl implements ProductAccess {
         Objects.requireNonNull(externalId, "externalId");
         Objects.requireNonNull(fields, "fields");
         try {
-            ProductResponse raw = runtime.get(path(ApiPaths.PRODUCT_BY_EXTERNAL_ID, externalId),
+            ProductResponse rawResponse = runtime.get(path(ApiPaths.PRODUCT_BY_EXTERNAL_ID, externalId),
                     ProductPaths.fieldsQuery(fields), ProductResponse.class);
-            return Optional.ofNullable(raw).map(ProductMapper::toDomain);
+            return Optional.ofNullable(rawResponse).map(ProductMapper::toDomain);
         } catch (ErliNotFoundException absent) {
             // "No such product" is an expected answer to a lookup, not a failure: the caller asked
             // whether it exists. Every other error still propagates.
@@ -85,9 +86,9 @@ public final class ProductAccessImpl implements ProductAccess {
     public ProductUpdateResult update(ProductExternalId externalId, ProductPatch patch) {
         Objects.requireNonNull(externalId, "externalId");
         Objects.requireNonNull(patch, "patch");
-        ProductUpdateResponse raw = runtime.patch(path(ApiPaths.PRODUCT_BY_EXTERNAL_ID, externalId),
+        ProductUpdateResponse rawResponse = runtime.patch(path(ApiPaths.PRODUCT_BY_EXTERNAL_ID, externalId),
                 ProductRequestMapper.toUpdate(patch), ProductUpdateResponse.class);
-        return ProductResultMapper.toUpdateResult(raw);
+        return ProductResultMapper.toUpdateResult(rawResponse);
     }
 
     @Override
@@ -100,11 +101,11 @@ public final class ProductAccessImpl implements ProductAccess {
         List<ProductsBatchUpdatePatchRequestInner> entries = new ArrayList<>(patches.size());
         patches.forEach((externalId, patch) ->
                 entries.add(ProductRequestMapper.toBatchEntry(externalId, patch)));
-        ProductBatchResponseInner[] raw = runtime.patch(ApiPaths.PRODUCTS_BATCH_UPDATE, entries,
+        ProductBatchResponseInner[] rawResponse = runtime.patch(ApiPaths.PRODUCTS_BATCH_UPDATE, entries,
                 ProductBatchResponseInner[].class);
-        return raw == null
+        return rawResponse == null
                 ? List.of()
-                : Arrays.stream(raw).map(ProductResultMapper::toBatchOutcome).toList();
+                : Arrays.stream(rawResponse).map(ProductResultMapper::toBatchOutcome).toList();
     }
 
     @Override
@@ -121,37 +122,59 @@ public final class ProductAccessImpl implements ProductAccess {
      */
     private Page<Product> fetchPage(ProductSearchRequest request, Cursor after) {
         ProductSearchRequest page = after == null ? request : request.after(after);
-        ProductResponse[] raw = runtime.post(ApiPaths.PRODUCTS_SEARCH,
+        ProductResponse[] rawResponse = runtime.post(ApiPaths.PRODUCTS_SEARCH,
                 ProductSearchMapper.toRequest(page), ProductResponse[].class);
-        if (raw == null || raw.length == 0) {
+        if (rawResponse == null || rawResponse.length == 0) {
             return new Page<>(List.of(), null);
         }
-        List<Product> products = Arrays.stream(raw).map(ProductMapper::toDomain).toList();
-        int requestedSize = page.pageSize().orElse(ProductSearchRequest.DEFAULT_PAGE_SIZE);
-        Cursor next = products.size() < requestedSize
-                ? null
-                : ProductSearchMapper.cursorOf(products.get(products.size() - 1), page.sortField())
-                        .orElse(null);
-        return new Page<>(products, next);
+        List<Product> products = Arrays.stream(rawResponse).map(ProductMapper::toDomain).toList();
+        if (products.size() < page.effectivePageSize()) {
+            // A short page is the last one; reporting no cursor ends the walk without spending a request
+            // to discover an empty page.
+            return new Page<>(products, null);
+        }
+        requireUniqueSortForPaging(page.sortField());
+        return new Page<>(products,
+                ProductSearchMapper.cursorOf(products.get(products.size() - 1), page.sortField()).orElse(null));
+    }
+
+    /**
+     * Refuse to page past the first page on a sort field that can repeat.
+     *
+     * <p>Erli's cursor is a <strong>strict</strong> bound on the sort field, so when several products
+     * share the last row's value and did not fit on the page, the next page begins past all of them and
+     * those products are silently never returned. That is a wrong answer presented as a complete one —
+     * worse than an error — so the walk stops with an explanation instead. A single page is unaffected,
+     * which keeps {@code search(...).limit(n)} on a non-unique sort perfectly usable.
+     */
+    private static void requireUniqueSortForPaging(ProductSortField sortField) {
+        if (!sortField.isUniquePerProduct()) {
+            throw new IllegalStateException(
+                    "Cannot page beyond the first page sorted by " + sortField + ": Erli's cursor is a"
+                            + " strict bound on the sort field, so products sharing the last row's value"
+                            + " would be skipped. Sort by EXTERNAL_ID or MARKETPLACE_ID to walk the whole"
+                            + " catalog, or keep the result within one page (see"
+                            + " ProductSearchRequest.pageSize).");
+        }
     }
 
     @Override
     public Discount startDiscount(ProductExternalId externalId, DiscountRequest request) {
         Objects.requireNonNull(externalId, "externalId");
         Objects.requireNonNull(request, "request");
-        var raw = runtime.post(path(ApiPaths.PRODUCT_DISCOUNT, externalId),
+        var rawResponse = runtime.post(path(ApiPaths.PRODUCT_DISCOUNT, externalId),
                 ProductResultMapper.toCreateDiscount(request),
                 io.github.mgrtomaszzurawski.erli.rest.model.Discount.class);
-        return ProductResultMapper.toDiscount(raw);
+        return ProductResultMapper.toDiscount(rawResponse);
     }
 
     @Override
     public Optional<Discount> getDiscount(ProductExternalId externalId) {
         Objects.requireNonNull(externalId, "externalId");
         try {
-            var raw = runtime.get(path(ApiPaths.PRODUCT_DISCOUNT, externalId),
+            var rawResponse = runtime.get(path(ApiPaths.PRODUCT_DISCOUNT, externalId),
                     io.github.mgrtomaszzurawski.erli.rest.model.Discount.class);
-            return Optional.ofNullable(raw).map(ProductResultMapper::toDiscount);
+            return Optional.ofNullable(rawResponse).map(ProductResultMapper::toDiscount);
         } catch (ErliNotFoundException absent) {
             // A product with no promotion is a normal state, not an error.
             return Optional.empty();

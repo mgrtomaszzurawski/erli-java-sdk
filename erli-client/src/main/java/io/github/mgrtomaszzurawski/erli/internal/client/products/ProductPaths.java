@@ -38,8 +38,11 @@ final class ProductPaths {
      * the marketplace for the whole product). Erli takes the selection as one comma-joined value.
      */
     static QueryParameters fieldsQuery(Set<ProductField> fields) {
+        if (fields.isEmpty()) {
+            return QueryParameters.empty();
+        }
         return QueryParameters.builder()
-                .addCsv(FIELDS_PARAMETER, fields.stream().map(ProductFieldNames::wireName).toList())
+                .addCsv(FIELDS_PARAMETER, ProductProjection.wireNamesFor(fields))
                 .build();
     }
 }

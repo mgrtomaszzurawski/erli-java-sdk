@@ -125,6 +125,10 @@ public sealed interface ProductFilter {
             if (field == null) {
                 throw new IllegalArgumentException("A membership filter needs a field");
             }
+            if (!field.supportsMembership()) {
+                throw new IllegalArgumentException(
+                        "Erli does not support in/nin on '" + field + "'; that field accepts equality only");
+            }
             if (values == null || values.isEmpty()) {
                 throw new IllegalArgumentException(
                         "A membership filter on '" + field + "' needs at least one value");

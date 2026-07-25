@@ -54,7 +54,10 @@ Optional<Product> summary = client.products()
         .get(ProductExternalId.of("sku-1"), Set.of(ProductField.NAME, ProductField.PRICE, ProductField.STOCK));
 ```
 
-Unselected fields come back empty, so select everything you intend to read.
+Unselected fields come back empty, so select everything you intend to read. The SDK quietly widens any
+projection with the handful of scalars a `Product` cannot be built without (`externalId`, `name`,
+`price`, `slug`, `created`, …) — the expensive parts, like the description, attributes, translations and
+images, stay excluded unless you ask for them.
 
 `Product` keeps three kinds of field distinguishable: what you authored, what the marketplace resolved
 from it (`attributes()`, `categories()`, `translations()`, `slug()`), and lifecycle state
@@ -115,7 +118,6 @@ try (Stream<Product> active = client.products().search(ProductSearchRequest.buil
         .filter(ProductFilter.and(
                 ProductFilter.equalTo(ProductFilterField.STATUS, "active"),
                 ProductFilter.greaterThan(ProductFilterField.STOCK, "0")))
-        .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
         .fields(Set.of(ProductField.NAME, ProductField.STOCK))
         .build())) {
 
@@ -127,9 +129,27 @@ Filters compose to any depth with `and` / `or` / `not`, and leaves are compariso
 Field and operator are checked against each other when the filter is built, so an ordered comparison on
 an equality-only field such as `STATUS` fails immediately with the field named, not as a 400.
 
-**Set the sort before the walk, not during it.** Product search is the one `_search` in the API that
-returns a bare array with no cursor in the response, so the SDK derives the next page's cursor from the
-sort field of the last row. Changing the sort mid-walk would silently skip or repeat products.
+**Walking the whole catalog requires a unique sort.** Product search is the one `_search` in the API
+that returns a bare array with no cursor in the response, so the SDK derives the next page's cursor from
+the sort field of the last row — and Erli treats that cursor as a *strict* bound. If several products
+share the last row's value and did not fit on the page, the next page would begin past all of them and
+those products would never be returned.
+
+Only `EXTERNAL_ID` (the default) and `MARKETPLACE_ID` are unique per product. Sorting by anything else —
+`UPDATED`, `NAME`, `EAN` — is fine within a single page, but the SDK stops with an `IllegalStateException`
+rather than paging past the first page and silently returning an incomplete answer. Note `updateAll`
+stamps the same `updated` on every product it touches, so that field ties readily.
+
+```java
+// Fine: one page, any sort.
+client.products().search(ProductSearchRequest.builder()
+        .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
+        .pageSize(50)
+        .build()).limit(50).toList();
+
+// Fine: the whole catalog, unique sort.
+client.products().search(ProductSearchRequest.all()).forEach(this::reindex);
+```
 
 ## Timed promotions
 

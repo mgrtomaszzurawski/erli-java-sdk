@@ -34,11 +34,11 @@ final class ProductResultMapper {
      * An unknown name is kept rather than dropped or thrown on: the API may add fields at any time, and
      * a successful update must not become a failure because the response mentioned a newer one.
      */
-    static ProductUpdateResult toUpdateResult(ProductUpdateResponse raw) {
-        Objects.requireNonNull(raw, "raw ProductUpdateResponse");
+    static ProductUpdateResult toUpdateResult(ProductUpdateResponse rawResult) {
+        Objects.requireNonNull(rawResult, "ProductUpdateResponse");
         Set<ProductField> known = EnumSet.noneOf(ProductField.class);
         Set<String> unrecognised = new LinkedHashSet<>();
-        collectFields(raw.getUpdatedFields(), known, unrecognised);
+        collectFields(rawResult.getUpdatedFields(), known, unrecognised);
         return new ProductUpdateResult(known, unrecognised);
     }
 
@@ -48,7 +48,7 @@ final class ProductResultMapper {
             return;
         }
         for (String wireName : wireNames) {
-            ProductField field = ProductFieldNames.fromWireName(wireName);
+            ProductField field = ProductEnums.toProductFieldOrNull(wireName);
             if (field == null) {
                 unrecognised.add(wireName);
             } else {
@@ -57,51 +57,51 @@ final class ProductResultMapper {
         }
     }
 
-    static BatchUpdateOutcome toBatchOutcome(ProductBatchResponseInner raw) {
-        Objects.requireNonNull(raw, "raw ProductBatchResponseInner");
+    static BatchUpdateOutcome toBatchOutcome(ProductBatchResponseInner rawResult) {
+        Objects.requireNonNull(rawResult, "ProductBatchResponseInner");
         Set<ProductField> known = EnumSet.noneOf(ProductField.class);
         Set<String> unrecognised = new LinkedHashSet<>();
-        Optional<ProductUpdateResult> result = Optional.ofNullable(raw.getResult())
+        Optional<ProductUpdateResult> result = Optional.ofNullable(rawResult.getResult())
                 .map(entry -> {
                     collectFields(entry.getUpdatedFields(), known, unrecognised);
                     return new ProductUpdateResult(known, unrecognised);
                 });
         return new BatchUpdateOutcome(
-                ProductExternalId.of(require(raw.getExternalId(), "batch entry externalId")),
-                require(raw.getStatus(), "batch entry status").intValue(),
+                ProductExternalId.of(require(rawResult.getExternalId(), "batch entry externalId")),
+                require(rawResult.getStatus(), "batch entry status").intValue(),
                 result,
-                Optional.ofNullable(raw.getError()).map(ProductResultMapper::toBatchError));
+                Optional.ofNullable(rawResult.getError()).map(ProductResultMapper::toBatchError));
     }
 
-    private static BatchUpdateError toBatchError(ProductBatchResponseInnerError raw) {
+    private static BatchUpdateError toBatchError(ProductBatchResponseInnerError rawResult) {
         return new BatchUpdateError(
-                raw.getName(),
-                raw.getMessage(),
-                Optional.ofNullable(raw.getPolishMessage()),
-                Optional.ofNullable(raw.getFailureType()),
-                Optional.ofNullable(raw.getPayload()).map(payload -> payload.getDetails()),
-                Optional.ofNullable(raw.getTraceId()).map(TraceId::of),
-                Optional.ofNullable(raw.getSpanId()));
+                rawResult.getName(),
+                rawResult.getMessage(),
+                Optional.ofNullable(rawResult.getPolishMessage()),
+                Optional.ofNullable(rawResult.getFailureType()),
+                Optional.ofNullable(rawResult.getPayload()).map(payload -> payload.getDetails()),
+                Optional.ofNullable(rawResult.getTraceId()).map(TraceId::of),
+                Optional.ofNullable(rawResult.getSpanId()));
     }
 
     static CreateDiscount toCreateDiscount(DiscountRequest request) {
-        CreateDiscount raw = new CreateDiscount();
-        raw.setNewPrice(ProductValues.toMinorUnits(request.newPrice()));
-        raw.setStartAt(request.startAt());
-        raw.setRestoreAt(request.restoreAt());
-        raw.setUnfreezeAfterwards(request.unfreezeAfterwards());
-        return raw;
+        CreateDiscount rawResult = new CreateDiscount();
+        rawResult.setNewPrice(ProductValues.toMinorUnits(request.newPrice()));
+        rawResult.setStartAt(request.startAt());
+        rawResult.setRestoreAt(request.restoreAt());
+        rawResult.setUnfreezeAfterwards(request.unfreezeAfterwards());
+        return rawResult;
     }
 
-    static Discount toDiscount(io.github.mgrtomaszzurawski.erli.rest.model.Discount raw) {
-        Objects.requireNonNull(raw, "raw Discount");
+    static Discount toDiscount(io.github.mgrtomaszzurawski.erli.rest.model.Discount rawResult) {
+        Objects.requireNonNull(rawResult, "Discount");
         return new Discount(
-                ProductExternalId.of(require(raw.getExternalId(), "discount externalId")),
-                require(raw.getShopId(), "discount shopId").longValue(),
-                ProductValues.toMoney(require(raw.getNewPrice(), "discount newPrice")),
-                require(raw.getStartAt(), "discount startAt"),
-                require(raw.getRestoreAt(), "discount restoreAt"),
-                Boolean.TRUE.equals(raw.getUnfreezeAfterwards()));
+                ProductExternalId.of(require(rawResult.getExternalId(), "discount externalId")),
+                require(rawResult.getShopId(), "discount shopId").longValue(),
+                ProductValues.toMoney(require(rawResult.getNewPrice(), "discount newPrice")),
+                require(rawResult.getStartAt(), "discount startAt"),
+                require(rawResult.getRestoreAt(), "discount restoreAt"),
+                Boolean.TRUE.equals(rawResult.getUnfreezeAfterwards()));
     }
 
     private static <T> T require(T value, String field) {

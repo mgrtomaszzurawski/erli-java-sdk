@@ -62,7 +62,7 @@ import java.util.Optional;
  * @param translations                     marketplace-produced translations, when any exist
  * @param dispatchTime                     how long the seller takes to hand the product to the carrier
  * @param deliveryPriceList                the name of the delivery price list that applies, when set
- * @param weight                           the product weight in kilograms, when set
+ * @param weight                           the product weight in grams, as Erli states it, when set
  * @param packaging                        packaging characteristics, when set
  * @param basketLimit                      the maximum units per order, when the seller caps it
  * @param invoiceType                      the kind of invoice the seller issues

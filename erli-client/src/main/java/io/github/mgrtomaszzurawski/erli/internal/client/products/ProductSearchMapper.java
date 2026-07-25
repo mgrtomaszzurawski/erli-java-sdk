@@ -40,28 +40,29 @@ final class ProductSearchMapper {
     }
 
     static ProductSearch toRequest(ProductSearchRequest request) {
-        ProductSearch raw = new ProductSearch();
+        ProductSearch rawSearch = new ProductSearch();
         ProductSearchPagination pagination = new ProductSearchPagination();
         pagination.setSortField(ProductSearchPagination.SortFieldEnum
-                .fromValue(ProductEnums.wireNameOf(request.sortField())));
+                .fromValue(request.sortField().wireName()));
         pagination.setOrder(ProductSearchPagination.OrderEnum
-                .fromValue(ProductEnums.wireNameOf(request.order())));
-        request.pageSize().ifPresent(pagination::setLimit);
+                .fromValue(request.order().wireName()));
+        // Always state the limit. The walk decides it has reached the last page by comparing a page
+        // against the size it asked for, so leaving the server to apply its own default would silently
+        // truncate every search the day that default changes.
+        pagination.setLimit(request.effectivePageSize());
         request.after().ifPresent(cursor -> pagination.setAfter(afterValue(cursor)));
-        raw.pagination(pagination);
-        request.filter().ifPresent(filter -> raw.setFilter(toRawFilter(filter)));
+        rawSearch.pagination(pagination);
+        request.filter().ifPresent(filter -> rawSearch.setFilter(toRawFilter(filter)));
         // The generator pre-populates `fields` with ALL 58 selectable names, so leaving it alone would
         // send the full projection on every search — defeating the point of asking for fewer fields and
         // making each response as large as it can be. Null means "not stated", which is what an
-        // unprojected search must say.
+        // unprojected search must say; a stated projection is widened so every row stays mappable.
         if (request.fields().isEmpty()) {
-            raw.setFields(null);
+            rawSearch.setFields(null);
         } else {
-            Set<String> fields = new LinkedHashSet<>();
-            request.fields().forEach(field -> fields.add(ProductFieldNames.wireName(field)));
-            raw.setFields(fields);
+            rawSearch.setFields(new LinkedHashSet<>(ProductProjection.wireNamesFor(request.fields())));
         }
-        return raw;
+        return rawSearch;
     }
 
     /**
@@ -95,27 +96,27 @@ final class ProductSearchMapper {
             return comparisonFilter(comparison);
         }
         if (filter instanceof ProductFilter.Membership membership) {
-            ProductFilterAnyOf2 raw = new ProductFilterAnyOf2();
-            raw.setField(ProductFilterAnyOf2.FieldEnum.fromValue(filterFieldName(membership.field())));
-            raw.setOperator(membership.included()
+            ProductFilterAnyOf2 rawSearch = new ProductFilterAnyOf2();
+            rawSearch.setField(ProductFilterAnyOf2.FieldEnum.fromValue(filterFieldName(membership.field())));
+            rawSearch.setOperator(membership.included()
                     ? ProductFilterAnyOf2.OperatorEnum.IN
                     : ProductFilterAnyOf2.OperatorEnum.NIN);
-            raw.setValue(membership.values());
-            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(raw);
+            rawSearch.setValue(membership.values());
+            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawSearch);
         }
         if (filter instanceof ProductFilter.Junction junction) {
-            ProductFilterAnyOf3 raw = new ProductFilterAnyOf3();
-            raw.setOperator(junction.conjunction()
+            ProductFilterAnyOf3 rawSearch = new ProductFilterAnyOf3();
+            rawSearch.setOperator(junction.conjunction()
                     ? ProductFilterAnyOf3.OperatorEnum.AND
                     : ProductFilterAnyOf3.OperatorEnum.OR);
-            raw.setValue(junction.operands().stream().map(ProductSearchMapper::toRawFilter).toList());
-            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(raw);
+            rawSearch.setValue(junction.operands().stream().map(ProductSearchMapper::toRawFilter).toList());
+            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawSearch);
         }
         if (filter instanceof ProductFilter.Negation negation) {
-            ProductFilterAnyOf4 raw = new ProductFilterAnyOf4();
-            raw.setOperator(ProductFilterAnyOf4.OperatorEnum.NOT);
-            raw.setValue(toRawFilter(negation.operand()));
-            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(raw);
+            ProductFilterAnyOf4 rawSearch = new ProductFilterAnyOf4();
+            rawSearch.setOperator(ProductFilterAnyOf4.OperatorEnum.NOT);
+            rawSearch.setValue(toRawFilter(negation.operand()));
+            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawSearch);
         }
         throw new IllegalStateException("Unhandled ProductFilter variant: " + filter.getClass());
     }
@@ -130,17 +131,17 @@ final class ProductSearchMapper {
         String fieldName = filterFieldName(comparison.field());
         String operator = comparisonOperatorName(comparison.operator());
         if (comparison.field().supportsOrderedComparison()) {
-            ProductFilterAnyOf raw = new ProductFilterAnyOf();
-            raw.setField(ProductFilterAnyOf.FieldEnum.fromValue(fieldName));
-            raw.setOperator(ProductFilterAnyOf.OperatorEnum.fromValue(operator));
-            raw.setValue(new ProductFilterAnyOfValue(comparison.value()));
-            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(raw);
+            ProductFilterAnyOf rawSearch = new ProductFilterAnyOf();
+            rawSearch.setField(ProductFilterAnyOf.FieldEnum.fromValue(fieldName));
+            rawSearch.setOperator(ProductFilterAnyOf.OperatorEnum.fromValue(operator));
+            rawSearch.setValue(new ProductFilterAnyOfValue(comparison.value()));
+            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawSearch);
         }
-        ProductFilterAnyOf1 raw = new ProductFilterAnyOf1();
-        raw.setField(ProductFilterAnyOf1.FieldEnum.fromValue(fieldName));
-        raw.setOperator(ProductFilterAnyOf1.OperatorEnum.fromValue(operator));
-        raw.setValue(equalityValue(comparison.field(), comparison.value()));
-        return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(raw);
+        ProductFilterAnyOf1 rawSearch = new ProductFilterAnyOf1();
+        rawSearch.setField(ProductFilterAnyOf1.FieldEnum.fromValue(fieldName));
+        rawSearch.setOperator(ProductFilterAnyOf1.OperatorEnum.fromValue(operator));
+        rawSearch.setValue(equalityValue(comparison.field(), comparison.value()));
+        return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawSearch);
     }
 
     /**

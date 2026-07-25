@@ -60,7 +60,10 @@ public final class ProductPatch {
 
     private ProductPatch(Builder builder) {
         this.content = builder.content;
-        this.cleared = Collections.unmodifiableSet(builder.cleared);
+        // Copy, not a view: the builder stays usable after build() and must not reach back in.
+        this.cleared = builder.cleared.isEmpty()
+                ? Set.of()
+                : Collections.unmodifiableSet(EnumSet.copyOf(builder.cleared));
         this.newExternalId = builder.newExternalId;
         this.overrideFrozen = builder.overrideFrozen;
     }

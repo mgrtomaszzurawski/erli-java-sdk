@@ -233,7 +233,7 @@ public final class ProductContent {
         return deliveryPriceList;
     }
 
-    /** The product weight in kilograms. */
+    /** The product weight in grams, as Erli states it. */
     public Optional<BigDecimal> weight() {
         return weight;
     }
@@ -523,7 +523,7 @@ public final class ProductContent {
             return this;
         }
 
-    /** Set the product weight in kilograms. */
+    /** Set the product weight in grams, as Erli states it. */
         public Builder weight(BigDecimal value) {
             this.weight = Optional.ofNullable(value);
             return this;

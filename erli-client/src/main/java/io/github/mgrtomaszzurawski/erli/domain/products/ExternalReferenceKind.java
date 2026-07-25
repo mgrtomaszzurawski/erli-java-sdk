@@ -6,26 +6,37 @@ package io.github.mgrtomaszzurawski.erli.domain.products;
 public enum ExternalReferenceKind {
 
     /** Allegro. */
-    ALLEGRO,
+    ALLEGRO("allegro"),
 
     /** Ceneo. */
-    CENEO,
+    CENEO("ceneo"),
 
     /** Amazon. */
-    AMAZON,
+    AMAZON("amazon"),
 
     /** Empik. */
-    EMPIK,
+    EMPIK("empik"),
 
     /** Morele. */
-    MORELE,
+    MORELE("morele"),
 
     /** Arena. */
-    ARENA,
+    ARENA("arena"),
 
     /** Another site not covered by the named kinds. */
-    OTHER,
+    OTHER("other"),
 
     /** A seller-defined reference. */
-    CUSTOM
+    CUSTOM("custom");
+
+    private final String wireName;
+
+    ExternalReferenceKind(String wireName) {
+        this.wireName = wireName;
+    }
+
+    /** The value the Erli API uses for this constant on the wire. */
+    public String wireName() {
+        return wireName;
+    }
 }

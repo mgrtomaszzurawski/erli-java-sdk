@@ -6,11 +6,22 @@ package io.github.mgrtomaszzurawski.erli.domain.products;
 public enum DispatchTimeUnit {
 
     /** Hours. */
-    HOUR,
+    HOUR("hour"),
 
     /** Days. */
-    DAY,
+    DAY("day"),
 
     /** Months. */
-    MONTH
+    MONTH("month");
+
+    private final String wireName;
+
+    DispatchTimeUnit(String wireName) {
+        this.wireName = wireName;
+    }
+
+    /** The value the Erli API uses for this constant on the wire. */
+    public String wireName() {
+        return wireName;
+    }
 }

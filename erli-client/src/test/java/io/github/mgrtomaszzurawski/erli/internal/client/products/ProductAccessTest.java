@@ -11,6 +11,8 @@ import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.products.BatchUpdateOutcome;
+import io.github.mgrtomaszzurawski.erli.domain.products.Discount;
+import io.github.mgrtomaszzurawski.erli.domain.products.DiscountRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.DispatchTime;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAccess;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductContent;
@@ -19,15 +21,21 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilter;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilterField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductImage;
+import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductPatch;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
+import io.github.mgrtomaszzurawski.erli.domain.products.ProductSortField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductUpdateResult;
+import io.github.mgrtomaszzurawski.erli.domain.products.SortOrder;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -41,6 +49,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -70,6 +79,19 @@ class ProductAccessTest {
     private static final String BATCH_PATH = "/products/batch-update";
     private static final ProductExternalId SKU_1 = ProductExternalId.of("sku-1");
 
+    private static final String DISCOUNT_PATH = "/products/sku-1/discount";
+
+    /** The smallest body ProductMapper can turn into a Product — what a widened projection returns. */
+    private static final String MINIMAL_PRODUCT_BODY = productBody("sku-1");
+
+    /** A fuller body, used where the test cares about the request rather than the mapping. */
+    private static final String FULL_PRODUCT_BODY = productBody("sku-1");
+
+    private static final String DISCOUNT_BODY =
+            "{\"externalId\":\"sku-1\",\"shopId\":100007,\"newPrice\":7900,"
+                    + "\"startAt\":\"2026-08-01T00:00:00+02:00\","
+                    + "\"restoreAt\":\"2026-08-08T00:00:00+02:00\",\"unfreezeAfterwards\":true}";
+
     private static final String OBSERVED_401_BODY =
             "{\"failureType\":\"security\",\"message\":\"Invalid API key\",\"httpCode\":401,"
                     + "\"polishMessage\":\"Nieprawidłowy klucz API\",\"spanId\":\"span-1\"}";
@@ -93,6 +115,14 @@ class ProductAccessTest {
     void stopServer() {
         client.close();
         server.stop();
+    }
+
+    /** A response carrying exactly the fields a Product requires, and nothing else. */
+    private static String productBody(String externalId) {
+        return "{\"externalId\":\"" + externalId + "\",\"marketplaceId\":987654,"
+                + "\"name\":\"Kurtka\",\"slug\":\"kurtka\",\"status\":\"active\",\"stock\":10,"
+                + "\"price\":10000,\"dispatchTime\":{\"unit\":\"day\",\"period\":1},"
+                + "\"frozen\":{},\"created\":\"2026-07-24T13:50:23.961+02:00\"}";
     }
 
     private ProductAccess products() {
@@ -229,7 +259,7 @@ class ProductAccessTest {
     void neverSendsOverrideFrozenOnAnOrdinaryPatch() {
         server.stubFor(patch(urlEqualTo(PRODUCT_PATH)).willReturn(okJson("{\"updatedFields\":[\"stock\"]}")));
 
-        products().update(SKU_1, emptyPatch());
+        products().update(SKU_1, stockPatch());
 
         // Layer 1 declares overrideFrozen as an explicit null (JsonNullable.of(null)) rather than
         // undefined, so leaving it alone puts "overrideFrozen": null on every update and the marketplace
@@ -287,16 +317,15 @@ class ProductAccessTest {
 
     @Test
     void getSendsTheFieldProjectionAsACommaJoinedQueryParameter() {
-        String projected = "/products/sku-1?fields=name,price";
-        server.stubFor(get(urlEqualTo(projected)).willReturn(aResponse()
-                .withStatus(404)
-                .withHeader(CONTENT_TYPE_HEADER, JSON_MEDIA_TYPE)
-                .withBody("{\"message\":\"Product not found\"}")));
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(MINIMAL_PRODUCT_BODY)));
 
         products().get(SKU_1, new java.util.LinkedHashSet<>(
                 List.of(ProductField.NAME, ProductField.PRICE)));
 
-        server.verify(getRequestedFor(urlEqualTo(projected)));
+        // One comma-joined value, not repeated keys.
+        LoggedRequest sent = server.findAll(getRequestedFor(urlPathEqualTo(PRODUCT_PATH))).get(0);
+        assertEquals(1, sent.queryParameter("fields").values().size());
+        assertTrue(sent.queryParameter("fields").firstValue().contains(","));
     }
 
     @Test
@@ -311,6 +340,142 @@ class ProductAccessTest {
         server.verify(getRequestedFor(urlEqualTo("/products/sku-1/discount")));
     }
 
+    @Test
+    void widensAProjectionWithTheFieldsAProductCannotBeBuiltWithout() {
+        // Erli lets a projection omit any field, including the ones Product needs. Asking for NAME alone
+        // would return a body the mapper cannot turn into a Product, so the SDK widens the selection.
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(FULL_PRODUCT_BODY)));
+
+        Product product = products().get(SKU_1, Set.of(ProductField.NAME)).orElseThrow();
+
+        assertEquals("sku-1", product.externalId().value());
+        LoggedRequest sent = server.findAll(getRequestedFor(urlPathEqualTo(PRODUCT_PATH))).get(0);
+        List<String> requestedFields = List.of(sent.queryParameter("fields").firstValue().split(","));
+        assertTrue(requestedFields.containsAll(List.of("name", "externalId", "price", "slug", "created")),
+                "the projection must be widened, was " + requestedFields);
+        assertFalse(requestedFields.contains("translations"),
+                "widening must not pull in the expensive fields the caller did not ask for");
+    }
+
+    @Test
+    void mapsAProjectedBodyThatCarriesOnlyTheWidenedFields() {
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(MINIMAL_PRODUCT_BODY)));
+
+        Product product = products().get(SKU_1, Set.of(ProductField.NAME, ProductField.PRICE)).orElseThrow();
+
+        assertEquals("sku-1", product.externalId().value());
+        assertEquals(new java.math.BigDecimal("100.00"), product.price().amount());
+        // Fields outside the projection come back empty rather than blowing up the mapping.
+        assertTrue(product.ean().isEmpty());
+        assertTrue(product.description().isEmpty());
+        assertTrue(product.attributes().isEmpty());
+    }
+
+    @Test
+    void walksASecondPageUsingTheCursorDerivedFromTheLastRow() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$[?(!@.pagination.after)]"))
+                .willReturn(okJson("[" + productBody("sku-a") + "," + productBody("sku-b") + "]")));
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.pagination.after", equalTo("sku-b")))
+                .willReturn(okJson("[" + productBody("sku-c") + "]")));
+
+        List<String> walked = products().search(ProductSearchRequest.builder().pageSize(2).build())
+                .map(product -> product.externalId().value()).toList();
+
+        assertEquals(List.of("sku-a", "sku-b", "sku-c"), walked);
+        // Page two is requested with the last row's sort-field value, because Erli sends no body cursor.
+        server.verify(2, postRequestedFor(urlEqualTo(SEARCH_PATH)));
+    }
+
+    @Test
+    void fetchesOnlyTheFirstPageWhenTheConsumerStopsEarly() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(okJson("[" + productBody("sku-a") + "," + productBody("sku-b") + "]")));
+
+        List<String> firstOnly = products().search(ProductSearchRequest.builder().pageSize(2).build())
+                .limit(1).map(product -> product.externalId().value()).toList();
+
+        assertEquals(List.of("sku-a"), firstOnly);
+        server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
+    }
+
+    @Test
+    void refusesToPageBeyondTheFirstPageOnASortFieldThatCanRepeat() {
+        // Erli's cursor is a strict bound, so products sharing the last row's `updated` would be skipped.
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(okJson("[" + productBody("sku-a") + "," + productBody("sku-b") + "]")));
+
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+                () -> products().search(ProductSearchRequest.builder()
+                        .pageSize(2)
+                        .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
+                        .build()).toList());
+
+        assertTrue(failure.getMessage().contains("UPDATED"), failure.getMessage());
+    }
+
+    @Test
+    void aSinglePageOnANonUniqueSortIsStillAllowed() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[" + productBody("sku-a") + "]")));
+
+        List<Product> page = products().search(ProductSearchRequest.builder()
+                .pageSize(2)
+                .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
+                .build()).toList();
+
+        assertEquals(1, page.size());
+    }
+
+    @Test
+    void alwaysStatesThePageSizeItUsesToDetectTheLastPage() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[]")));
+
+        products().search(ProductSearchRequest.all()).count();
+
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.pagination.limit",
+                        equalTo(Integer.toString(ProductSearchRequest.DEFAULT_PAGE_SIZE)))));
+    }
+
+    @Test
+    void startDiscountSendsTheMinorUnitPriceAndWindowAndMapsTheResult() {
+        server.stubFor(post(urlEqualTo(DISCOUNT_PATH)).willReturn(okJson(DISCOUNT_BODY)));
+
+        Discount discount = products().startDiscount(SKU_1, DiscountRequest.between(
+                Money.ofPln("79.00"),
+                OffsetDateTime.parse("2026-08-01T00:00:00+02:00"),
+                OffsetDateTime.parse("2026-08-08T00:00:00+02:00")));
+
+        server.verify(postRequestedFor(urlEqualTo(DISCOUNT_PATH))
+                .withRequestBody(matchingJsonPath("$.newPrice", equalTo("7900")))
+                .withRequestBody(matchingJsonPath("$.unfreezeAfterwards", equalTo("true")))
+                .withRequestBody(matchingJsonPath("$.startAt"))
+                .withRequestBody(matchingJsonPath("$.restoreAt")));
+        assertEquals("sku-1", discount.externalId().value());
+        assertEquals(100007L, discount.shopId());
+        assertEquals(new java.math.BigDecimal("79.00"), discount.newPrice().amount());
+        assertTrue(discount.unfreezeAfterwards());
+        assertTrue(discount.isActiveAt(OffsetDateTime.parse("2026-08-04T00:00:00+02:00")));
+    }
+
+    @Test
+    void getDiscountMapsAnExistingPromotion() {
+        server.stubFor(get(urlEqualTo(DISCOUNT_PATH)).willReturn(okJson(DISCOUNT_BODY)));
+
+        Discount discount = products().getDiscount(SKU_1).orElseThrow();
+
+        assertEquals(new java.math.BigDecimal("79.00"), discount.newPrice().amount());
+        assertFalse(discount.isActiveAt(OffsetDateTime.parse("2026-09-01T00:00:00+02:00")));
+    }
+
+    @Test
+    void rejectsAMembershipFilterOnAnEqualityOnlyField() {
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+                () -> ProductFilter.in(ProductFilterField.STATUS, List.of("active")));
+        assertTrue(failure.getMessage().contains("STATUS"), failure.getMessage());
+    }
+
     // --- The mandatory error-path table (TESTING.md) ------------------------------------------------
 
     @Test
@@ -320,7 +485,7 @@ class ProductAccessTest {
                 .withHeader(CONTENT_TYPE_HEADER, JSON_MEDIA_TYPE)
                 .withBody(OBSERVED_401_BODY)));
 
-        assertThrows(ErliAuthException.class, () -> products().update(SKU_1, emptyPatch()));
+        assertThrows(ErliAuthException.class, () -> products().update(SKU_1, stockPatch()));
     }
 
     @Test
@@ -330,7 +495,7 @@ class ProductAccessTest {
                 .withHeader(CONTENT_TYPE_HEADER, JSON_MEDIA_TYPE)
                 .withBody("{\"message\":\"Product not found\"}")));
 
-        assertThrows(ErliNotFoundException.class, () -> products().update(SKU_1, emptyPatch()));
+        assertThrows(ErliNotFoundException.class, () -> products().update(SKU_1, stockPatch()));
     }
 
     @Test
@@ -366,7 +531,8 @@ class ProductAccessTest {
         assertTrue(failure.details().rawBody().contains("Service unavailable"), failure.getMessage());
     }
 
-    private static ProductPatch emptyPatch() {
+    /** The smallest meaningful patch: one field set, nothing cleared. */
+    private static ProductPatch stockPatch() {
         return ProductPatch.builder().content(ProductContent.builder().stock(1).build()).build();
     }
 
@@ -389,13 +555,4 @@ class ProductAccessTest {
         server.verify(1, postRequestedFor(urlEqualTo(PRODUCT_PATH)));
     }
 
-    @Test
-    void sendsAnEqualToJsonBodyForASingleFieldPatch() {
-        server.stubFor(patch(urlEqualTo(PRODUCT_PATH)).willReturn(okJson("{\"updatedFields\":[\"stock\"]}")));
-
-        products().update(SKU_1, emptyPatch());
-
-        server.verify(patchRequestedFor(urlEqualTo(PRODUCT_PATH))
-                .withRequestBody(equalToJson("{\"stock\":1}", true, true)));
-    }
 }

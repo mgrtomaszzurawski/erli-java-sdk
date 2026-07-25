@@ -80,6 +80,15 @@ public final class ProductSearchRequest {
         return pageSize;
     }
 
+    /**
+     * The page size actually sent — the caller's, or {@link #DEFAULT_PAGE_SIZE}. The SDK always states a
+     * limit rather than letting the server apply its own, because the page walk decides it has reached
+     * the end by comparing a page against the size it asked for.
+     */
+    public int effectivePageSize() {
+        return pageSize.orElse(DEFAULT_PAGE_SIZE);
+    }
+
     /** The cursor to resume after, when resuming a persisted walk. */
     public Optional<Cursor> after() {
         return after;

@@ -6,8 +6,19 @@ package io.github.mgrtomaszzurawski.erli.domain.products;
 public enum ProductStatus {
 
     /** The product is listed and buyable. */
-    ACTIVE,
+    ACTIVE("active"),
 
     /** The product is withheld from sale. */
-    INACTIVE
+    INACTIVE("inactive");
+
+    private final String wireName;
+
+    ProductStatus(String wireName) {
+        this.wireName = wireName;
+    }
+
+    /** The value the Erli API uses for this constant on the wire. */
+    public String wireName() {
+        return wireName;
+    }
 }

@@ -6,11 +6,22 @@ package io.github.mgrtomaszzurawski.erli.domain.products;
 public enum ExternalSource {
 
     /** Authored in the seller's own shop. */
-    SHOP,
+    SHOP("shop"),
 
     /** Imported from Allegro. */
-    ALLEGRO,
+    ALLEGRO("allegro"),
 
     /** Supplied by the Erli marketplace catalog. */
-    MARKETPLACE
+    MARKETPLACE("marketplace");
+
+    private final String wireName;
+
+    ExternalSource(String wireName) {
+        this.wireName = wireName;
+    }
+
+    /** The value the Erli API uses for this constant on the wire. */
+    public String wireName() {
+        return wireName;
+    }
 }

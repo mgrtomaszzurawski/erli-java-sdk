@@ -12,6 +12,7 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ExternalReference;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalResponsibleEntity;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalVariantGroup;
 import io.github.mgrtomaszzurawski.erli.domain.products.FrozenFields;
+import io.github.mgrtomaszzurawski.erli.domain.products.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.Packaging;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductDescription;
@@ -71,64 +72,64 @@ final class ProductPayloadMapper {
     }
 
     private static ProductCreateDescriptionAnyOfSectionsInner section(DescriptionSection section) {
-        ProductCreateDescriptionAnyOfSectionsInner raw = new ProductCreateDescriptionAnyOfSectionsInner();
-        raw.setItems(section.items().stream().map(ProductPayloadMapper::descriptionItem).toList());
-        return raw;
+        ProductCreateDescriptionAnyOfSectionsInner rawPayload = new ProductCreateDescriptionAnyOfSectionsInner();
+        rawPayload.setItems(section.items().stream().map(ProductPayloadMapper::descriptionItem).toList());
+        return rawPayload;
     }
 
     private static ProductCreateDescriptionAnyOfSectionsInnerItemsInner descriptionItem(DescriptionItem item) {
-        ProductCreateDescriptionAnyOfSectionsInnerItemsInner raw =
+        ProductCreateDescriptionAnyOfSectionsInnerItemsInner rawPayload =
                 new ProductCreateDescriptionAnyOfSectionsInnerItemsInner();
-        raw.setType(ProductCreateDescriptionAnyOfSectionsInnerItemsInner.TypeEnum
-                .fromValue(ProductEnums.wireNameOf(item.type())));
-        item.content().ifPresent(raw::setContent);
-        item.url().ifPresent(raw::setUrl);
-        return raw;
+        rawPayload.setType(ProductCreateDescriptionAnyOfSectionsInnerItemsInner.TypeEnum
+                .fromValue(item.type().wireName()));
+        item.content().ifPresent(rawPayload::setContent);
+        item.url().ifPresent(rawPayload::setUrl);
+        return rawPayload;
     }
 
     static List<ProductCreateImagesInner> images(List<ProductImage> images) {
         return images.stream().map(image -> {
-            ProductCreateImagesInner raw = new ProductCreateImagesInner();
-            raw.setUrl(image.url());
-            image.isVariantImage().ifPresent(raw::setIsVariantImage);
-            image.isLifestyleImage().ifPresent(raw::setIsLifestyleImage);
-            return raw;
+            ProductCreateImagesInner rawPayload = new ProductCreateImagesInner();
+            rawPayload.setUrl(image.url());
+            image.isVariantImage().ifPresent(rawPayload::setIsVariantImage);
+            image.isLifestyleImage().ifPresent(rawPayload::setIsLifestyleImage);
+            return rawPayload;
         }).toList();
     }
 
     static List<ProductCreateFilesInner> files(List<ProductFile> files) {
         return files.stream().map(file -> {
-            ProductCreateFilesInner raw = new ProductCreateFilesInner();
-            raw.setUrl(file.url());
-            return raw;
+            ProductCreateFilesInner rawPayload = new ProductCreateFilesInner();
+            rawPayload.setUrl(file.url());
+            return rawPayload;
         }).toList();
     }
 
     static ProductCreateDispatchTime dispatchTime(DispatchTime dispatchTime) {
-        ProductCreateDispatchTime raw = new ProductCreateDispatchTime();
-        raw.setUnit(ProductCreateDispatchTime.UnitEnum.fromValue(ProductEnums.wireNameOf(dispatchTime.unit())));
-        raw.setPeriod(new ProductCreateDispatchTimePeriod(dispatchTime.period()));
-        return raw;
+        ProductCreateDispatchTime rawPayload = new ProductCreateDispatchTime();
+        rawPayload.setUnit(ProductCreateDispatchTime.UnitEnum.fromValue(dispatchTime.unit().wireName()));
+        rawPayload.setPeriod(new ProductCreateDispatchTimePeriod(dispatchTime.period()));
+        return rawPayload;
     }
 
     static ProductCreatePackaging packaging(Packaging packaging) {
-        ProductCreatePackaging raw = new ProductCreatePackaging();
-        raw.setTags(packaging.tags());
-        packaging.weight().ifPresent(raw::setWeight);
-        return raw;
+        ProductCreatePackaging rawPayload = new ProductCreatePackaging();
+        rawPayload.setTags(packaging.tags());
+        packaging.weight().ifPresent(rawPayload::setWeight);
+        return rawPayload;
     }
 
     static List<ProductCreateExternalReferencesInner> externalReferences(List<ExternalReference> references) {
         return references.stream().map(reference -> {
-            ProductCreateExternalReferencesInnerAnyOf raw = new ProductCreateExternalReferencesInnerAnyOf();
-            reference.id().ifPresent(raw::setId);
-            reference.url().ifPresent(raw::setUrl);
-            reference.kind().ifPresent(kind -> raw.setKind(
-                    ProductCreateExternalReferencesInnerAnyOf.KindEnum.fromValue(ProductEnums.wireNameOf(kind))));
-            reference.source().ifPresent(source -> raw.setSource(
+            ProductCreateExternalReferencesInnerAnyOf rawPayload = new ProductCreateExternalReferencesInnerAnyOf();
+            reference.id().ifPresent(rawPayload::setId);
+            reference.url().ifPresent(rawPayload::setUrl);
+            reference.kind().ifPresent(kind -> rawPayload.setKind(
+                    ProductCreateExternalReferencesInnerAnyOf.KindEnum.fromValue(kind.wireName())));
+            reference.source().ifPresent(source -> rawPayload.setSource(
                     ProductCreateExternalReferencesInnerAnyOf.SourceEnum.fromValue(
-                            ProductEnums.wireNameOf(source))));
-            return new ProductCreateExternalReferencesInner(raw);
+                            source.wireName())));
+            return new ProductCreateExternalReferencesInner(rawPayload);
         }).toList();
     }
 
@@ -147,78 +148,78 @@ final class ProductPayloadMapper {
         // final throw is unreachable unless a new variant is added without a branch here.
         AttributeValues values = attribute.values();
         if (values instanceof AttributeValues.NumericValues numeric) {
-            ProductCreateExternalAttributesInnerAnyOf raw = new ProductCreateExternalAttributesInnerAnyOf();
-            attribute.id().ifPresent(id -> raw.setId(identifier(id)));
-            attribute.name().ifPresent(raw::setName);
-            attribute.index().ifPresent(raw::setIndex);
-            attribute.unit().ifPresent(raw::setUnit);
-            attribute.source().ifPresent(source -> raw.setSource(
+            ProductCreateExternalAttributesInnerAnyOf rawPayload = new ProductCreateExternalAttributesInnerAnyOf();
+            attribute.id().ifPresent(id -> rawPayload.setId(identifier(id)));
+            attribute.name().ifPresent(rawPayload::setName);
+            attribute.index().ifPresent(rawPayload::setIndex);
+            attribute.unit().ifPresent(rawPayload::setUnit);
+            attribute.source().ifPresent(source -> rawPayload.setSource(
                     ProductCreateExternalAttributesInnerAnyOf.SourceEnum.fromValue(
-                            ProductEnums.wireNameOf(source))));
-            attribute.type().ifPresent(type -> raw.setType(
+                            source.wireName())));
+            attribute.type().ifPresent(type -> rawPayload.setType(
                     ProductCreateExternalAttributesInnerAnyOf.TypeEnum.fromValue(
-                            ProductEnums.wireNameOf(type))));
-            raw.setValues(numeric.numbers());
-            return new ProductCreateExternalAttributesInner(raw);
+                            type.wireName())));
+            rawPayload.setValues(numeric.numbers());
+            return new ProductCreateExternalAttributesInner(rawPayload);
         }
         if (values instanceof AttributeValues.RangeValues range) {
-            ProductCreateExternalAttributesInnerAnyOf1 raw = new ProductCreateExternalAttributesInnerAnyOf1();
-            attribute.id().ifPresent(id -> raw.setId(identifier(id)));
-            attribute.name().ifPresent(raw::setName);
-            attribute.index().ifPresent(raw::setIndex);
-            attribute.unit().ifPresent(raw::setUnit);
-            attribute.source().ifPresent(source -> raw.setSource(
+            ProductCreateExternalAttributesInnerAnyOf1 rawPayload = new ProductCreateExternalAttributesInnerAnyOf1();
+            attribute.id().ifPresent(id -> rawPayload.setId(identifier(id)));
+            attribute.name().ifPresent(rawPayload::setName);
+            attribute.index().ifPresent(rawPayload::setIndex);
+            attribute.unit().ifPresent(rawPayload::setUnit);
+            attribute.source().ifPresent(source -> rawPayload.setSource(
                     ProductCreateExternalAttributesInnerAnyOf1.SourceEnum.fromValue(
-                            ProductEnums.wireNameOf(source))));
-            attribute.type().ifPresent(type -> raw.setType(
+                            source.wireName())));
+            attribute.type().ifPresent(type -> rawPayload.setType(
                     ProductCreateExternalAttributesInnerAnyOf1.TypeEnum.fromValue(
-                            ProductEnums.wireNameOf(type))));
+                            type.wireName())));
             ProductCreateExternalAttributesInnerAnyOf1Values bounds =
                     new ProductCreateExternalAttributesInnerAnyOf1Values();
             range.from().ifPresent(bounds::setFrom);
             range.to().ifPresent(bounds::setTo);
-            raw.setValues(bounds);
-            return new ProductCreateExternalAttributesInner(raw);
+            rawPayload.setValues(bounds);
+            return new ProductCreateExternalAttributesInner(rawPayload);
         }
         if (values instanceof AttributeValues.DictionaryValues dictionary) {
-            ProductCreateExternalAttributesInnerAnyOf2 raw = new ProductCreateExternalAttributesInnerAnyOf2();
-            attribute.id().ifPresent(id -> raw.setId(identifier(id)));
-            attribute.name().ifPresent(raw::setName);
-            attribute.index().ifPresent(raw::setIndex);
-            attribute.source().ifPresent(source -> raw.setSource(
+            ProductCreateExternalAttributesInnerAnyOf2 rawPayload = new ProductCreateExternalAttributesInnerAnyOf2();
+            attribute.id().ifPresent(id -> rawPayload.setId(identifier(id)));
+            attribute.name().ifPresent(rawPayload::setName);
+            attribute.index().ifPresent(rawPayload::setIndex);
+            attribute.source().ifPresent(source -> rawPayload.setSource(
                     ProductCreateExternalAttributesInnerAnyOf2.SourceEnum.fromValue(
-                            ProductEnums.wireNameOf(source))));
-            attribute.type().ifPresent(type -> raw.setType(
+                            source.wireName())));
+            attribute.type().ifPresent(type -> rawPayload.setType(
                     ProductCreateExternalAttributesInnerAnyOf2.TypeEnum.fromValue(
-                            ProductEnums.wireNameOf(type))));
-            raw.setValues(dictionary.entries().stream()
+                            type.wireName())));
+            rawPayload.setValues(dictionary.entries().stream()
                     .map(ProductPayloadMapper::dictionaryEntry)
                     .toList());
-            return new ProductCreateExternalAttributesInner(raw);
+            return new ProductCreateExternalAttributesInner(rawPayload);
         }
         if (values instanceof AttributeValues.TextValues text) {
-            ProductCreateExternalAttributesInnerAnyOf3 raw = new ProductCreateExternalAttributesInnerAnyOf3();
-            attribute.id().ifPresent(id -> raw.setId(identifier(id)));
-            attribute.name().ifPresent(raw::setName);
-            attribute.index().ifPresent(raw::setIndex);
-            attribute.source().ifPresent(source -> raw.setSource(
+            ProductCreateExternalAttributesInnerAnyOf3 rawPayload = new ProductCreateExternalAttributesInnerAnyOf3();
+            attribute.id().ifPresent(id -> rawPayload.setId(identifier(id)));
+            attribute.name().ifPresent(rawPayload::setName);
+            attribute.index().ifPresent(rawPayload::setIndex);
+            attribute.source().ifPresent(source -> rawPayload.setSource(
                     ProductCreateExternalAttributesInnerAnyOf3.SourceEnum.fromValue(
-                            ProductEnums.wireNameOf(source))));
-            attribute.type().ifPresent(type -> raw.setType(
+                            source.wireName())));
+            attribute.type().ifPresent(type -> rawPayload.setType(
                     ProductCreateExternalAttributesInnerAnyOf3.TypeEnum.fromValue(
-                            ProductEnums.wireNameOf(type))));
-            raw.setValues(text.texts());
-            return new ProductCreateExternalAttributesInner(raw);
+                            type.wireName())));
+            rawPayload.setValues(text.texts());
+            return new ProductCreateExternalAttributesInner(rawPayload);
         }
         throw new IllegalStateException("Unhandled AttributeValues variant: " + values.getClass());
     }
 
     private static ProductCreateExternalAttributesInnerAnyOf2ValuesInner dictionaryEntry(DictionaryValue entry) {
-        ProductCreateExternalAttributesInnerAnyOf2ValuesInner raw =
+        ProductCreateExternalAttributesInnerAnyOf2ValuesInner rawPayload =
                 new ProductCreateExternalAttributesInnerAnyOf2ValuesInner();
-        raw.setId(identifier(entry.id()));
-        entry.name().ifPresent(raw::setName);
-        return raw;
+        rawPayload.setId(identifier(entry.id()));
+        entry.name().ifPresent(rawPayload::setName);
+        return rawPayload;
     }
 
     /**
@@ -227,6 +228,13 @@ final class ProductPayloadMapper {
      * the marketplace echoes back for ids it owns.
      */
     private static ProductCreateExternalAttributesInnerAnyOfId identifier(String value) {
+        if (value == null) {
+            // The read side leaves a dictionary id absent when the marketplace omitted it, so a
+            // read-modify-write round trip legitimately arrives here with null. Sending no id is the
+            // faithful echo of that; constructing a BigDecimal from null would throw NullPointerException,
+            // which the catch below does not cover.
+            return null;
+        }
         try {
             return new ProductCreateExternalAttributesInnerAnyOfId(new BigDecimal(value));
         } catch (NumberFormatException notNumeric) {
@@ -236,84 +244,84 @@ final class ProductPayloadMapper {
 
     static List<ProductCreateExternalCategoriesInner> externalCategories(List<ExternalCategory> categories) {
         return categories.stream().map(category -> {
-            ProductCreateExternalCategoriesInner raw = new ProductCreateExternalCategoriesInner();
-            category.index().ifPresent(raw::setIndex);
-            category.source().ifPresent(source -> raw.setSource(
-                    ProductCreateExternalCategoriesInner.SourceEnum.fromValue(ProductEnums.wireNameOf(source))));
-            raw.setBreadcrumb(category.breadcrumb().stream()
+            ProductCreateExternalCategoriesInner rawPayload = new ProductCreateExternalCategoriesInner();
+            category.index().ifPresent(rawPayload::setIndex);
+            category.source().ifPresent(source -> rawPayload.setSource(
+                    ProductCreateExternalCategoriesInner.SourceEnum.fromValue(source.wireName())));
+            rawPayload.setBreadcrumb(category.breadcrumb().stream()
                     .map(ProductPayloadMapper::dictionaryEntry)
                     .toList());
-            return raw;
+            return rawPayload;
         }).toList();
     }
 
     static ProductCreateExternalVariantGroup externalVariantGroup(ExternalVariantGroup group) {
-        ProductCreateExternalVariantGroup raw = new ProductCreateExternalVariantGroup();
-        group.id().ifPresent(raw::setId);
-        group.source().ifPresent(source -> raw.setSource(
-                ProductCreateExternalVariantGroup.SourceEnum.fromValue(ProductEnums.wireNameOf(source))));
-        raw.setAttributes(group.attributes().stream()
+        ProductCreateExternalVariantGroup rawPayload = new ProductCreateExternalVariantGroup();
+        group.id().ifPresent(rawPayload::setId);
+        group.source().ifPresent(source -> rawPayload.setSource(
+                ProductCreateExternalVariantGroup.SourceEnum.fromValue(source.wireName())));
+        rawPayload.setAttributes(group.attributes().stream()
                 .map(ProductCreateExternalVariantGroupAttributesInner::new)
                 .toList());
-        return raw;
+        return rawPayload;
     }
 
     static List<ProductCreateExternalResponsibleProducerInner> responsibleProducers(
             List<ExternalResponsibleEntity> entities) {
         return entities.stream().map(entity -> {
-            ProductCreateExternalResponsibleProducerInner raw =
+            ProductCreateExternalResponsibleProducerInner rawPayload =
                     new ProductCreateExternalResponsibleProducerInner();
-            entity.externalId().ifPresent(raw::setExternalId);
-            entity.source().ifPresent(source -> raw.setSource(
+            entity.externalId().ifPresent(rawPayload::setExternalId);
+            entity.source().ifPresent(source -> rawPayload.setSource(
                     ProductCreateExternalResponsibleProducerInner.SourceEnum.fromValue(
-                            ProductEnums.wireNameOf(source))));
-            return raw;
+                            source.wireName())));
+            return rawPayload;
         }).toList();
     }
 
     static List<ProductCreateExternalResponsiblePersonInner> responsiblePersons(
             List<ExternalResponsibleEntity> entities) {
         return entities.stream().map(entity -> {
-            ProductCreateExternalResponsiblePersonInner raw = new ProductCreateExternalResponsiblePersonInner();
-            entity.externalId().ifPresent(raw::setExternalId);
-            entity.source().ifPresent(source -> raw.setSource(
+            ProductCreateExternalResponsiblePersonInner rawPayload = new ProductCreateExternalResponsiblePersonInner();
+            entity.externalId().ifPresent(rawPayload::setExternalId);
+            entity.source().ifPresent(source -> rawPayload.setSource(
                     ProductCreateExternalResponsiblePersonInner.SourceEnum.fromValue(
-                            ProductEnums.wireNameOf(source))));
-            return raw;
+                            source.wireName())));
+            return rawPayload;
         }).toList();
     }
 
     static ProductCreateExternalProductSets externalProductSets(ExternalProductSet set) {
-        ProductCreateExternalProductSets raw = new ProductCreateExternalProductSets();
-        raw.setItems(set.items().stream().map(item -> {
+        ProductCreateExternalProductSets rawPayload = new ProductCreateExternalProductSets();
+        rawPayload.setItems(set.items().stream().map(item -> {
             ProductCreateExternalProductSetsItemsInner rawItem = new ProductCreateExternalProductSetsItemsInner();
             item.externalMetaProductId().ifPresent(rawItem::setExternalMetaProductId);
             item.quantity().ifPresent(rawItem::setQuantity);
             return rawItem;
         }).toList());
-        return raw;
+        return rawPayload;
     }
 
     static ProductCreateProductSets productSets(ProductSet set) {
-        ProductCreateProductSets raw = new ProductCreateProductSets();
-        raw.setItems(set.items().stream().map(item -> {
+        ProductCreateProductSets rawPayload = new ProductCreateProductSets();
+        rawPayload.setItems(set.items().stream().map(item -> {
             ProductCreateProductSetsItemsInner rawItem = new ProductCreateProductSetsItemsInner();
             item.metaProductId().ifPresent(rawItem::setMetaProductId);
             item.quantity().ifPresent(rawItem::setQuantity);
             return rawItem;
         }).toList());
-        return raw;
+        return rawPayload;
     }
 
     static List<ProductCreateProductAttachmentsInner> productAttachments(List<ProductAttachment> attachments) {
         return attachments.stream().map(attachment -> {
-            ProductCreateProductAttachmentsInner raw = new ProductCreateProductAttachmentsInner();
-            attachment.id().ifPresent(raw::setId);
-            attachment.url().ifPresent(raw::setUrl);
-            attachment.kind().ifPresent(kind -> raw.setKind(
-                    ProductCreateProductAttachmentsInner.KindEnum.fromValue(ProductEnums.wireNameOf(kind))));
-            raw.setMarkets(attachment.markets().stream().map(ProductEnums::wireNameOf).toList());
-            return raw;
+            ProductCreateProductAttachmentsInner rawPayload = new ProductCreateProductAttachmentsInner();
+            attachment.id().ifPresent(rawPayload::setId);
+            attachment.url().ifPresent(rawPayload::setUrl);
+            attachment.kind().ifPresent(kind -> rawPayload.setKind(
+                    ProductCreateProductAttachmentsInner.KindEnum.fromValue(kind.wireName())));
+            rawPayload.setMarkets(attachment.markets().stream().map(Market::wireName).toList());
+            return rawPayload;
         }).toList();
     }
 

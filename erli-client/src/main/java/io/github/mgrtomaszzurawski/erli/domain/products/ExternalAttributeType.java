@@ -6,14 +6,25 @@ package io.github.mgrtomaszzurawski.erli.domain.products;
 public enum ExternalAttributeType {
 
     /** Numeric values. */
-    NUMBER,
+    NUMBER("number"),
 
     /** A single from/to range. */
-    RANGE,
+    RANGE("range"),
 
     /** References to dictionary entries carrying an id and a name. */
-    DICTIONARY,
+    DICTIONARY("dictionary"),
 
     /** Free-text values. */
-    STRING
+    STRING("string");
+
+    private final String wireName;
+
+    ExternalAttributeType(String wireName) {
+        this.wireName = wireName;
+    }
+
+    /** The value the Erli API uses for this constant on the wire. */
+    public String wireName() {
+        return wireName;
+    }
 }

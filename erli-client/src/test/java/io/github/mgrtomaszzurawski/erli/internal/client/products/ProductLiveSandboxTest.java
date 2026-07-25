@@ -2,7 +2,7 @@ package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
-import io.github.mgrtomaszzurawski.erli.core.error.ErliException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliApiException;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.domain.products.DispatchTime;
@@ -72,8 +72,17 @@ class ProductLiveSandboxTest {
     private static final int SEED_STOCK = 10;
     private static final int RESTOCKED = 7;
 
-    private static final int VISIBILITY_ATTEMPTS = 10;
-    private static final Duration VISIBILITY_PAUSE = Duration.ofSeconds(2);
+    private static final int VISIBILITY_ATTEMPTS = 8;
+    private static final Duration VISIBILITY_PAUSE = Duration.ofSeconds(3);
+
+    /**
+     * The sandbox rate-limits, and a 429 is not retried by the transport on a write
+     * ({@code retryPost=false}), so the live test backs off itself. Nothing about the SDK is under test
+     * here — this only stops a shared, throttled environment from failing an otherwise good run.
+     */
+    private static final int RATE_LIMIT_ATTEMPTS = 5;
+    private static final Duration RATE_LIMIT_PAUSE = Duration.ofSeconds(20);
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
 
     private static boolean credentialsPresent() {
         return isSet(System.getenv(BASE_URL_ENV_VAR)) && isSet(System.getenv(API_KEY_ENV_VAR));
@@ -114,7 +123,7 @@ class ProductLiveSandboxTest {
     private static Optional<Product> awaitProduct(ProductAccess products, ProductExternalId externalId,
             java.util.function.Predicate<Product> ready) {
         for (int attempt = 0; attempt < VISIBILITY_ATTEMPTS; attempt++) {
-            Optional<Product> found = products.get(externalId).filter(ready);
+            Optional<Product> found = withRateLimitBackoff(() -> products.get(externalId)).filter(ready);
             if (found.isPresent()) {
                 return found;
             }
@@ -128,9 +137,9 @@ class ProductLiveSandboxTest {
     /** Poll until the product is findable through {@code _search}, whose index lags {@code GET}. */
     private static List<Product> awaitSearchable(ProductAccess products, ProductExternalId externalId) {
         for (int attempt = 0; attempt < VISIBILITY_ATTEMPTS; attempt++) {
-            List<Product> matched = products.search(ProductSearchRequest.builder()
+            List<Product> matched = withRateLimitBackoff(() -> products.search(ProductSearchRequest.builder()
                     .filter(ProductFilter.equalTo(ProductFilterField.EXTERNAL_ID, externalId.value()))
-                    .build()).toList();
+                    .build()).toList());
             if (!matched.isEmpty()) {
                 return matched;
             }
@@ -141,9 +150,31 @@ class ProductLiveSandboxTest {
         return List.of();
     }
 
+    /** Run {@code call}, backing off and retrying while the sandbox is throttling. */
+    private static <T> T withRateLimitBackoff(java.util.function.Supplier<T> call) {
+        ErliApiException lastThrottle = null;
+        for (int attempt = 0; attempt < RATE_LIMIT_ATTEMPTS; attempt++) {
+            try {
+                return call.get();
+            } catch (ErliApiException failure) {
+                if (failure.details().httpStatus() != HTTP_TOO_MANY_REQUESTS) {
+                    throw failure;
+                }
+                lastThrottle = failure;
+                sleepFor(RATE_LIMIT_PAUSE);
+            }
+        }
+        throw new AssertionError("The sandbox kept rate-limiting after "
+                + RATE_LIMIT_ATTEMPTS + " attempts", lastThrottle);
+    }
+
     private static boolean sleepBriefly() {
+        return sleepFor(VISIBILITY_PAUSE);
+    }
+
+    private static boolean sleepFor(Duration pause) {
         try {
-            Thread.sleep(VISIBILITY_PAUSE.toMillis());
+            Thread.sleep(pause.toMillis());
             return true;
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
@@ -157,14 +188,19 @@ class ProductLiveSandboxTest {
         try (ErliClient client = openClient()) {
             ProductAccess products = client.products();
 
-            try {
-                products.create(SEED_PRODUCT_ID, seedDraft());
-            } catch (ErliException alreadyExists) {
-                // Idempotent re-run: the seed is already there from an earlier run. Erli answers 409,
-                // which the SDK maps to a validation failure; updating it below is the correct recovery.
-                products.update(SEED_PRODUCT_ID, ProductPatch.builder()
+            // Idempotence is decided by asking whether the seed exists, not by interpreting a failure.
+            // Erli answers 409 for "already exists" but also 429 for a rate limit, and the SDK maps both
+            // into the same remediation group — so catching the exception would let a throttled run pass
+            // as a successful re-run.
+            if (withRateLimitBackoff(() -> products.get(SEED_PRODUCT_ID)).isEmpty()) {
+                withRateLimitBackoff(() -> {
+                    products.create(SEED_PRODUCT_ID, seedDraft());
+                    return null;
+                });
+            } else {
+                withRateLimitBackoff(() -> products.update(SEED_PRODUCT_ID, ProductPatch.builder()
                         .content(ProductContent.builder().stock(SEED_STOCK).build())
-                        .build());
+                        .build()));
             }
 
             // Wait for the image too: the marketplace re-hosts it, so it lands after the product does.
@@ -192,14 +228,15 @@ class ProductLiveSandboxTest {
         try (ErliClient client = openClient()) {
             ProductAccess products = client.products();
 
-            ProductUpdateResult result = products.update(SEED_PRODUCT_ID, ProductPatch.builder()
-                    .content(ProductContent.builder().stock(RESTOCKED).build())
-                    .build());
+            ProductUpdateResult result = withRateLimitBackoff(() -> products.update(SEED_PRODUCT_ID,
+                    ProductPatch.builder()
+                            .content(ProductContent.builder().stock(RESTOCKED).build())
+                            .build()));
 
             assertTrue(result.changed(ProductField.STOCK),
                     "the marketplace should report stock as changed, got " + result.updatedFields());
 
-            Product after = products.get(SEED_PRODUCT_ID).orElseThrow();
+            Product after = withRateLimitBackoff(() -> products.get(SEED_PRODUCT_ID)).orElseThrow();
             assertEquals(RESTOCKED, after.stock());
             // The whole point of the three-state patch: everything untouched must survive.
             assertEquals(SEED_NAME, after.name());
@@ -221,8 +258,8 @@ class ProductLiveSandboxTest {
 
             // Laziness: a one-page-sized walk must not spin. A tiny page size with limit(1) proves the
             // stream stops pulling as soon as the consumer does.
-            long firstOnly = products.search(ProductSearchRequest.builder().pageSize(1).build())
-                    .limit(1).count();
+            long firstOnly = withRateLimitBackoff(() -> products
+                    .search(ProductSearchRequest.builder().pageSize(1).build()).limit(1).count());
             assertEquals(1, firstOnly);
         }
     }
@@ -235,9 +272,9 @@ class ProductLiveSandboxTest {
 
             // A real 404 must read as "no such product" — and reaching a 404 proves the request was
             // authenticated and routed correctly.
-            assertTrue(products.get(ABSENT_PRODUCT_ID).isEmpty(),
+            assertTrue(withRateLimitBackoff(() -> products.get(ABSENT_PRODUCT_ID)).isEmpty(),
                     "The sandbox unexpectedly holds a product under the probe id");
-            assertTrue(products.getDiscount(ABSENT_PRODUCT_ID).isEmpty(),
+            assertTrue(withRateLimitBackoff(() -> products.getDiscount(ABSENT_PRODUCT_ID)).isEmpty(),
                     "The sandbox unexpectedly holds a discount under the probe id");
         }
     }

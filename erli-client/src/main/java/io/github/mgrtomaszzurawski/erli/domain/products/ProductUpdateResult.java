@@ -1,6 +1,5 @@
 package io.github.mgrtomaszzurawski.erli.domain.products;
 
-import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -17,8 +16,8 @@ import java.util.Set;
 public record ProductUpdateResult(Set<ProductField> updatedFields, Set<String> unrecognisedFields) {
 
     public ProductUpdateResult {
-        updatedFields = Collections.unmodifiableSet(updatedFields);
-        unrecognisedFields = Collections.unmodifiableSet(unrecognisedFields);
+        updatedFields = updatedFields.isEmpty() ? Set.of() : Set.copyOf(updatedFields);
+        unrecognisedFields = unrecognisedFields.isEmpty() ? Set.of() : Set.copyOf(unrecognisedFields);
     }
 
     /** Whether the marketplace reports the given field as changed. */
