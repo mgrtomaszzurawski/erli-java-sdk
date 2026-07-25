@@ -24,7 +24,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductUpdateResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -141,11 +140,6 @@ class ProductAccessTest {
     }
 
     @Test
-    @Disabled("RED until the core JsonCodec fix lands (BACKLOG: the JsonNullableModule + NON_NULL half "
-            + "of fix/core-jsoncodec-java-time). Today an untouched field serializes as an explicit null "
-            + "and a JsonNullable one as {\"present\":false}, so this PATCH would ask Erli to wipe name, "
-            + "price and dispatchTime. Re-enable — do not weaken — once that merges; the assertions here "
-            + "are the contract.")
     void updateOmitsUntouchedFieldsAndSendsAnExplicitNullOnlyForClearedOnes() {
         server.stubFor(patch(urlEqualTo(PRODUCT_PATH))
                 .willReturn(okJson("{\"updatedFields\":[\"stock\",\"mobilePrice\"]}")));
@@ -229,6 +223,44 @@ class ProductAccessTest {
                 // archived is a boolean on the wire, not the string "true".
                 .withRequestBody(matchingJsonPath("$.filter.value[1].value.value", equalTo("true")))
                 .withRequestBody(matchingJsonPath("$.filter.value[2].operator", equalTo("in"))));
+    }
+
+    @Test
+    void neverSendsOverrideFrozenOnAnOrdinaryPatch() {
+        server.stubFor(patch(urlEqualTo(PRODUCT_PATH)).willReturn(okJson("{\"updatedFields\":[\"stock\"]}")));
+
+        products().update(SKU_1, emptyPatch());
+
+        // Layer 1 declares overrideFrozen as an explicit null (JsonNullable.of(null)) rather than
+        // undefined, so leaving it alone puts "overrideFrozen": null on every update and the marketplace
+        // answers 400 "overrideFrozen must be [true]". Observed live, 2026-07-25.
+        server.verify(patchRequestedFor(urlEqualTo(PRODUCT_PATH))
+                .withRequestBody(equalToJson("{\"stock\":1}", true, true)));
+    }
+
+    @Test
+    void sendsOverrideFrozenOnlyWhenTheCallerAsksForIt() {
+        server.stubFor(patch(urlEqualTo(PRODUCT_PATH)).willReturn(okJson("{\"updatedFields\":[\"stock\"]}")));
+
+        products().update(SKU_1, ProductPatch.builder()
+                .content(ProductContent.builder().stock(1).build())
+                .overrideFrozen(true)
+                .build());
+
+        server.verify(patchRequestedFor(urlEqualTo(PRODUCT_PATH))
+                .withRequestBody(matchingJsonPath("$.overrideFrozen", equalTo("true"))));
+    }
+
+    @Test
+    void omitsTheFieldProjectionEntirelyWhenNoFieldsWereSelected() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[]")));
+
+        products().search(ProductSearchRequest.all()).count();
+
+        // Layer 1 pre-populates `fields` with all 58 selectable names; sending that on every search
+        // would make each response as large as possible and defeat the projection entirely.
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$[?(!@.fields)]")));
     }
 
     @Test

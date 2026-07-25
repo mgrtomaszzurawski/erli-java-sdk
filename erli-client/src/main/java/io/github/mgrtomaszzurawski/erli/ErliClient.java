@@ -3,12 +3,20 @@ package io.github.mgrtomaszzurawski.erli;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliConfigurationException;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DictionariesAccess;
+import io.github.mgrtomaszzurawski.erli.domain.hooks.HooksAccess;
+import io.github.mgrtomaszzurawski.erli.domain.inbox.InboxAccess;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAccess;
+import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shop.ShopAccess;
 import io.github.mgrtomaszzurawski.erli.internal.ErrorMapper;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
+import io.github.mgrtomaszzurawski.erli.internal.client.dictionaries.DictionariesAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.hooks.HooksAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.inbox.InboxAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.products.ProductAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.shipping.ShippingAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shop.ShopAccessImpl;
 
 import java.net.http.HttpClient;
@@ -37,6 +45,10 @@ public final class ErliClient implements AutoCloseable {
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final ShopAccess shop;
+    private final ShippingAccess shipping;
+    private final DictionariesAccess dictionaries;
+    private final InboxAccess inbox;
+    private final HooksAccess hooks;
     private final ProductAccess products;
 
     private ErliClient(Builder builder) {
@@ -54,6 +66,10 @@ public final class ErliClient implements AutoCloseable {
                 codec,
                 new ErrorMapper(codec));
         this.shop = new ShopAccessImpl(runtime);
+        this.shipping = new ShippingAccessImpl(runtime);
+        this.dictionaries = new DictionariesAccessImpl(runtime);
+        this.inbox = new InboxAccessImpl(runtime, codec);
+        this.hooks = new HooksAccessImpl(runtime);
         this.products = new ProductAccessImpl(runtime);
     }
 
@@ -85,9 +101,31 @@ public final class ErliClient implements AutoCloseable {
 
     // --- APPEND BLOCK: bucket B Orders accessor --------------------------------------------------
     // --- APPEND BLOCK: bucket C Shipping & Delivery accessor -------------------------------------
+    /** Access to parcels, external parcels, posting points and pickup protocols ({@code /shipping/*}). */
+    public ShippingAccess shipping() {
+        ensureOpen();
+        return shipping;
+    }
+
     // --- APPEND BLOCK: bucket D Dictionaries accessor --------------------------------------------
+    /** Access to Erli's reference dictionaries (delivery methods, …). */
+    public DictionariesAccess dictionaries() {
+        ensureOpen();
+        return dictionaries;
+    }
     // --- APPEND BLOCK: bucket E Finance accessor -------------------------------------------------
     // --- APPEND BLOCK: bucket F Comms & Automation accessor --------------------------------------
+    /** Access to the shop's event inbox ({@code /inbox}). */
+    public InboxAccess inbox() {
+        ensureOpen();
+        return inbox;
+    }
+
+    /** Access to the shop's webhook subscriptions and their test-fire operations ({@code /hooks}). */
+    public HooksAccess hooks() {
+        ensureOpen();
+        return hooks;
+    }
 
     private void ensureOpen() {
         if (closed.get()) {

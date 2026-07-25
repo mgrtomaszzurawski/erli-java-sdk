@@ -57,6 +57,27 @@ try (ErliClient client = ErliClient.builder()
 }
 ```
 
+## Feature guides
+
+Per-domain guides are added as each domain ships:
+
+| Guide | Accessor | What it covers |
+|---|---|---|
+| [`docs/products.md`](docs/products.md) | `client.products()` | publishing and updating offers, the three-state patch, catalog search, timed promotions |
+| [`docs/inbox.md`](docs/inbox.md) | `client.inbox()` | polling the event inbox, order/product-sync events, acknowledging messages |
+| [`docs/hooks.md`](docs/hooks.md) | `client.hooks()` | registering webhook subscriptions and firing them on demand |
+
+```java
+// Drain the event inbox, then acknowledge the batch.
+try (ErliClient client = ErliClient.fromEnvironment()) {
+    List<Message> batch = client.inbox().unread();
+    batch.forEach(message -> System.out.println(message.type() + " at " + message.created()));
+    if (!batch.isEmpty()) {
+        client.inbox().markRead(ReadReceipt.upTo(batch.get(batch.size() - 1).id()));
+    }
+}
+```
+
 ## License
 
 [AGPL-3.0-only](LICENSE.txt).

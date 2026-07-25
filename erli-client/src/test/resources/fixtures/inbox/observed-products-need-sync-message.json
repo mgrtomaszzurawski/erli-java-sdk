@@ -1,0 +1,14 @@
+[
+  {
+    "shopId": 100007,
+    "created": "2026-07-25T13:17:07.175Z",
+    "read": false,
+    "type": "productsNeedSync",
+    "payload": {
+      "externalProductIds": [
+        "probe-1"
+      ]
+    },
+    "id": "6a64b7539355872fb8f579c5"
+  }
+]

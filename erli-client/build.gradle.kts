@@ -20,6 +20,14 @@ dependencies {
     // Layer 1 raw models + Jackson stay internal to this module (never re-exported to consumers).
     implementation(project(":erli-rest-models"))
     implementation(libs.jackson.databind)
+    // Declared directly because JsonCodec imports JavaTimeModule and module-info `requires` it. It also
+    // arrives transitively through erli-rest-models' `api`, but relying on that would break this module
+    // the day Layer 1 narrows that dependency — and the JPMS gate would not catch it, because the
+    // consumer's compile classpath never resolves erli-client's transitive requires.
+    implementation(libs.jackson.datatype.jsr310)
+    // Same reasoning for the nullable module: `nullable: true` properties are generated as
+    // JsonNullable<T>, and JsonCodec registers the module that decodes them.
+    implementation(libs.jackson.databind.nullable)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
@@ -28,5 +36,23 @@ dependencies {
 }
 
 tasks.test {
-    useJUnitPlatform()
+    // Unit tests only. Live @Tag("e2e") tests hit the sandbox and run via the e2eTest task below.
+    useJUnitPlatform {
+        excludeTags("e2e")
+    }
+}
+
+// Live end-to-end tests against the Erli sandbox. Reads ERLI_BASE_URL / ERLI_API_KEY from the
+// environment (sourced from /workspace/shared/secrets/erli-sandbox.env); each e2e test assumes those
+// are present and self-skips otherwise. Run: `./gradlew :erli-client:e2eTest`.
+tasks.register<Test>("e2eTest") {
+    description = "Runs @Tag(\"e2e\") live-sandbox tests (requires ERLI_BASE_URL + ERLI_API_KEY)."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform {
+        includeTags("e2e")
+    }
+    // Always re-run: results depend on live server state, not just inputs.
+    outputs.upToDateWhen { false }
 }

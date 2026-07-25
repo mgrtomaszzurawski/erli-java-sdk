@@ -1,0 +1,13 @@
+{
+  "name": "ValidationFailure",
+  "message": "Wystąpił problem z walidacją danych, types: types does not contain 1 required values",
+  "failureType": "validation",
+  "polishMessage": "Problem z walidacją, sprawdź pola",
+  "payload": {
+    "details": {
+      "types": "\"types\" does not contain 1 required value(s)"
+    }
+  },
+  "spanId": "lmtps6H4szmP5",
+  "traceId": "lmtps6H4szmP5"
+}

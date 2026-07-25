@@ -8,6 +8,7 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreate;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductUpdate;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductUpdateFrozen;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductsBatchUpdatePatchRequestInner;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 /**
  * Builds the {@code ProductCreate} and {@code ProductUpdate} request payloads from the domain's write
@@ -46,9 +47,9 @@ final class ProductRequestMapper {
         content.externalResponsiblePerson().ifPresent(value -> raw.setExternalResponsiblePerson(ProductPayloadMapper.responsiblePersons(value)));
         content.images().ifPresent(value -> raw.setImages(ProductPayloadMapper.images(value)));
         content.files().ifPresent(value -> raw.setFiles(ProductPayloadMapper.files(value)));
-        content.price().ifPresent(value -> raw.setPrice(ProductValues.toGrosze(value)));
-        content.mobilePrice().ifPresent(value -> raw.setMobilePrice(ProductValues.toGrosze(value)));
-        content.cataloguePrice().ifPresent(value -> raw.setCataloguePrice(ProductValues.toGrosze(value)));
+        content.price().ifPresent(value -> raw.setPrice(ProductValues.toMinorUnits(value)));
+        content.mobilePrice().ifPresent(value -> raw.setMobilePrice(ProductValues.toMinorUnits(value)));
+        content.cataloguePrice().ifPresent(value -> raw.setCataloguePrice(ProductValues.toMinorUnits(value)));
         content.referencePriceType().ifPresent(value -> raw.setReferencePriceType(ProductCreate.ReferencePriceTypeEnum.fromValue(ProductEnums.wireNameOf(value))));
         content.stock().ifPresent(raw::setStock);
         content.status().ifPresent(value -> raw.setStatus(ProductCreate.StatusEnum.fromValue(ProductEnums.wireNameOf(value))));
@@ -97,9 +98,9 @@ final class ProductRequestMapper {
         content.externalResponsiblePerson().ifPresent(value -> raw.setExternalResponsiblePerson(ProductPayloadMapper.responsiblePersons(value)));
         content.images().ifPresent(value -> raw.setImages(ProductPayloadMapper.images(value)));
         content.files().ifPresent(value -> raw.setFiles(ProductPayloadMapper.files(value)));
-        content.price().ifPresent(value -> raw.setPrice(ProductValues.toGrosze(value)));
-        content.mobilePrice().ifPresent(value -> raw.setMobilePrice(ProductValues.toGrosze(value)));
-        content.cataloguePrice().ifPresent(value -> raw.setCataloguePrice(ProductValues.toGrosze(value)));
+        content.price().ifPresent(value -> raw.setPrice(ProductValues.toMinorUnits(value)));
+        content.mobilePrice().ifPresent(value -> raw.setMobilePrice(ProductValues.toMinorUnits(value)));
+        content.cataloguePrice().ifPresent(value -> raw.setCataloguePrice(ProductValues.toMinorUnits(value)));
         content.referencePriceType().ifPresent(value -> raw.setReferencePriceType(ProductUpdate.ReferencePriceTypeEnum.fromValue(ProductEnums.wireNameOf(value))));
         content.stock().ifPresent(raw::setStock);
         content.status().ifPresent(value -> raw.setStatus(ProductUpdate.StatusEnum.fromValue(ProductEnums.wireNameOf(value))));
@@ -126,9 +127,7 @@ final class ProductRequestMapper {
         content.packaging().ifPresent(value -> raw.setPackaging(ProductPayloadMapper.packaging(value)));
         content.frozen().ifPresent(frozen -> raw.setFrozen(updateFrozen(frozen)));
         patch.newExternalId().ifPresent(value -> raw.setNewExternalId(value.value()));
-        if (patch.overrideFrozen()) {
-            raw.setOverrideFrozen(Boolean.TRUE);
-        }
+        applyOverrideFrozen(patch, raw::setOverrideFrozen, raw::setOverrideFrozen_JsonNullable);
         dropUnsetCollections(content, value -> raw.setImages(null), value -> raw.setExternalReferences(null));
         for (ProductField field : patch.cleared()) {
             clear(raw, field);
@@ -160,9 +159,9 @@ final class ProductRequestMapper {
         content.externalResponsiblePerson().ifPresent(value -> raw.setExternalResponsiblePerson(ProductPayloadMapper.responsiblePersons(value)));
         content.images().ifPresent(value -> raw.setImages(ProductPayloadMapper.images(value)));
         content.files().ifPresent(value -> raw.setFiles(ProductPayloadMapper.files(value)));
-        content.price().ifPresent(value -> raw.setPrice(ProductValues.toGrosze(value)));
-        content.mobilePrice().ifPresent(value -> raw.setMobilePrice(ProductValues.toGrosze(value)));
-        content.cataloguePrice().ifPresent(value -> raw.setCataloguePrice(ProductValues.toGrosze(value)));
+        content.price().ifPresent(value -> raw.setPrice(ProductValues.toMinorUnits(value)));
+        content.mobilePrice().ifPresent(value -> raw.setMobilePrice(ProductValues.toMinorUnits(value)));
+        content.cataloguePrice().ifPresent(value -> raw.setCataloguePrice(ProductValues.toMinorUnits(value)));
         content.referencePriceType().ifPresent(value -> raw.setReferencePriceType(ProductsBatchUpdatePatchRequestInner.ReferencePriceTypeEnum.fromValue(ProductEnums.wireNameOf(value))));
         content.stock().ifPresent(raw::setStock);
         content.status().ifPresent(value -> raw.setStatus(ProductsBatchUpdatePatchRequestInner.StatusEnum.fromValue(ProductEnums.wireNameOf(value))));
@@ -189,9 +188,7 @@ final class ProductRequestMapper {
         content.packaging().ifPresent(value -> raw.setPackaging(ProductPayloadMapper.packaging(value)));
         content.frozen().ifPresent(frozen -> raw.setFrozen(updateFrozen(frozen)));
         patch.newExternalId().ifPresent(value -> raw.setNewExternalId(value.value()));
-        if (patch.overrideFrozen()) {
-            raw.setOverrideFrozen(Boolean.TRUE);
-        }
+        applyOverrideFrozen(patch, raw::setOverrideFrozen, raw::setOverrideFrozen_JsonNullable);
         dropUnsetCollections(content, value -> raw.setImages(null), value -> raw.setExternalReferences(null));
         for (ProductField field : patch.cleared()) {
             clearBatchEntry(raw, field);
@@ -360,6 +357,25 @@ final class ProductRequestMapper {
         }
         if (content.externalReferences().isEmpty()) {
             externalReferences.accept(null);
+        }
+    }
+
+    /**
+     * Set {@code overrideFrozen}, or remove it from the payload entirely when the caller did not ask
+     * for it.
+     *
+     * <p>The generator declares this one property as {@code JsonNullable.<Object>of(null)} — an
+     * <em>explicit null</em> — where every other nullable property defaults to {@code undefined()}.
+     * Left alone it therefore travels on every single update, and the marketplace rejects it:
+     * {@code 400 "overrideFrozen must be [true]"}. Resetting it to {@code undefined()} is what makes an
+     * ordinary patch a legal request. Observed live against the sandbox, 2026-07-25.
+     */
+    private static void applyOverrideFrozen(ProductPatch patch, java.util.function.Consumer<Object> setValue,
+            java.util.function.Consumer<JsonNullable<Object>> setRaw) {
+        if (patch.overrideFrozen()) {
+            setValue.accept(Boolean.TRUE);
+        } else {
+            setRaw.accept(JsonNullable.undefined());
         }
     }
 }

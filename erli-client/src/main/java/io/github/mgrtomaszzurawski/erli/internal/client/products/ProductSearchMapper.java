@@ -50,7 +50,13 @@ final class ProductSearchMapper {
         request.after().ifPresent(cursor -> pagination.setAfter(afterValue(cursor)));
         raw.pagination(pagination);
         request.filter().ifPresent(filter -> raw.setFilter(toRawFilter(filter)));
-        if (!request.fields().isEmpty()) {
+        // The generator pre-populates `fields` with ALL 58 selectable names, so leaving it alone would
+        // send the full projection on every search — defeating the point of asking for fewer fields and
+        // making each response as large as it can be. Null means "not stated", which is what an
+        // unprojected search must say.
+        if (request.fields().isEmpty()) {
+            raw.setFields(null);
+        } else {
             Set<String> fields = new LinkedHashSet<>();
             request.fields().forEach(field -> fields.add(ProductFieldNames.wireName(field)));
             raw.setFields(fields);

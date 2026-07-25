@@ -2,7 +2,6 @@ package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 
-import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
@@ -14,39 +13,42 @@ import java.util.function.Function;
  */
 final class ProductValues {
 
-    /** Erli quotes every product price as an integer number of grosze (1/100 PLN). */
-    private static final int GROSZE_PER_ZLOTY_SCALE = 2;
+    /** Erli quotes every product price as an integer number of minor units ("w groszach"). */
     private static final String MARKETPLACE_CURRENCY_CODE = "PLN";
-    private static final BigDecimal GROSZE_PER_ZLOTY = BigDecimal.valueOf(100);
+    private static final Currency MARKETPLACE_CURRENCY = Currency.getInstance(MARKETPLACE_CURRENCY_CODE);
 
     private ProductValues() {
     }
 
-    /** A grosze amount from the wire as PLN {@link Money}. */
-    static Money toMoney(Integer grosze) {
-        return Money.of(
-                BigDecimal.valueOf(grosze.longValue(), GROSZE_PER_ZLOTY_SCALE),
-                Currency.getInstance(MARKETPLACE_CURRENCY_CODE));
+    /** A minor-units amount from the wire as {@link Money}, via the core helper. */
+    static Money toMoney(Integer minorUnits) {
+        return Money.ofMinorUnits(minorUnits.longValue(), MARKETPLACE_CURRENCY);
     }
 
-    /** An optional grosze amount from the wire as PLN {@link Money}. */
-    static Optional<Money> toOptionalMoney(Integer grosze) {
-        return Optional.ofNullable(grosze).map(ProductValues::toMoney);
+    /** An optional minor-units amount from the wire as {@link Money}. */
+    static Optional<Money> toOptionalMoney(Integer minorUnits) {
+        return Optional.ofNullable(minorUnits).map(ProductValues::toMoney);
     }
 
     /**
-     * A {@link Money} amount back to the integer grosze the API expects. Rejects sub-grosz precision
-     * rather than rounding it away silently — a price the caller cannot express exactly is a mistake
-     * worth surfacing at the call site, not a penny quietly lost.
+     * A {@link Money} amount back to the integer minor units the API expects — the inverse of
+     * {@link Money#ofMinorUnits(long, java.util.Currency)}, which core does not yet provide (see
+     * BACKLOG: a {@code Money.toMinorUnits()} counterpart belongs next to it).
+     *
+     * <p>Scales by the currency's own fraction digits rather than a hard-coded 100, matching how core
+     * reads the value back. Rejects sub-minor-unit precision instead of rounding it away silently: a
+     * price the caller cannot express exactly is a mistake worth surfacing at the call site, not a
+     * penny quietly lost.
      */
-    static Integer toGrosze(Money money) {
-        BigDecimal grosze = money.amount().multiply(GROSZE_PER_ZLOTY);
+    static Integer toMinorUnits(Money money) {
+        int scale = Math.max(money.currency().getDefaultFractionDigits(), 0);
         try {
-            return grosze.intValueExact();
-        } catch (ArithmeticException notWholeGrosze) {
+            return money.amount().movePointRight(scale).intValueExact();
+        } catch (ArithmeticException notWholeMinorUnits) {
             throw new IllegalArgumentException(
                     "Price " + money.amount() + " " + money.currency().getCurrencyCode()
-                            + " cannot be expressed as a whole number of grosze", notWholeGrosze);
+                            + " cannot be expressed as a whole number of minor units",
+                    notWholeMinorUnits);
         }
     }
 

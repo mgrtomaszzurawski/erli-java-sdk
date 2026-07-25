@@ -86,7 +86,7 @@ final class ProductResultMapper {
 
     static CreateDiscount toCreateDiscount(DiscountRequest request) {
         CreateDiscount raw = new CreateDiscount();
-        raw.setNewPrice(ProductValues.toGrosze(request.newPrice()));
+        raw.setNewPrice(ProductValues.toMinorUnits(request.newPrice()));
         raw.setStartAt(request.startAt());
         raw.setRestoreAt(request.restoreAt());
         raw.setUnfreezeAfterwards(request.unfreezeAfterwards());

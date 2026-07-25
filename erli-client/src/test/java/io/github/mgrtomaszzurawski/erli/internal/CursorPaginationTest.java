@@ -75,4 +75,20 @@ class CursorPaginationTest {
         }
         assertEquals(1, fetches.get(), "only the first page should have been fetched");
     }
+
+    @Test
+    void stopsWhenServerEchoesTheSameCursorWithANonEmptyPage() {
+        AtomicInteger fetches = new AtomicInteger();
+        PageFetcher<String> fetcher = after -> {
+            fetches.incrementAndGet();
+            // A broken server that keeps returning the same cursor with items would loop forever
+            // without the repeated-cursor guard.
+            return new Page<>(List.of("x"), Cursor.of("loop"));
+        };
+
+        List<String> all = CursorPagination.stream(fetcher).limit(100).toList();
+
+        assertEquals(List.of("x", "x"), all);
+        assertEquals(2, fetches.get());
+    }
 }
