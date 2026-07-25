@@ -53,8 +53,8 @@ public record ParcelDraft(
                 + ", deliveryMethod=" + deliveryMethod
                 + ", dimensions=" + dimensions
                 + ", receiver=" + receiver
-                + ", postingPointId=" + postingPointId.map(String::valueOf).orElse("null")
-                + ", additionalInformation=" + (additionalInformation.isEmpty() ? "null" : "***")
+                + ", postingPointId=" + Redaction.show(postingPointId)
+                + ", additionalInformation=" + Redaction.hide(additionalInformation)
                 + ", nonStandard=" + nonStandard
                 + ']';
     }

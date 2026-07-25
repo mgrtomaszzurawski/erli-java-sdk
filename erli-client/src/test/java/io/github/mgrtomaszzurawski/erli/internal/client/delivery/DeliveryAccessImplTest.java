@@ -32,6 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.math.BigDecimal;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
@@ -220,6 +221,40 @@ class DeliveryAccessImplTest {
 
         server.verify(patchRequestedFor(urlEqualTo(PRICE_LIST_BY_ID_PATH))
                 .withHeader("Authorization", equalTo("Bearer " + TEST_KEY)));
+    }
+
+    @Test
+    void rejectsAnAmountThatIsNotAWholeNumberOfGroszeSeparatelyFromOneOutOfRange() {
+        DeliveryPrice fractional = priceOf(new BigDecimal("10.499"));
+        DeliveryPrice huge = priceOf(new BigDecimal("99999999999"));
+
+        IllegalArgumentException notWhole = assertThrows(IllegalArgumentException.class,
+                () -> deliveryAccess().createPriceList(PriceListDraft.builder("x").price(fractional).build()));
+        IllegalArgumentException outOfRange = assertThrows(IllegalArgumentException.class,
+                () -> deliveryAccess().createPriceList(PriceListDraft.builder("x").price(huge).build()));
+
+        assertTrue(notWhole.getMessage().contains("whole number"), notWhole.getMessage());
+        assertTrue(outOfRange.getMessage().contains("range"), outOfRange.getMessage());
+        server.verify(0, postRequestedFor(urlEqualTo(PRICE_LIST_PATH)));
+    }
+
+    @Test
+    void rejectsAnAmountInACurrencyTheDeliveryEndpointDoesNotPriceIn() {
+        DeliveryPrice inYen = new DeliveryPrice(
+                new DeliveryMethodRef(DeliveryMethodId.of("erliDHL5kg"), Optional.empty()),
+                Money.ofMinorUnits(1299, "JPY"), Money.ofMinorUnits(0, "PLN"), Optional.empty(), false);
+
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+                () -> deliveryAccess().createPriceList(PriceListDraft.builder("x").price(inYen).build()));
+
+        assertTrue(failure.getMessage().contains("PLN"), failure.getMessage());
+        server.verify(0, postRequestedFor(urlEqualTo(PRICE_LIST_PATH)));
+    }
+
+    private static DeliveryPrice priceOf(BigDecimal amount) {
+        return new DeliveryPrice(
+                new DeliveryMethodRef(DeliveryMethodId.of("erliDHL5kg"), Optional.empty()),
+                Money.of(amount, java.util.Currency.getInstance("PLN")), Money.ofMinorUnits(0, "PLN"), Optional.empty(), false);
     }
 
     @Test

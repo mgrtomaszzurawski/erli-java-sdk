@@ -29,6 +29,8 @@ final class PriceListRequestMapper {
     private static final String DIMENSION_KEY = "dimension";
     private static final String LIMIT_KEY = "limit";
     private static final BigDecimal TEN = BigDecimal.TEN;
+    /** Erli prices delivery in grosze; the read side decodes the same way. */
+    private static final String CURRENCY_CODE = "PLN";
 
     private PriceListRequestMapper() {
     }
@@ -113,6 +115,11 @@ final class PriceListRequestMapper {
      * apart, because "0.5 grosza" and "more than a billion złoty" need different fixes.
      */
     private static Integer toMinorUnits(Money amount, String fieldName) {
+        if (!CURRENCY_CODE.equals(amount.currency().getCurrencyCode())) {
+            throw new IllegalArgumentException("'" + fieldName + "' must be in " + CURRENCY_CODE
+                    + "; Erli prices delivery in grosze and the read side decodes it as such, got "
+                    + amount.currency().getCurrencyCode());
+        }
         int fractionDigits = amount.currency().getDefaultFractionDigits();
         BigDecimal minorUnits = amount.amount().multiply(TEN.pow(Math.max(fractionDigits, 0)));
         BigDecimal whole;

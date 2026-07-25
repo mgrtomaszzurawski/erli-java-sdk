@@ -29,6 +29,7 @@ import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -54,6 +55,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -308,8 +310,39 @@ class ShippingWriteOperationsTest {
         assertThrows(IllegalArgumentException.class,
                 () -> shippingAccess().deleteExternalParcel(ParcelId.of(".")));
 
-        // Collapsing "." to the collection endpoint would turn a single cancel into a bulk operation.
-        server.verify(0, deleteRequestedFor(urlPathEqualTo("/shipping/parcels/")));
-        server.verify(0, deleteRequestedFor(urlPathEqualTo(EXTERNAL_PATH)));
+        // Asserting on every request the server saw, not on a guessed path: the client transmits dot
+        // segments un-normalized, so a path-specific check would match nothing whether or not the guard
+        // exists. Collapsing "." to the collection endpoint is what turns one cancel into a bulk delete.
+        assertTrue(server.findAll(RequestPatternBuilder.allRequests()).isEmpty(),
+                "no request may leave the client for a relative-segment id");
+    }
+
+    @Test
+    void mapsTheStatusHistoryOfAnExternalParcel() {
+        server.stubFor(get(urlEqualTo(EXTERNAL_BY_ID_PATH)).willReturn(okJson("""
+                { "id": 77, "orderId": "100007x1234", "type": "external",
+                  "shipping": { "vendor": "dpd" }, "status": "sent",
+                  "statusHistory": [ { "status": "preparing", "changed": "2026-07-20T08:15:00Z" },
+                                     { "status": "sent" } ],
+                  "createdAt": "2026-07-20T08:14:00Z", "updatedAt": "2026-07-21T09:30:00Z" }
+                """)));
+
+        ExternalParcel parcel = shippingAccess().externalParcel(ParcelId.of("77"));
+
+        assertEquals(2, parcel.statusHistory().size());
+        assertEquals(ParcelStatus.PREPARING, parcel.statusHistory().get(0).status());
+        assertTrue(parcel.statusHistory().get(0).changed().isPresent());
+        assertTrue(parcel.statusHistory().get(1).changed().isEmpty());
+    }
+
+    @Test
+    void keepsCourierInstructionsOutOfADraftsToString() {
+        String rendered = sampleDraft().toString();
+
+        assertFalse(rendered.contains("Leave at reception"), rendered);
+        assertTrue(rendered.contains("additionalInformation=***"), rendered);
+        // The receiver redacts itself; this pins that the draft does not undo that.
+        assertFalse(rendered.contains("buyer@example.test"), rendered);
+        assertFalse(rendered.contains("Kwiatowa"), rendered);
     }
 }

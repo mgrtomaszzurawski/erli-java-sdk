@@ -40,7 +40,7 @@ class PriceListE2ETest {
             Money.ofMinorUnits(1049, "PLN"), Money.ofMinorUnits(0, "PLN"), Optional.empty(), false);
 
     @Test
-    void reachesTheLiveDeliveryEndpointsAndMapsItsNotFoundError() {
+    void reachesTheLiveDeliveryEndpointsAndMapsAnAbsentPriceListToValidation() {
         assumeTrue(isSet("ERLI_BASE_URL") && isSet("ERLI_API_KEY"), "sandbox environment not configured");
 
         try (ErliClient client = ErliClient.fromEnvironment()) {

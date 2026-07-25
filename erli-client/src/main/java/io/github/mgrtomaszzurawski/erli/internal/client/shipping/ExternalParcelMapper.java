@@ -67,7 +67,8 @@ final class ExternalParcelMapper {
     static ExternalParcelResult toResult(JsonNode rawEntry, JsonCodec codec) {
         Objects.requireNonNull(rawEntry, "raw external parcel result");
         Objects.requireNonNull(codec, "codec");
-        if (rawEntry.has(ERROR_FIELD)) {
+        // hasNonNull, not has: an explicit "error": null is a created parcel, not a refusal.
+        if (rawEntry.hasNonNull(ERROR_FIELD)) {
             return toRejected(codec.convert(rawEntry, CreateExternalParcelResponseAnyOf1.class));
         }
         return new ExternalParcelResult.Created(
