@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
 import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
+import io.github.mgrtomaszzurawski.erli.core.model.SortOrder;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.products.BatchUpdateOutcome;
 import io.github.mgrtomaszzurawski.erli.domain.products.Discount;
@@ -29,7 +30,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductPatch;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSortField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductUpdateResult;
-import io.github.mgrtomaszzurawski.erli.domain.products.SortOrder;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -421,7 +421,7 @@ class ProductAccessTest {
         IllegalStateException failure = assertThrows(IllegalStateException.class,
                 () -> products().search(ProductSearchRequest.builder()
                         .pageSize(2)
-                        .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
+                        .sortBy(ProductSortField.UPDATED, SortOrder.DESCENDING)
                         .build()).toList());
 
         assertTrue(failure.getMessage().contains("UPDATED"), failure.getMessage());
@@ -436,7 +436,7 @@ class ProductAccessTest {
 
         List<Product> page = products().search(ProductSearchRequest.builder()
                 .pageSize(2)
-                .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
+                .sortBy(ProductSortField.UPDATED, SortOrder.DESCENDING)
                 .build()).limit(2).toList();
 
         assertEquals(2, page.size());
@@ -452,7 +452,7 @@ class ProductAccessTest {
 
         List<Product> page = products().search(ProductSearchRequest.builder()
                 .pageSize(2)
-                .sortBy(ProductSortField.ARCHIVED_AT, SortOrder.DESC)
+                .sortBy(ProductSortField.ARCHIVED_AT, SortOrder.DESCENDING)
                 .build()).toList();
 
         assertEquals(List.of("sku-a", "sku-b"),
@@ -466,7 +466,7 @@ class ProductAccessTest {
 
         List<Product> page = products().search(ProductSearchRequest.builder()
                 .pageSize(2)
-                .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
+                .sortBy(ProductSortField.UPDATED, SortOrder.DESCENDING)
                 .build()).toList();
 
         assertEquals(1, page.size());
@@ -496,7 +496,7 @@ class ProductAccessTest {
 
         products().search(ProductSearchRequest.builder()
                 .pageSize(2)
-                .sortBy(ProductSortField.MARKETPLACE_ID, SortOrder.ASC)
+                .sortBy(ProductSortField.MARKETPLACE_ID, SortOrder.ASCENDING)
                 .build()).toList();
 
         // A numeric column compared against a quoted cursor would end the walk after one page.
@@ -510,7 +510,7 @@ class ProductAccessTest {
         // before this call was made, so it must be refused like any other continuation.
         IllegalStateException failure = assertThrows(IllegalStateException.class,
                 () -> products().search(ProductSearchRequest.builder()
-                        .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
+                        .sortBy(ProductSortField.UPDATED, SortOrder.DESCENDING)
                         .after(io.github.mgrtomaszzurawski.erli.core.model.Cursor.of("2026-07-25T09:00:00Z"))
                         .build()).toList());
 

@@ -1,7 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.products;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
-
+import io.github.mgrtomaszzurawski.erli.core.model.SortOrder;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Optional;
@@ -17,7 +17,7 @@ import java.util.Set;
  * <pre>{@code
  * ProductSearchRequest query = ProductSearchRequest.builder()
  *         .filter(ProductFilter.equalTo(ProductFilterField.STATUS, "active"))
- *         .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
+ *         .sortBy(ProductSortField.UPDATED, SortOrder.DESCENDING)
  *         .fields(Set.of(ProductField.NAME, ProductField.PRICE, ProductField.STOCK))
  *         .build();
  * }</pre>
@@ -111,7 +111,7 @@ public final class ProductSearchRequest {
         private Optional<ProductFilter> filter = Optional.empty();
         private Set<ProductField> fields = EnumSet.noneOf(ProductField.class);
         private ProductSortField sortField = ProductSortField.EXTERNAL_ID;
-        private SortOrder order = SortOrder.ASC;
+        private SortOrder order = SortOrder.ASCENDING;
         private Optional<Integer> pageSize = Optional.empty();
         private Optional<Cursor> after = Optional.empty();
 
@@ -138,7 +138,7 @@ public final class ProductSearchRequest {
          */
         public Builder sortBy(ProductSortField field, SortOrder direction) {
             this.sortField = field == null ? ProductSortField.EXTERNAL_ID : field;
-            this.order = direction == null ? SortOrder.ASC : direction;
+            this.order = direction == null ? SortOrder.ASCENDING : direction;
             return this;
         }
 

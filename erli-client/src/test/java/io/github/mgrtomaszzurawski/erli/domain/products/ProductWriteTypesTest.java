@@ -1,10 +1,10 @@
 package io.github.mgrtomaszzurawski.erli.domain.products;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
-import org.junit.jupiter.api.Test;
-
+import io.github.mgrtomaszzurawski.erli.core.model.SortOrder;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -113,7 +113,7 @@ class ProductWriteTypesTest {
     void defaultsASearchToExternalIdAscending() {
         ProductSearchRequest request = ProductSearchRequest.all();
         assertEquals(ProductSortField.EXTERNAL_ID, request.sortField());
-        assertEquals(SortOrder.ASC, request.order());
+        assertEquals(SortOrder.ASCENDING, request.order());
         assertTrue(request.filter().isEmpty());
         assertTrue(request.fields().isEmpty());
     }

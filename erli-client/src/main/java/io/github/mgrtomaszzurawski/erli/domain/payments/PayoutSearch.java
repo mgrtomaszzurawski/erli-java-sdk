@@ -1,8 +1,8 @@
 package io.github.mgrtomaszzurawski.erli.domain.payments;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
+import io.github.mgrtomaszzurawski.erli.core.model.SortOrder;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentSearch.ComparisonOperator;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;

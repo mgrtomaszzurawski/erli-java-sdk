@@ -7,17 +7,16 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilter;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilterField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSortField;
-import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf1Value;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf2;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf3;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf4;
+import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOfValue;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductSearch;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductSearchPagination;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductSearchPaginationAfter;
-
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
@@ -51,7 +50,7 @@ final class ProductSearchMapper {
         pagination.setSortField(ProductSearchPagination.SortFieldEnum
                 .fromValue(request.sortField().wireName()));
         pagination.setOrder(ProductSearchPagination.OrderEnum
-                .fromValue(request.order().wireName()));
+                .fromValue(request.order().wireValue()));
         // Always state the limit. The walk decides it has reached the last page by comparing a page
         // against the size it asked for, so leaving the server to apply its own default would silently
         // truncate every search the day that default changes.
