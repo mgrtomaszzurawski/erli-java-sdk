@@ -1,0 +1,25 @@
+{
+  "id": "221202x12346",
+  "status": "pending",
+  "items": [
+    {
+      "id": 987656,
+      "externalId": "SKU-PLAIN-1",
+      "quantity": 1,
+      "unitPrice": 2500,
+      "name": "Zwykly kubek",
+      "slug": "zwykly-kubek"
+    }
+  ],
+  "delivery": {
+    "name": "Odbior osobisty",
+    "typeId": "self-pickup",
+    "price": 0,
+    "cod": false
+  },
+  "totalPrice": 2500,
+  "currency": "PLN",
+  "sellerStatus": "created",
+  "created": "2026-07-23T10:00:00Z",
+  "updated": "2026-07-23T10:00:00Z"
+}

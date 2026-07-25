@@ -12,7 +12,7 @@ import io.github.mgrtomaszzurawski.erli.domain.inbox.Country;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Delivery;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryTracking;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddressType;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.OrderEvent;
@@ -33,8 +33,7 @@ import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.MessagePayloadAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDelivery;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryPickupPlace;
-import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryTrackingAnyOf;
-import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryTrackingAnyOf1;
+import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryTracking;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderItemsInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderPayment;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderRebate;
@@ -61,9 +60,9 @@ import java.util.Optional;
  *       for {@code PLN}); the order-level {@code currency} applies to every amount in the payload, and
  *       {@link Money#ofMinorUnits(long, java.util.Currency)} rebuilds it at that currency's own scale.</li>
  *   <li>{@code deliveryTracking} is declared as two alternative shapes ({@code trackingUrl} versus
- *       {@code vendor} + {@code trackingNumber}). The generated {@code anyOf} wrapper cannot pick
- *       between them under a lenient mapper, so the tracking subtree is bound to both branches and the
- *       fields that are present are merged — see {@link #toDeliveryTracking}.</li>
+ *       {@code vendor} + {@code trackingNumber}). Layer 1 merges them into one lossless object (the
+ *       {@code normalizeSpec} composite merge, CORE-3), so which shape arrived is simply which optional
+ *       fields are set — see {@link #toDeliveryTracking}.</li>
  * </ul>
  */
 final class OrderEventMapper {
@@ -78,7 +77,7 @@ final class OrderEventMapper {
     /**
      * @param rawPayload  the payload bound to the order branch of the {@code anyOf}
      * @param payloadNode the same payload as a tree, needed for the ambiguous tracking sub-object
-     * @param codec       binds the tracking subtree to its two candidate branches
+     * @param codec       binds the tracking subtree, which the payload wrapper leaves untyped
      */
     static OrderEvent toDomain(MessagePayloadAnyOf rawPayload, JsonNode payloadNode, JsonCodec codec) {
         Objects.requireNonNull(rawPayload, "raw order payload");
@@ -203,10 +202,9 @@ final class OrderEventMapper {
     }
 
     /**
-     * The two declared tracking shapes share only {@code status}, and the generated {@code anyOf}
-     * wrapper always binds the first branch when unknown properties are ignored — which would silently
-     * drop {@code vendor} and {@code trackingNumber}. Binding the subtree to both branches and merging
-     * what is present is correct for either shape.
+     * Erli declares two tracking shapes sharing only {@code status}. Layer 1 now merges them into one
+     * lossless object (the {@code normalizeSpec} composite merge, CORE-3), so this is a single bind and
+     * which shape arrived is simply which optional fields are set.
      */
     private static Optional<DeliveryTracking> toDeliveryTracking(JsonNode payloadNode, JsonCodec codec) {
         if (payloadNode == null) {
@@ -216,14 +214,12 @@ final class OrderEventMapper {
         if (trackingNode == null || trackingNode.isNull()) {
             return Optional.empty();
         }
-        OrderDeliveryTrackingAnyOf urlShape = codec.convert(trackingNode, OrderDeliveryTrackingAnyOf.class);
-        OrderDeliveryTrackingAnyOf1 carrierShape =
-                codec.convert(trackingNode, OrderDeliveryTrackingAnyOf1.class);
+        OrderDeliveryTracking tracking = codec.convert(trackingNode, OrderDeliveryTracking.class);
         return Optional.of(new DeliveryTracking(
-                toTrackingStatus(urlShape, carrierShape),
-                Optional.ofNullable(urlShape.getTrackingUrl()),
-                Optional.ofNullable(carrierShape.getVendor()).map(OrderEventMapper::toDeliveryVendor),
-                Optional.ofNullable(carrierShape.getTrackingNumber())));
+                toTrackingStatus(requireStatus(tracking)),
+                Optional.ofNullable(tracking.getTrackingUrl()),
+                Optional.ofNullable(tracking.getVendor()).map(OrderEventMapper::toDeliveryVendor),
+                Optional.ofNullable(tracking.getTrackingNumber())));
     }
 
     @SuppressWarnings("deprecation")
@@ -362,32 +358,15 @@ final class OrderEventMapper {
         };
     }
 
-    private static TrackingStatus toTrackingStatus(
-            OrderDeliveryTrackingAnyOf urlShape, OrderDeliveryTrackingAnyOf1 carrierShape) {
-        if (urlShape.getStatus() != null) {
-            return toTrackingStatus(urlShape.getStatus());
+    private static OrderDeliveryTracking.StatusEnum requireStatus(OrderDeliveryTracking tracking) {
+        OrderDeliveryTracking.StatusEnum status = tracking.getStatus();
+        if (status == null) {
+            throw new IllegalStateException("deliveryTracking is missing the required 'status' field");
         }
-        if (carrierShape.getStatus() != null) {
-            return toTrackingStatus(carrierShape.getStatus());
-        }
-        throw new IllegalStateException("deliveryTracking is missing the required 'status' field");
+        return status;
     }
 
-    private static TrackingStatus toTrackingStatus(OrderDeliveryTrackingAnyOf.StatusEnum rawStatus) {
-        return switch (rawStatus) {
-            case PREPARING -> TrackingStatus.PREPARING;
-            case WAITING_FOR_COURIER -> TrackingStatus.WAITING_FOR_COURIER;
-            case SENT -> TrackingStatus.SENT;
-            case READY_TO_PICKUP -> TrackingStatus.READY_TO_PICKUP;
-            case ON_THE_WAY -> TrackingStatus.ON_THE_WAY;
-            case READY_TO_SEND -> TrackingStatus.READY_TO_SEND;
-            case TRACKING_UNAVAILABLE -> TrackingStatus.TRACKING_UNAVAILABLE;
-            case RETURNED -> TrackingStatus.RETURNED;
-            case CANCELED -> TrackingStatus.CANCELED;
-        };
-    }
-
-    private static TrackingStatus toTrackingStatus(OrderDeliveryTrackingAnyOf1.StatusEnum rawStatus) {
+    private static TrackingStatus toTrackingStatus(OrderDeliveryTracking.StatusEnum rawStatus) {
         return switch (rawStatus) {
             case PREPARING -> TrackingStatus.PREPARING;
             case WAITING_FOR_COURIER -> TrackingStatus.WAITING_FOR_COURIER;
@@ -406,7 +385,7 @@ final class OrderEventMapper {
      * the fleet convention is a {@code fromWire} lookup for those (see {@code KNOWN-SERVER-BEHAVIORS.md}).
      * An unknown carrier already fails earlier, when the generated enum decodes it.
      */
-    private static DeliveryVendor toDeliveryVendor(OrderDeliveryTrackingAnyOf1.VendorEnum rawVendor) {
+    private static DeliveryVendor toDeliveryVendor(OrderDeliveryTracking.VendorEnum rawVendor) {
         return DeliveryVendor.fromWire(rawVendor.getValue());
     }
 

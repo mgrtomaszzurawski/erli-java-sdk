@@ -1,7 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethod;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod.VendorEnum;
 import org.junit.jupiter.api.Test;
 
