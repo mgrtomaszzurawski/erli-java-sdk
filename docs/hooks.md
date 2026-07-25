@@ -35,13 +35,24 @@ try (ErliClient client = ErliClient.fromEnvironment()) {
 }
 ```
 
-A hook you register must use `https` and must not carry credentials in its userinfo: Erli sends the access token
-and, for the three `ORDER_*` kinds, the buyer's personal data to this endpoint. `Hook.toString()`
+A hook you register must use `https` and must not carry credentials in its userinfo: Erli sends the
+access token and, for the three `ORDER_*` kinds, the buyer's personal data to this endpoint. `Hook.toString()`
 redacts the token *and* the URL's query string, since a webhook URL often carries the shared secret
 there.
 
 A subscription already stored on the shop is read back as-is even if it breaks those rules, so
 `list()` can still show you an insecure hook you need to replace.
+
+`list()` throws `ErliTransportException` if the shop holds a subscription this SDK version cannot
+represent, and because the list is mapped as a whole you then see none of them. Two causes, with
+different remedies:
+
+- **A URL the SDK rejects** (over the length limit, or malformed). The message names the hook kind, so
+  `save` a corrected subscription for that kind, or `delete(HookKind)` it — neither needs the stored
+  value to decode.
+- **A hook name newer than this SDK.** The message cannot name it, because there is no `HookKind`
+  constant for a name the SDK does not know — and for the same reason `delete(HookKind)` cannot address
+  it either. Upgrade the SDK, or remove that subscription from the shop panel.
 
 `save` creates or overwrites the subscription named by `hook.kind()` — there is one subscription per
 kind, so saving twice replaces rather than duplicates. `delete` succeeds even when nothing was
@@ -68,8 +79,14 @@ for (ProductBuyability answer : answers) {
 ```
 
 Both components are `Optional`: the API declares `status` explicitly nullable, and a shop may report
-availability without a stock figure. With no `CHECK_BUYABILITY` subscription registered the call
-succeeds and returns an empty list rather than failing.
+availability without a stock figure.
+
+An empty `status` has two causes and they are indistinguishable here: the shop did not state one, or
+it stated one newer than your SDK version (an unrecognised value decodes to absent — see
+[`inbox.md`](inbox.md)). Either way, do not read it as "inactive"; treat it as "not stated".
+
+With no `CHECK_BUYABILITY` subscription registered the call succeeds and returns an empty list rather
+than failing.
 
 ```java
 // Ask Erli to call your PRODUCTS_NEED_SYNC endpoint for these products.
@@ -87,6 +104,14 @@ the shop's inbox.
 
 ## Errors
 
-Every operation throws the remediation exception matching the failure: `ErliAuthException` (401/403),
-`ErliNotFoundException` (404), `ErliValidationException` (400/409/422), `ErliServerException` (5xx).
-Each carries `details()` with `traceId`/`spanId` and the API's `polishMessage`.
+| HTTP | Exception |
+|---|---|
+| 401 / 403 | `ErliAuthException` |
+| 404 | `ErliNotFoundException` |
+| 400 / 409 / 422 | `ErliValidationException` |
+| 5xx | `ErliServerException` |
+
+All extend `ErliException` and carry `details()` with `traceId`/`spanId` and the API's Polish message
+where it supplied one. A stored subscription the SDK cannot represent is reported as
+`ErliTransportException` (see `list()` above), so catching `ErliException` covers every failure of a
+call.
