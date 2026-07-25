@@ -11,15 +11,20 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * The single transport chokepoint: builds requests against the configured base URL, injects the
  * Bearer credential and standard headers, executes them on {@link java.net.http.HttpClient}, applies
  * the {@link RetryPolicy} (429/5xx and transport failures, honoring {@code Retry-After} as a floor),
- * and maps non-2xx responses to the remediation exceptions via {@link ErrorMapper}. Every domain
- * bucket goes through here — it is built once by {@code ErliClient}. Internal: never exported.
+ * and maps non-2xx responses to the remediation exceptions via {@link ErrorMapper}. Exposes the full
+ * verb surface the buckets need — GET/POST/PUT/PATCH/DELETE, object and bare-array responses, and
+ * URL-encoded {@link QueryParameters}. Retry idempotency follows HTTP semantics: GET/PUT/DELETE are
+ * retryable; POST/PATCH are not (unless {@code retryPost} is set). Built once by {@code ErliClient}.
+ * Internal: never exported.
  */
 public final class HttpRuntime {
 
@@ -29,6 +34,11 @@ public final class HttpRuntime {
     private static final String HEADER_USER_AGENT = "User-Agent";
     private static final String HEADER_RETRY_AFTER = "Retry-After";
     private static final String MEDIA_TYPE_JSON = "application/json";
+
+    private static final String METHOD_PATCH = "PATCH";
+
+    private static final boolean IDEMPOTENT = true;
+    private static final boolean NON_IDEMPOTENT = false;
 
     private static final int HTTP_OK_MIN = 200;
     private static final int HTTP_OK_MAX_EXCLUSIVE = 300;
@@ -55,34 +65,82 @@ public final class HttpRuntime {
         this.errorMapper = Objects.requireNonNull(errorMapper, "errorMapper");
     }
 
-    /** Execute {@code GET path} and decode the JSON body into {@code responseType}. */
+    /** {@code GET path} with no query parameters, decoding a JSON object into {@code responseType}. */
     public <T> T get(String path, Class<T> responseType) {
-        HttpRequest request = baseRequest(path)
-                .header(HEADER_ACCEPT, MEDIA_TYPE_JSON)
-                .GET()
-                .build();
-        return execute(request, path, responseType, true);
+        return get(path, QueryParameters.empty(), responseType);
     }
 
-    /** Execute {@code POST path} with a JSON-serialized {@code requestBody}, decoding into {@code responseType}. */
+    /** {@code GET path} with URL-encoded query parameters, decoding a JSON object. */
+    public <T> T get(String path, QueryParameters queryParameters, Class<T> responseType) {
+        HttpRequest request = queryRequest(path, queryParameters).GET().build();
+        return execute(request, path, IDEMPOTENT, body -> decodeObject(body, responseType));
+    }
+
+    /** {@code GET path} with query parameters, decoding a bare JSON array into a {@code List}. */
+    public <T> List<T> getList(String path, QueryParameters queryParameters, Class<T> elementType) {
+        HttpRequest request = queryRequest(path, queryParameters).GET().build();
+        return execute(request, path, IDEMPOTENT, body -> decodeList(body, elementType));
+    }
+
+    /** {@code POST path} with a JSON body, decoding a JSON object into {@code responseType}. */
     public <T> T post(String path, Object requestBody, Class<T> responseType) {
-        HttpRequest request = baseRequest(path)
-                .header(HEADER_ACCEPT, MEDIA_TYPE_JSON)
-                .header(HEADER_CONTENT_TYPE, MEDIA_TYPE_JSON)
-                .POST(HttpRequest.BodyPublishers.ofString(codec.write(requestBody), StandardCharsets.UTF_8))
-                .build();
-        return execute(request, path, responseType, false);
+        return execute(bodyRequest("POST", path, requestBody), path, NON_IDEMPOTENT,
+                body -> decodeObject(body, responseType));
     }
 
-    private HttpRequest.Builder baseRequest(String path) {
+    /** {@code POST path} with a JSON body, decoding a bare JSON array into a {@code List}. */
+    public <T> List<T> postList(String path, Object requestBody, Class<T> elementType) {
+        return execute(bodyRequest("POST", path, requestBody), path, NON_IDEMPOTENT,
+                body -> decodeList(body, elementType));
+    }
+
+    /** {@code PUT path} with a JSON body. PUT is idempotent, so it participates in retries. */
+    public <T> T put(String path, Object requestBody, Class<T> responseType) {
+        return execute(bodyRequest("PUT", path, requestBody), path, IDEMPOTENT,
+                body -> decodeObject(body, responseType));
+    }
+
+    /** {@code PATCH path} with a JSON body. PATCH is not idempotent, so it is not retried by default. */
+    public <T> T patch(String path, Object requestBody, Class<T> responseType) {
+        return execute(bodyRequest(METHOD_PATCH, path, requestBody), path, NON_IDEMPOTENT,
+                body -> decodeObject(body, responseType));
+    }
+
+    /**
+     * {@code DELETE path} with query parameters, decoding a JSON object (or {@code null} when the
+     * response is empty, e.g. HTTP 204). Use {@code Void.class} when no body is expected.
+     */
+    public <T> T delete(String path, QueryParameters queryParameters, Class<T> responseType) {
+        HttpRequest request = queryRequest(path, queryParameters).DELETE().build();
+        return execute(request, path, IDEMPOTENT, body -> decodeObject(body, responseType));
+    }
+
+    private HttpRequest.Builder queryRequest(String path, QueryParameters queryParameters) {
+        return baseRequest(queryParameters.appendTo(baseUrl + path)).header(HEADER_ACCEPT, MEDIA_TYPE_JSON);
+    }
+
+    private HttpRequest bodyRequest(String method, String path, Object requestBody) {
+        HttpRequest.BodyPublisher publisher =
+                HttpRequest.BodyPublishers.ofString(codec.write(requestBody), StandardCharsets.UTF_8);
+        HttpRequest.Builder builder = baseRequest(baseUrl + path)
+                .header(HEADER_ACCEPT, MEDIA_TYPE_JSON)
+                .header(HEADER_CONTENT_TYPE, MEDIA_TYPE_JSON);
+        return switch (method) {
+            case "POST" -> builder.POST(publisher).build();
+            case "PUT" -> builder.PUT(publisher).build();
+            default -> builder.method(method, publisher).build();
+        };
+    }
+
+    private HttpRequest.Builder baseRequest(String uri) {
         return HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + path))
+                .uri(URI.create(uri))
                 .timeout(requestTimeout)
                 .header(HEADER_AUTHORIZATION, apiKey.authorizationHeaderValue())
                 .header(HEADER_USER_AGENT, userAgent);
     }
 
-    private <T> T execute(HttpRequest request, String path, Class<T> responseType, boolean idempotent) {
+    private <T> T execute(HttpRequest request, String path, boolean idempotent, Function<String, T> decoder) {
         int attempt = 0;
         int retryIndex = FIRST_RETRY_INDEX;
         while (true) {
@@ -103,7 +161,7 @@ public final class HttpRuntime {
 
             int status = response.statusCode();
             if (isSuccess(status)) {
-                return decode(response.body(), responseType);
+                return decoder.apply(response.body());
             }
             if (canRetry(attempt) && retryPolicy.isRetryableStatus(status, idempotent)) {
                 sleepBackoff(retryIndex++, retryAfterFloor(response));
@@ -117,11 +175,18 @@ public final class HttpRuntime {
         return attempt < retryPolicy.maxAttempts();
     }
 
-    private <T> T decode(String body, Class<T> responseType) {
+    private <T> T decodeObject(String body, Class<T> responseType) {
         if (responseType == Void.class || body == null || body.isBlank()) {
             return null;
         }
         return codec.read(body, responseType);
+    }
+
+    private <T> List<T> decodeList(String body, Class<T> elementType) {
+        if (body == null || body.isBlank()) {
+            return List.of();
+        }
+        return codec.readList(body, elementType);
     }
 
     private void sleepBackoff(int retryIndex, Duration retryAfterFloor) {
@@ -143,7 +208,7 @@ public final class HttpRuntime {
             long seconds = Long.parseLong(header.get().trim());
             return seconds >= 0 ? Duration.ofSeconds(seconds) : null;
         } catch (NumberFormatException notAnInteger) {
-            // HTTP-date form is not honored as a floor in M1; fall back to computed backoff.
+            // HTTP-date form is not honored as a floor here; fall back to computed backoff.
             return null;
         }
     }

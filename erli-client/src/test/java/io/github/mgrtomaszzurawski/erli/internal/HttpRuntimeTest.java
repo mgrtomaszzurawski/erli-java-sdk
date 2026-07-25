@@ -13,16 +13,28 @@ import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.patch;
+import static com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpRuntimeTest {
@@ -117,5 +129,74 @@ class HttpRuntimeTest {
         assertThrows(ErliServerException.class,
                 () -> runtimeWith(RetryPolicy.none()).get(ME_PATH, ShopResponse.class));
         server.verify(1, getRequestedFor(urlEqualTo(ME_PATH)));
+    }
+
+    @Test
+    void getSendsUrlEncodedQueryParameters() {
+        String path = "/dictionaries/deliveryMethods";
+        server.stubFor(get(urlPathEqualTo(path)).willReturn(okJson("[" + SHOP_JSON + "]")));
+
+        QueryParameters query = QueryParameters.builder().add("vendor", "inpost").addBoolean("cod", true).build();
+        List<ShopResponse> result = runtimeWith(fastRetry()).getList(path, query, ShopResponse.class);
+
+        assertEquals(1, result.size());
+        server.verify(getRequestedFor(urlPathEqualTo(path))
+                .withQueryParam("vendor", equalTo("inpost"))
+                .withQueryParam("cod", equalTo("true")));
+    }
+
+    @Test
+    void getListDecodesBareJsonArray() {
+        server.stubFor(get(urlPathEqualTo(ME_PATH)).willReturn(okJson("[" + SHOP_JSON + "," + SHOP_JSON + "]")));
+
+        List<ShopResponse> result = runtimeWith(fastRetry()).getList(ME_PATH, QueryParameters.empty(), ShopResponse.class);
+
+        assertEquals(2, result.size());
+        assertEquals(100007, result.get(0).getId().intValue());
+    }
+
+    @Test
+    void patchSendsPatchWithJsonBody() {
+        String path = "/products/ABC";
+        server.stubFor(patch(urlEqualTo(path)).willReturn(okJson(SHOP_JSON)));
+
+        ShopResponse result = runtimeWith(fastRetry()).patch(path, Map.of("name", "new"), ShopResponse.class);
+
+        assertEquals("test-shop", result.getName());
+        server.verify(patchRequestedFor(urlEqualTo(path))
+                .withHeader("Content-Type", equalTo("application/json"))
+                .withRequestBody(equalToJson("{\"name\":\"new\"}")));
+    }
+
+    @Test
+    void putSendsPutWithJsonBody() {
+        String path = "/hooks/onOrder";
+        server.stubFor(put(urlEqualTo(path)).willReturn(okJson(SHOP_JSON)));
+
+        runtimeWith(fastRetry()).put(path, Map.of("url", "https://x"), ShopResponse.class);
+
+        server.verify(putRequestedFor(urlEqualTo(path))
+                .withRequestBody(equalToJson("{\"url\":\"https://x\"}")));
+    }
+
+    @Test
+    void deleteReturnsNullOnEmptyBody() {
+        String path = "/shipping/external/9";
+        server.stubFor(delete(urlEqualTo(path)).willReturn(aResponse().withStatus(204)));
+
+        ShopResponse result = runtimeWith(fastRetry()).delete(path, QueryParameters.empty(), ShopResponse.class);
+
+        assertNull(result);
+        server.verify(deleteRequestedFor(urlEqualTo(path)));
+    }
+
+    @Test
+    void postListDecodesBareJsonArray() {
+        String path = "/products/_search";
+        server.stubFor(post(urlEqualTo(path)).willReturn(okJson("[" + SHOP_JSON + "]")));
+
+        List<ShopResponse> result = runtimeWith(fastRetry()).postList(path, Map.of("page", 1), ShopResponse.class);
+
+        assertEquals(1, result.size());
     }
 }
