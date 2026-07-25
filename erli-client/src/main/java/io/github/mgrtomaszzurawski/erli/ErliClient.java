@@ -2,7 +2,6 @@ package io.github.mgrtomaszzurawski.erli;
 
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliConfigurationException;
-import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.billing.BillingAccess;
 import io.github.mgrtomaszzurawski.erli.domain.campaigns.CampaignsAccess;

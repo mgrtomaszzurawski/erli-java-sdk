@@ -1,6 +1,5 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.delivery;
 
-import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.domain.delivery.DeliveryMethodRef;
 import io.github.mgrtomaszzurawski.erli.domain.delivery.DeliveryPrice;

@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.ErliClient;
-import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
