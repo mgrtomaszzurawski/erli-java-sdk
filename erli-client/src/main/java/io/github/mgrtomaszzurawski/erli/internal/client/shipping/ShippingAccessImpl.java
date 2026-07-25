@@ -34,10 +34,19 @@ public final class ShippingAccessImpl implements ShippingAccess {
     @Override
     public Parcel parcel(ParcelId parcelId) {
         Objects.requireNonNull(parcelId, "parcelId");
-        String path = ApiPaths.SHIPPING_PARCEL_BY_ID.replace(PARCEL_ID_PLACEHOLDER, encodeSegment(parcelId.value()));
-        io.github.mgrtomaszzurawski.erli.rest.model.Parcel raw =
-                runtime.get(path, io.github.mgrtomaszzurawski.erli.rest.model.Parcel.class);
-        return ParcelMapper.toDomain(raw);
+        return ParcelMapper.toDomain(runtime.get(withId(ApiPaths.SHIPPING_PARCEL_BY_ID, parcelId.value()),
+                io.github.mgrtomaszzurawski.erli.rest.model.Parcel.class));
+    }
+
+    /**
+     * Fill a templated path's {@code {id}} placeholder with an encoded segment.
+     *
+     * <p>Kept as a call-site expression rather than a local variable so the transport verb and its
+     * {@code ApiPaths} constant stay on one line — that pairing is what the DoD coverage auditor reads
+     * to prove an operation is genuinely wired (see {@code tools/README.md}).
+     */
+    private static String withId(String pathTemplate, String idValue) {
+        return pathTemplate.replace(PARCEL_ID_PLACEHOLDER, encodeSegment(idValue));
     }
 
     /** Percent-encode a value for use as a single path segment. */
