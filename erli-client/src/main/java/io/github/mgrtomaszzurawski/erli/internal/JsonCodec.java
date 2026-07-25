@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+
+import java.util.List;
 
 /**
  * Thin Jackson wrapper for the SDK's JSON boundary. Configured to <strong>ignore unknown
@@ -26,6 +29,20 @@ public final class JsonCodec {
             return mapper.readValue(body, type);
         } catch (JsonProcessingException failure) {
             throw new ErliTransportException("Failed to decode response body as " + type.getSimpleName(), failure);
+        }
+    }
+
+    /**
+     * Deserialize a JSON array body into a {@code List<T>}. Erli's dictionary endpoints return bare
+     * arrays (no pagination envelope), so this is the list counterpart to {@link #read}.
+     */
+    public <T> List<T> readList(String body, Class<T> elementType) {
+        try {
+            CollectionType listType = mapper.getTypeFactory().constructCollectionType(List.class, elementType);
+            return mapper.readValue(body, listType);
+        } catch (JsonProcessingException failure) {
+            throw new ErliTransportException(
+                    "Failed to decode response body as List<" + elementType.getSimpleName() + ">", failure);
         }
     }
 
