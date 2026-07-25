@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.hooks;
 
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.BuyabilityQuery;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.Hook;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.HookKind;
@@ -35,7 +36,16 @@ public final class HooksAccessImpl implements HooksAccess {
     public List<Hook> list() {
         List<HookResponseInner> rawHooks =
                 runtime.getList(ApiPaths.HOOKS, QueryParameters.empty(), HookResponseInner.class);
-        return mapAll(rawHooks, HookMapper::toDomain);
+        // A stored subscription the SDK cannot represent must still surface as an ErliException: the
+        // documented contract is that catching ErliException covers every failure of a call. Since
+        // CORE-12 this is reachable from wire data — an unrecognised hookName decodes to null — so the
+        // mapper's IllegalStateException would otherwise escape bare.
+        try {
+            return mapAll(rawHooks, HookMapper::toDomain);
+        } catch (IllegalStateException | IllegalArgumentException failure) {
+            throw new ErliTransportException(
+                    "The shop has a webhook subscription this SDK version cannot represent", failure);
+        }
     }
 
     @Override

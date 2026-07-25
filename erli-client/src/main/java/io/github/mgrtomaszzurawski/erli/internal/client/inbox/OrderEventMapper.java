@@ -312,22 +312,19 @@ final class OrderEventMapper {
     }
 
     private static Country toCountry(OrderUserDeliveryAddress.CountryEnum rawCountry) {
-        requireKnownEnum(rawCountry, "deliveryAddress.country");
-        return switch (rawCountry) {
+        return switch (requireKnownEnum(rawCountry, "deliveryAddress.country")) {
             case PL -> Country.PL;
         };
     }
 
     private static Country toInvoiceCountry(OrderUserInvoiceAddress.CountryEnum rawCountry) {
-        requireKnownEnum(rawCountry, "invoiceAddress.country");
-        return switch (rawCountry) {
+        return switch (requireKnownEnum(rawCountry, "invoiceAddress.country")) {
             case PL -> Country.PL;
         };
     }
 
     private static InvoiceAddressType toInvoiceAddressType(OrderUserInvoiceAddress.TypeEnum rawType) {
-        requireKnownEnum(rawType, "invoiceAddress.type");
-        return switch (rawType) {
+        return switch (requireKnownEnum(rawType, "invoiceAddress.type")) {
             case COMPANY -> InvoiceAddressType.COMPANY;
             case PERSON -> InvoiceAddressType.PERSON;
         };
@@ -369,7 +366,9 @@ final class OrderEventMapper {
      * <p>A carrier newer than the vendored spec never reaches here: since CORE-12 the codec decodes it
      * to {@code null}, and the caller's {@code Optional.ofNullable} turns that into an empty
      * {@link DeliveryTracking#vendor()}. So {@code fromWire}'s guard now only catches drift between this
-     * domain enum and the generated one — a packaging bug, not a wire condition.
+     * domain enum and the generated one — a packaging bug, not a wire condition. Note that closing that
+     * gap takes two steps: {@link DeliveryVendor} is hand-written, so re-generating Layer 1 alone adds
+     * the carrier to the generated enum and then trips this guard until the core enum gains it too.
      */
     private static DeliveryVendor toDeliveryVendor(OrderDeliveryTracking.VendorEnum rawVendor) {
         return DeliveryVendor.fromWire(rawVendor.getValue());
@@ -386,8 +385,7 @@ final class OrderEventMapper {
     }
 
     private static ReturnReason toReturnReason(OrderReturnsInner.ReasonEnum rawReason) {
-        requireKnownEnum(rawReason, "returns[].reason");
-        return switch (rawReason) {
+        return switch (requireKnownEnum(rawReason, "returns[].reason")) {
             case RESIGN -> ReturnReason.RESIGN;
             case MISTAKE -> ReturnReason.MISTAKE;
             case ITEMS_QUALITY -> ReturnReason.ITEMS_QUALITY;

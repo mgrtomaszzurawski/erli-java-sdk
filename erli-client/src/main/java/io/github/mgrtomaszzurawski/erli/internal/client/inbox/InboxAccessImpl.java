@@ -77,9 +77,11 @@ public final class InboxAccessImpl implements InboxAccess {
      *
      * <p>What reaches here narrowed under CORE-12. An unrecognised <em>enum</em> value no longer fails
      * the response — the codec decodes it to {@code null}, so an optional one simply becomes an empty
-     * {@code Optional} and only a <em>required</em> one still stops the mapping. What is left are
-     * genuinely unmappable messages: a required property absent or unrecognised, or a payload whose
-     * shape does not match its {@code type}.
+     * {@code Optional} and only a <em>required</em> one still stops the mapping. What is left is a
+     * required property absent or unrecognised, a payload whose shape does not match its {@code type},
+     * or drift between a hand-written domain enum and the generated one. Only the first two are wire
+     * conditions the advice below fits; the third is a packaging bug in the SDK itself, where
+     * acknowledging the message would hide a defect rather than work around a payload.
      *
      * <p>An unacknowledged message is returned again by the next call, so such a message would stall
      * the drain loop forever with no clue which one it was. Naming the offending id turns that dead end
