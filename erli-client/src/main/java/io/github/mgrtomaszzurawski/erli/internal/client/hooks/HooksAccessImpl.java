@@ -41,14 +41,14 @@ public final class HooksAccessImpl implements HooksAccess {
     @Override
     public void save(Hook hook) {
         Objects.requireNonNull(hook, "hook").requireRegisterable();
-        runtime.put(PathTemplate.expand(ApiPaths.HOOK_BY_NAME, hookNameValue(hook.kind())),
+        runtime.put(PathTemplate.expand(ApiPaths.HOOK_BY_NAME, hookNamePathParams(hook.kind())),
                 HookMapper.toRaw(hook), Void.class);
     }
 
     @Override
     public void delete(HookKind kind) {
         Objects.requireNonNull(kind, "kind");
-        runtime.delete(PathTemplate.expand(ApiPaths.HOOK_BY_NAME, hookNameValue(kind)),
+        runtime.delete(PathTemplate.expand(ApiPaths.HOOK_BY_NAME, hookNamePathParams(kind)),
                 QueryParameters.empty(), Void.class);
     }
 
@@ -66,7 +66,7 @@ public final class HooksAccessImpl implements HooksAccess {
         runtime.post(ApiPaths.HOOK_PRODUCTS_NEED_SYNC_RUN, HookMapper.toRaw(notification), Void.class);
     }
 
-    private static Map<String, String> hookNameValue(HookKind kind) {
+    private static Map<String, String> hookNamePathParams(HookKind kind) {
         return Map.of(ApiPaths.HOOK_NAME_PARAM, kind.wireValue());
     }
 

@@ -59,7 +59,7 @@ import java.util.Optional;
  * <ul>
  *   <li>All money in the payload arrives as an <strong>integer count of minor units</strong> (grosze
  *       for {@code PLN}); the order-level {@code currency} applies to every amount in the payload, and
- *       {@link Money#ofMinorUnits} rebuilds it at that currency's own scale.</li>
+ *       {@link Money#ofMinorUnits(long, java.util.Currency)} rebuilds it at that currency's own scale.</li>
  *   <li>{@code deliveryTracking} is declared as two alternative shapes ({@code trackingUrl} versus
  *       {@code vendor} + {@code trackingNumber}). The generated {@code anyOf} wrapper cannot pick
  *       between them under a lenient mapper, so the tracking subtree is bound to both branches and the
@@ -178,7 +178,8 @@ final class OrderEventMapper {
                 requireText(rawDelivery.getName(), "delivery.name"),
                 DeliveryMethodId.of(requireText(rawDelivery.getTypeId(), "delivery.typeId")),
                 Money.ofMinorUnits(requireInteger(rawDelivery.getPrice(), "delivery.price"), currency),
-                Optional.ofNullable(rawDelivery.getCancelled()).map(minorUnits -> Money.ofMinorUnits(minorUnits, currency)),
+                Optional.ofNullable(rawDelivery.getCancelled())
+                        .map(minorUnits -> Money.ofMinorUnits(minorUnits, currency)),
                 requireBoolean(rawDelivery.getCod(), "delivery.cod"),
                 Optional.ofNullable(rawDelivery.getSourceMarket()),
                 Optional.ofNullable(rawDelivery.getTargetMarket()),

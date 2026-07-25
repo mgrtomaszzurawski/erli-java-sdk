@@ -32,7 +32,7 @@ public final class ApiPaths {
     // --- APPEND BLOCK: bucket E Finance -----------------------------------------------------------
 
     // --- APPEND BLOCK: bucket F Comms & Automation ------------------------------------------------
-    /** Name of the {@link #HOOK_BY_NAME} placeholder, as {@code PathTemplate} expects it. */
+    /** Name of the {@link #HOOK_BY_NAME} placeholder, as {@link PathTemplate#expand} expects it. */
     public static final String HOOK_NAME_PARAM = "hookName";
 
     /** {@code POST /hooks/checkBuyability/run} — test-fire the shop's buyability hook. */
