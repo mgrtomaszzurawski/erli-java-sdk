@@ -2,12 +2,14 @@ package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
+import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Order;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderSearchRequest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,6 +38,26 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class OrdersLiveE2ETest {
 
     private static final int SAMPLE_SIZE = 5;
+    private static final int RATE_LIMIT_ATTEMPTS = 4;
+    private static final Duration RATE_LIMIT_BACKOFF = Duration.ofSeconds(2);
+
+    /**
+     * The sandbox rate-limits repeated searches, and {@code _search} is a read Erli exposes as a
+     * {@code POST} — so the default policy will not retry it and a 429 aborts the call. Enabling
+     * {@code retryPost} here is not a test workaround: it is the configuration {@code docs/orders.md}
+     * recommends for exactly this case, so the live run exercises what a real unattended sync would do.
+     */
+    private static ErliClient liveClient() {
+        return ErliClient.builder()
+                .apiKey(ApiKey.fromEnvironment())
+                .baseUrlFromEnvironment()
+                .retryPolicy(RetryPolicy.builder()
+                        .maxAttempts(RATE_LIMIT_ATTEMPTS)
+                        .baseDelay(RATE_LIMIT_BACKOFF)
+                        .retryPost(true)
+                        .build())
+                .build();
+    }
 
     /**
      * The round-trip itself: the request is accepted, the bare-array body decodes, and the cursor walk
@@ -43,7 +65,7 @@ class OrdersLiveE2ETest {
      */
     @Test
     void completesASearchRoundTripAgainstTheLiveSandbox() {
-        try (ErliClient client = ErliClient.fromEnvironment()) {
+        try (ErliClient client = liveClient()) {
             List<Order> sample = client.orders()
                     .search(OrderSearchRequest.builder().pageSize(SAMPLE_SIZE).build())
                     .limit(SAMPLE_SIZE)
@@ -63,7 +85,7 @@ class OrdersLiveE2ETest {
      */
     @Test
     void mapsEveryRequiredFieldOfALiveOrder() {
-        try (ErliClient client = ErliClient.fromEnvironment()) {
+        try (ErliClient client = liveClient()) {
             List<Order> sample = client.orders()
                     .search(OrderSearchRequest.builder().pageSize(SAMPLE_SIZE).build())
                     .limit(SAMPLE_SIZE)
@@ -88,7 +110,7 @@ class OrdersLiveE2ETest {
      */
     @Test
     void fetchesASingleOrderById() {
-        try (ErliClient client = ErliClient.fromEnvironment()) {
+        try (ErliClient client = liveClient()) {
             Optional<Order> first = client.orders()
                     .search(OrderSearchRequest.builder().pageSize(1).build())
                     .findFirst();

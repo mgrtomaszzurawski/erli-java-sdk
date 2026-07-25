@@ -41,7 +41,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.OrderUser;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderUserDeliveryAddress;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderUserInvoiceAddress;
 
-import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.List;
 import java.util.Objects;
@@ -56,8 +55,8 @@ import java.util.OptionalLong;
  * <p>Two conversions are worth knowing about:
  * <ul>
  *   <li><strong>Money.</strong> Erli sends every amount as an integer count of minor units (grosze)
- *       with the order's currency alongside, so amounts are rebuilt with the currency's own scale
- *       rather than divided by a hard-coded hundred.</li>
+ *       with the order's currency alongside, so amounts go through the core
+ *       {@link Money#ofMinorUnits} helper rather than a local divisor.</li>
  *   <li><strong>Closed enums</strong> are translated with an explicit exhaustive {@code switch}, never
  *       {@code valueOf(name())}. That decouples the public enums from the generated constant names and
  *       turns a new upstream value into a compile error here — a deliberate signal to map it — instead
@@ -383,11 +382,9 @@ final class OrderMapper {
 
     // --- primitives -------------------------------------------------------------------------------
 
-    /** Rebuilds an amount from Erli's integer minor units using the currency's own scale. */
+    /** Erli sends amounts as integer minor units (grosze); core owns the conversion. */
     private static Money money(Integer minorUnits, Currency currency) {
-        return Money.of(
-                BigDecimal.valueOf(minorUnits.longValue(), currency.getDefaultFractionDigits()),
-                currency);
+        return Money.ofMinorUnits(minorUnits.longValue(), currency);
     }
 
     private static OptionalInt optionalInt(Integer value) {

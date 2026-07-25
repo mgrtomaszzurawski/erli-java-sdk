@@ -9,22 +9,22 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import org.openapitools.jackson.nullable.JsonNullableModule;
 
 import java.util.List;
 
 /**
- * Thin Jackson wrapper for the SDK's JSON boundary. Configured to <strong>ignore unknown
- * properties</strong> so the SDK stays forward-compatible with the API's richer-than-spec payloads
- * (see {@code KNOWN-SERVER-BEHAVIORS.md}). Internal: never exported to consumers.
+ * Thin Jackson wrapper for the SDK's JSON boundary. Internal: never exported to consumers.
  *
- * <p>Three further settings are load-bearing for every domain bucket:
+ * <p>The configuration is the contract every layer above depends on:
  * <ul>
- *   <li>the JSR-310 module, because the generated models expose {@code date-time} properties as
- *       {@link java.time.OffsetDateTime} — without it decoding any dated payload fails outright;</li>
- *   <li>ISO-8601 (not numeric) date output, matching what the API sends and accepts;</li>
- *   <li>{@link JsonInclude.Include#NON_NULL} serialization, so an unset optional property is
- *       <em>omitted</em> rather than written as an explicit {@code null}. This matters on the
- *       {@code PATCH} endpoints, where an explicit {@code null} is a request to clear the field.</li>
+ *   <li><strong>Unknown properties are ignored</strong>, so the SDK stays forward-compatible with the
+ *       API's richer-than-spec payloads (see {@code KNOWN-SERVER-BEHAVIORS.md}).</li>
+ *   <li><strong>{@code java.time} types are supported</strong> — every OpenAPI {@code date-time}
+ *       property becomes an {@link java.time.OffsetDateTime} in the generated Layer-1 models.</li>
+ *   <li><strong>Dates travel as ISO-8601 strings</strong>, never as epoch numbers; the spec types every
+ *       timestamp as {@code string/date-time}, in requests as well as responses.</li>
+ *   <li><strong>The offset the API sent is preserved</strong> rather than normalized to UTC.</li>
  * </ul>
  */
 public final class JsonCodec {
@@ -33,13 +33,23 @@ public final class JsonCodec {
 
     public JsonCodec() {
         this.mapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                // Jackson otherwise rewrites every parsed offset to UTC. The instant survives, but an
-                // OffsetDateTime the SDK hands a consumer would silently lose the offset the server
-                // actually sent, which is a detail a public java.time type is expected to preserve.
-                .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
+                // Layer 1 maps every OpenAPI `date-time` property to java.time.OffsetDateTime, which a
+                // bare ObjectMapper refuses to handle. Erli states timestamps as ISO-8601 strings, so
+                // dates must also serialize as strings rather than epoch numbers.
+                .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                // Keep the offset the API actually sent. Jackson otherwise rewrites every timestamp to
+                // UTC, which silently changes what OffsetDateTime.getOffset() reports; the instant is
+                // the same, but the SDK would be handing back a value the server never stated.
+                .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
+                // Layer 1 maps every `nullable: true` property to JsonNullable<T> (100 of them across
+                // the spec, mostly the product schemas). Without this module such a property cannot be
+                // decoded at all when it carries a value, and throws when it carries an explicit null.
+                .registerModule(new JsonNullableModule())
+                // An unset optional field must be omitted from a write body, not sent as an explicit
+                // null: the API's request schemas are additionalProperties:false and treat a null as a
+                // value to store. This also lets JsonNullable's "undefined" state stay off the wire.
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
@@ -63,6 +73,24 @@ public final class JsonCodec {
         } catch (JsonProcessingException failure) {
             throw new ErliTransportException(
                     "Failed to decode response body as List<" + elementType.getSimpleName() + ">", failure);
+        }
+    }
+
+    /**
+     * Bind an already-parsed JSON subtree to {@code type}.
+     *
+     * <p>Needed wherever the SDK must choose the target class itself instead of letting Jackson choose.
+     * The generated {@code anyOf} wrappers try their branches in declaration order and accept the first
+     * that does not throw; with unknown properties ignored (see the class javadoc) the first branch
+     * always wins, so a payload whose real shape is a later branch binds to the wrong class and loses
+     * its fields silently. A caller that knows the discriminator — for inbox messages the sibling
+     * {@code type} field — reads the tree and binds the correct branch through this method.
+     */
+    public <T> T convert(JsonNode node, Class<T> type) {
+        try {
+            return mapper.treeToValue(node, type);
+        } catch (JsonProcessingException failure) {
+            throw new ErliTransportException("Failed to bind JSON to " + type.getSimpleName(), failure);
         }
     }
 

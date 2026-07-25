@@ -59,20 +59,22 @@ try (ErliClient client = ErliClient.builder()
 
 ## Feature guides
 
-Guides are added as each domain lands.
+Per-domain guides are added as each domain ships:
 
-| Domain | Guide |
-|---|---|
-| Orders | [`docs/orders.md`](docs/orders.md) |
+| Guide | Accessor | What it covers |
+|---|---|---|
+| [`docs/orders.md`](docs/orders.md) | `client.orders()` | searching orders with typed filters, cursor-resumed sync, seller-status updates, buyer-PII handling |
+| [`docs/inbox.md`](docs/inbox.md) | `client.inbox()` | polling the event inbox, order/product-sync events, acknowledging messages |
+| [`docs/hooks.md`](docs/hooks.md) | `client.hooks()` | registering webhook subscriptions and firing them on demand |
 
 ```java
+// Drain the event inbox, then acknowledge the batch.
 try (ErliClient client = ErliClient.fromEnvironment()) {
-    client.orders()
-            .search(OrderSearchRequest.builder()
-                    .filter(OrderFilter.updatedAfter(lastSync))
-                    .build())
-            .limit(100)
-            .forEach(order -> System.out.println(order.id() + " " + order.sellerStatus()));
+    List<Message> batch = client.inbox().unread();
+    batch.forEach(message -> System.out.println(message.type() + " at " + message.created()));
+    if (!batch.isEmpty()) {
+        client.inbox().markRead(ReadReceipt.upTo(batch.get(batch.size() - 1).id()));
+    }
 }
 ```
 

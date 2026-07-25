@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -24,8 +25,8 @@ import java.util.stream.Stream;
  */
 public final class OrderAccessImpl implements OrderAccess {
 
-    /** The {@code {id}} placeholder used by the templated paths in {@link ApiPaths}. */
-    private static final String ID_PLACEHOLDER = "{id}";
+    /** Name of the {@code {id}} placeholder in the templated paths in {@link ApiPaths}. */
+    private static final String ID_PARAMETER = "id";
 
     // The Layer-1 order model shares its simple name with the domain record, so the response types are
     // bound once here rather than fully qualifying them at every call site.
@@ -102,12 +103,12 @@ public final class OrderAccessImpl implements OrderAccess {
     }
 
     /**
-     * Substitute the order id into a templated path. The value is percent-encoded as a single path
-     * segment by {@link PathTemplate} — an id is consumer-supplied data and must not be able to alter
-     * the request's path.
+     * Substitute the order id into a templated path. The core {@link PathTemplate} percent-encodes it
+     * as a single path segment — an id is consumer-supplied data and must not be able to alter the
+     * request's path.
      */
     private static String withId(String template, OrderId orderId) {
         Objects.requireNonNull(orderId, "orderId");
-        return PathTemplate.expand(template, ID_PLACEHOLDER, orderId.value());
+        return PathTemplate.expand(template, Map.of(ID_PARAMETER, orderId.value()));
     }
 }

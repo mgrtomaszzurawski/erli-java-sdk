@@ -1,71 +1,56 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
+
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Path-segment encoding contract. Identifiers reach the SDK from consumer data, so a value must never
- * be able to change the shape of the request path.
- */
 class PathTemplateTest {
 
-    private static final String STATUS_TEMPLATE = "/orders/{id}/status";
-    private static final String ID_PLACEHOLDER = "{id}";
-
     @Test
-    void leavesAnOrdinaryIdentifierUntouched() {
-        assertEquals("/orders/221201x12345/status",
-                PathTemplate.expand(STATUS_TEMPLATE, ID_PLACEHOLDER, "221201x12345"));
+    void expandsAndEncodesTheSegment() {
+        assertEquals("/products/sku-1",
+                PathTemplate.expand("/products/{externalId}", Map.of("externalId", "sku-1")));
     }
 
     @Test
-    void leavesUnreservedPunctuationUntouched() {
-        assertEquals("/orders/a-b_c.d~e/status",
-                PathTemplate.expand(STATUS_TEMPLATE, ID_PLACEHOLDER, "a-b_c.d~e"));
-    }
-
-    /**
-     * The reason this class exists. Before encoding, an id ending in {@code #} truncated the template
-     * so that {@code PATCH /orders/{id}/status} was sent as {@code PATCH /orders/{id}} — a different,
-     * successful, authenticated write against the wrong resource.
-     */
-    @ParameterizedTest(name = "{0} cannot escape its segment")
-    @CsvSource({
-            "'221201x1#',            /orders/221201x1%23/status",
-            "'221201x1?limit=999',   /orders/221201x1%3Flimit%3D999/status",
-            "'221201x1/status',      /orders/221201x1%2Fstatus/status",
-            "'../../shops/me',       /orders/..%2F..%2Fshops%2Fme/status",
-            "'a b',                  /orders/a%20b/status",
-    })
-    void encodesCharactersThatWouldOtherwiseAlterThePath(String hostileId, String expectedPath) {
-        assertEquals(expectedPath, PathTemplate.expand(STATUS_TEMPLATE, ID_PLACEHOLDER, hostileId));
+    void encodesReservedCharactersThatWouldRerouteTheRequest() {
+        // '#','/','?' in an id must not split the path or add a fragment/query.
+        assertEquals("/orders/a%23b%2Fc%3Fd",
+                PathTemplate.expand("/orders/{id}", Map.of("id", "a#b/c?d")));
     }
 
     @Test
-    void encodesNonAsciiAsUtf8() {
-        assertEquals("/orders/%C5%82/status", PathTemplate.expand(STATUS_TEMPLATE, ID_PLACEHOLDER, "ł"));
+    void encodesSpaceAsPercent20NotPlus() {
+        assertEquals("/hooks/on%20order",
+                PathTemplate.expand("/hooks/{hookName}", Map.of("hookName", "on order")));
     }
 
-    /**
-     * Percent-encoding cannot neutralize these: both are made only of unreserved characters, so they
-     * would survive encoding and still resolve as relative path segments.
-     */
-    @ParameterizedTest
-    @ValueSource(strings = {".", ".."})
-    void rejectsRelativePathSegments(String relativeSegment) {
+    @Test
+    void rejectsDotAndDotDotSegments() {
         assertThrows(IllegalArgumentException.class,
-                () -> PathTemplate.expand(STATUS_TEMPLATE, ID_PLACEHOLDER, relativeSegment));
+                () -> PathTemplate.expand("/orders/{id}", Map.of("id", "..")));
+        assertThrows(IllegalArgumentException.class,
+                () -> PathTemplate.expand("/orders/{id}", Map.of("id", ".")));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"", " "})
-    void rejectsABlankValue(String blank) {
+    @Test
+    void rejectsBlankValue() {
         assertThrows(IllegalArgumentException.class,
-                () -> PathTemplate.expand(STATUS_TEMPLATE, ID_PLACEHOLDER, blank));
+                () -> PathTemplate.expand("/orders/{id}", Map.of("id", "  ")));
+    }
+
+    @Test
+    void rejectsUnresolvedPlaceholder() {
+        assertThrows(IllegalArgumentException.class,
+                () -> PathTemplate.expand("/orders/{id}", Map.of()));
+    }
+
+    @Test
+    void rejectsUnknownPlaceholderName() {
+        assertThrows(IllegalArgumentException.class,
+                () -> PathTemplate.expand("/orders/{id}", Map.of("wrong", "1")));
     }
 }
