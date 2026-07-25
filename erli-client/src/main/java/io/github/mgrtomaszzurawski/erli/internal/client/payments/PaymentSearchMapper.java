@@ -3,12 +3,12 @@ package io.github.mgrtomaszzurawski.erli.internal.client.payments;
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
 import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
+import io.github.mgrtomaszzurawski.erli.core.model.SortOrder;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentSearch;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentSortField;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PayoutSearch;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PayoutSortField;
 import io.github.mgrtomaszzurawski.erli.domain.payments.ReturnSearch;
-import io.github.mgrtomaszzurawski.erli.domain.payments.SortOrder;
 import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -24,8 +24,6 @@ final class PaymentSearchMapper {
     static final String TYPE_PAYOUT = "payout";
     static final String TYPE_RETURN = "return";
 
-    private static final String SORT_ASCENDING = "ASC";
-    private static final String SORT_DESCENDING = "DESC";
 
     // Wire names for the sortable/filterable fields, exactly as the API spells them.
     private static final String FIELD_ID = "id";
@@ -126,7 +124,7 @@ final class PaymentSearchMapper {
     }
 
     private static String wireOrder(SortOrder order) {
-        return order == SortOrder.DESCENDING ? SORT_DESCENDING : SORT_ASCENDING;
+        return order.wireValue();
     }
 
     private static String wireName(PaymentSortField sortField) {
