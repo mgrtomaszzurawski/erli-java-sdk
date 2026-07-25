@@ -33,9 +33,9 @@ import java.util.function.Function;
  * {@link Parcel} domain record. Kept internal so no {@code *Raw} type reaches an exported signature.
  *
  * <p>Enums translate through each domain enum's {@code fromWire}, matching the convention the
- * Dictionaries bucket established. A status the API added but the vendored spec lacks already fails
- * earlier, at JSON decode, so a second hand-written switch here would buy nothing — and this bucket's
- * schemas repeat the status vocabulary five times.
+ * Dictionaries bucket established — the schemas of this bucket repeat the status vocabulary five times,
+ * so a hand-written switch per occurrence would be 87 branches. Parcel status is mapped tolerantly
+ * (unknown or absent → {@link ParcelStatus#UNRECOGNIZED}); the closed vocabularies stay fail-loud.
  *
  * <p>Fields the spec marks required are asserted; a response missing one is a server contract break,
  * and failing with the field name beats handing the caller a half-built record.
@@ -54,7 +54,7 @@ final class ParcelMapper {
                 Boolean.TRUE.equals(rawParcel.getErliPro()),
                 toDimensions(requireField(rawParcel.getDimensions(), "dimensions")),
                 mapEach(rawParcel.getErrors(), ParcelMapper::toError, "errors"),
-                toStatus(requireField(rawParcel.getStatus(), "status")),
+                toStatus(rawParcel.getStatus()),
                 mapEach(rawParcel.getStatusHistory(), ParcelMapper::toStatusChange, "statusHistory"),
                 toShipment(requireField(rawParcel.getShipping(), "shipping")),
                 Optional.ofNullable(rawParcel.getTrackingNumber()),
@@ -95,9 +95,16 @@ final class ParcelMapper {
         return ParcelType.fromWire(rawType.getValue());
     }
 
+    /**
+     * Deliberately not {@code requireField}-guarded. The codec decodes an unknown enum as {@code null},
+     * so a status Erli mints after this release is indistinguishable here from an absent one — and of
+     * the two readings, degrading to {@link ParcelStatus#UNRECOGNIZED} is the one that does not cost the
+     * caller every other parcel in the same search response. The trade is that a genuinely missing
+     * status also reads as {@code UNRECOGNIZED} rather than naming a contract break.
+     */
     private static ParcelStatus toStatus(
             io.github.mgrtomaszzurawski.erli.rest.model.Parcel.StatusEnum rawStatus) {
-        return ParcelStatus.fromWire(rawStatus.getValue());
+        return rawStatus == null ? ParcelStatus.UNRECOGNIZED : ParcelStatus.fromWire(rawStatus.getValue());
     }
 
     private static ParcelDimensions toDimensions(CreateParcelsInnerDimensions rawDimensions) {
@@ -126,10 +133,10 @@ final class ParcelMapper {
 
     /** Per the spec only {@code status} is required on a history entry; {@code changed} is optional. */
     private static ParcelStatusChange toStatusChange(ParcelStatusHistoryInner rawEntry) {
-        ParcelStatusHistoryInner.StatusEnum rawStatus =
-                requireField(rawEntry.getStatus(), "statusHistory[].status");
+        ParcelStatusHistoryInner.StatusEnum rawStatus = rawEntry.getStatus();
         return new ParcelStatusChange(
-                ParcelStatus.fromWire(rawStatus.getValue()), Optional.ofNullable(rawEntry.getChanged()));
+                rawStatus == null ? ParcelStatus.UNRECOGNIZED : ParcelStatus.fromWire(rawStatus.getValue()),
+                Optional.ofNullable(rawEntry.getChanged()));
     }
 
     private static ParcelShipment toShipment(ParcelShipping rawShipping) {

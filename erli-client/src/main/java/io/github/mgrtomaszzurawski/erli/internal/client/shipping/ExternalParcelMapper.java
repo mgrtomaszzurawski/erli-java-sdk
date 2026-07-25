@@ -42,7 +42,7 @@ final class ExternalParcelMapper {
                 OrderId.of(requireField(rawParcel.getOrderId(), "orderId")),
                 ParcelType.fromWire(requireField(rawParcel.getType(), "type").getValue()),
                 toVendor(requireField(rawParcel.getShipping(), "shipping")),
-                ParcelStatus.fromWire(requireField(rawParcel.getStatus(), "status").getValue()),
+                toStatus(rawParcel.getStatus()),
                 toStatusHistory(rawParcel.getStatusHistory()),
                 Optional.ofNullable(rawParcel.getTrackingNumber()),
                 Optional.ofNullable(rawParcel.getTrackingStoppedCause()),
@@ -99,7 +99,7 @@ final class ExternalParcelMapper {
                 OrderId.of(requireField(raw.getOrderId(), "orderId")),
                 ParcelType.fromWire(requireField(raw.getType(), "type").getValue()),
                 toVendor(requireField(raw.getShipping(), "shipping")),
-                ParcelStatus.fromWire(requireField(raw.getStatus(), "status").getValue()),
+                toStatus(raw.getStatus()),
                 toStatusHistory(raw.getStatusHistory()),
                 Optional.ofNullable(raw.getTrackingNumber()),
                 Optional.ofNullable(raw.getTrackingStoppedCause()),
@@ -121,7 +121,7 @@ final class ExternalParcelMapper {
                 throw new IllegalStateException("External parcel 'statusHistory' has a null element");
             }
             history.add(new ParcelStatusChange(
-                    ParcelStatus.fromWire(requireField(rawEntry.getStatus(), "statusHistory[].status").getValue()),
+                    toStatus(rawEntry.getStatus()),
                     Optional.ofNullable(rawEntry.getChanged())));
         }
         return List.copyOf(history);
@@ -140,6 +140,14 @@ final class ExternalParcelMapper {
             errors.add(new ParcelError(errorCode.intValue(), Optional.ofNullable(rawError.getErrorMessage())));
         }
         return List.copyOf(errors);
+    }
+
+    /** Tolerant like {@link ParcelMapper}: an unknown or absent status degrades to a sentinel. */
+    private static ParcelStatus toStatus(Object rawStatus) {
+        if (rawStatus == null) {
+            return ParcelStatus.UNRECOGNIZED;
+        }
+        return ParcelStatus.fromWire(String.valueOf(rawStatus));
     }
 
     private static <T> T requireField(T value, String fieldName) {

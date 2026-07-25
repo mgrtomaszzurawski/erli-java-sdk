@@ -86,8 +86,14 @@ public enum ParcelStatus {
      * <p>Deliberately tolerant, unlike the smaller enums in this package. Those describe closed
      * vocabularies where an unknown value means something is genuinely wrong; parcel status is an open,
      * carrier-driven vocabulary where a new value is routine, and failing the read would punish the
-     * caller for Erli shipping with a new carrier. The shared codec already decodes an unknown enum as
-     * {@code null} (see {@code KNOWN-SERVER-BEHAVIORS.md}), so the null case lands here too.
+     * caller for Erli shipping with a new carrier.
+     *
+     * <p>The shared codec decodes an unknown enum as {@code null} before a mapper sees it (see
+     * {@code KNOWN-SERVER-BEHAVIORS.md}), so tolerance here only helps if the mappers let that
+     * {@code null} through instead of guarding it — {@code ParcelMapper}/{@code ExternalParcelMapper}
+     * do, deliberately, and say so. The consequence worth knowing: a genuinely <em>absent</em> status is
+     * indistinguishable from an unknown one after the codec, so it also reads as {@link #UNRECOGNIZED}
+     * rather than naming a contract break.
      */
     public static ParcelStatus fromWire(String wireValue) {
         if (wireValue == null) {
