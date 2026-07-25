@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
+import io.github.mgrtomaszzurawski.erli.core.model.TaxRate;
 import io.github.mgrtomaszzurawski.erli.domain.products.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.products.AttributeValues;
 import io.github.mgrtomaszzurawski.erli.domain.products.BaseMarket;
@@ -17,17 +18,15 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductStatus;
 import io.github.mgrtomaszzurawski.erli.domain.products.ReferencePriceType;
 import io.github.mgrtomaszzurawski.erli.domain.products.ResponsibleEntitySource;
-import io.github.mgrtomaszzurawski.erli.domain.products.TaxRate;
 import io.github.mgrtomaszzurawski.erli.domain.products.VariantGroupSource;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductResponse;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

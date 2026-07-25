@@ -1,7 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.products;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
-
+import io.github.mgrtomaszzurawski.erli.core.model.TaxRate;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
