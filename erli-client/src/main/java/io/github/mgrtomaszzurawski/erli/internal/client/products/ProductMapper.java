@@ -68,7 +68,8 @@ import java.util.Set;
  *
  * <p>Fields the spec marks required are demanded here: a missing one throws rather than yielding a
  * {@code Product} with a silent {@code null}, because a product without a price or an id is not something
- * a caller can act on. Everything else degrades to an empty {@link Optional} or an empty list.
+ * a caller can act on. Everything else degrades to an empty {@link Optional} or an empty list. For an
+ * enum-backed field "missing" also covers "sent, but unrecognised" — see {@link #require}.
  *
  * <p>Kept in an internal package so no {@code *Raw} type ever appears in an exported signature.
  * Internal: never exported.
@@ -398,9 +399,20 @@ final class ProductMapper {
         return String.valueOf(rawEnum);
     }
 
+    /**
+     * Demand a field the spec marks required.
+     *
+     * <p>The message names both causes on purpose. Since CORE-12 the codec decodes an unrecognised enum
+     * value to {@code null}, so for an enum-backed field this fires when the value was absent
+     * <em>or</em> when the marketplace sent one this SDK version does not know — and the two are
+     * indistinguishable by the time the payload reaches here. Staying loud is the right answer for a
+     * required field either way: a product whose status or dispatch time cannot be read is not
+     * something a caller can act on.
+     */
     private static <T> T require(T value, String field) {
         if (value == null) {
-            throw new IllegalStateException("ProductResponse is missing the required '" + field + "' field");
+            throw new IllegalStateException("ProductResponse is missing the required '" + field
+                    + "' field, or carries a value this SDK version does not recognise");
         }
         return value;
     }

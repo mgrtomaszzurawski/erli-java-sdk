@@ -21,6 +21,7 @@ import io.github.mgrtomaszzurawski.erli.domain.products.VariantGroupSource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Translates between the products domain enums and the wire values the Erli API uses.
@@ -35,14 +36,30 @@ import java.util.function.Function;
  * on the wire value — the thing the spec actually defines, and what every Layer-1 enum exposes as
  * {@code getValue()} — collapses those four back into one mapping.
  *
- * <p>An unrecognised value throws rather than silently degrading, naming both the value and the enum so
- * a spec addition is obvious from the message. Internal: never exported.
+ * <p><strong>Where an unrecognised value actually surfaces (CORE-12).</strong> The shared codec decodes
+ * with {@code READ_UNKNOWN_ENUM_VALUES_AS_NULL}, so a value the SDK does not know never reaches this
+ * class when the API declares the field as an enum — Layer 1 hands the mapper a {@code null} first, and
+ * the mapper decides: an optional field becomes absent, a required one fails its {@code require(...)}
+ * check. The lookups here only see a raw value for the handful of properties the spec types as an
+ * array of enums, which Layer 1 exposes as {@code List<String>}.
+ *
+ * <p>Those are the ones that need a policy, because they arrive as a list: rejecting one unfamiliar
+ * entry would fail the whole product read. {@link #toMarket} therefore degrades to
+ * {@link Market#UNRECOGNIZED} rather than throwing. {@link #toProductFieldOrNull} answers {@code null}
+ * for the same reason. Everything else stays fail-loud — reaching it with an unknown value would mean
+ * the codec's tolerance had been turned off, which is worth hearing about.
+ *
+ * <p>Internal: never exported.
  */
 final class ProductEnums {
 
     private static final Map<String, ProductStatus> PRODUCT_STATUSES = index(ProductStatus.values(), ProductStatus::wireName);
     private static final Map<String, BaseMarket> BASE_MARKETS = index(BaseMarket.values(), BaseMarket::wireName);
-    private static final Map<String, Market> MARKETS = index(Market.values(), Market::wireName);
+    // UNRECOGNIZED has no wire value, so it is excluded from the read index rather than asked for one.
+    private static final Map<String, Market> MARKETS = index(
+            Stream.of(Market.values()).filter(market -> market != Market.UNRECOGNIZED)
+                    .toArray(Market[]::new),
+            Market::wireName);
     private static final Map<String, InvoiceType> INVOICE_TYPES = index(InvoiceType.values(), InvoiceType::wireName);
     private static final Map<String, TaxRate> TAX_RATES = index(TaxRate.values(), TaxRate::wireName);
     private static final Map<String, ReferencePriceType> REFERENCE_PRICE_TYPES =
@@ -80,8 +97,13 @@ final class ProductEnums {
         return lookup(BASE_MARKETS, wireValue, BaseMarket.class);
     }
 
+    /**
+     * The market a wire value denotes, or {@link Market#UNRECOGNIZED} when this SDK version does not
+     * know it. Reached with a raw value only for {@code productAttachments[].markets}, which the spec
+     * types as an array of enums and Layer 1 exposes as {@code List<String>}.
+     */
     static Market toMarket(String wireValue) {
-        return lookup(MARKETS, wireValue, Market.class);
+        return MARKETS.getOrDefault(wireValue, Market.UNRECOGNIZED);
     }
 
     static InvoiceType toInvoiceType(String wireValue) {

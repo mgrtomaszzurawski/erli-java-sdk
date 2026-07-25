@@ -21,6 +21,7 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilter;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilterField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductImage;
+import io.github.mgrtomaszzurawski.erli.domain.products.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductPatch;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
@@ -570,6 +571,53 @@ class ProductAccessTest {
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
                 () -> ProductFilter.in(ProductFilterField.STATUS, List.of("active")));
         assertTrue(failure.getMessage().contains("STATUS"), failure.getMessage());
+    }
+
+    @Test
+    void survivesAMarketCodeThisSdkVersionDoesNotKnow() {
+        // One new market on one attachment must not fail the product read — and on a search, the page.
+        String withNewMarket = productBody("sku-1").replaceFirst("\\}$",
+                ",\"productAttachments\":[{\"id\":7,\"kind\":\"energyLabel\","
+                        + "\"markets\":[\"pl\",\"cz\"]}]}");
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(withNewMarket)));
+
+        Product product = products().get(SKU_1).orElseThrow();
+
+        // The scope keeps its true size; the unknown entry is visible rather than silently dropped.
+        assertEquals(List.of(Market.PL, Market.UNRECOGNIZED),
+                product.productAttachments().get(0).markets());
+    }
+
+    @Test
+    void refusesToWriteBackAMarketItCannotName() {
+        IllegalStateException failure =
+                assertThrows(IllegalStateException.class, Market.UNRECOGNIZED::wireName);
+        assertTrue(failure.getMessage().contains("upgrade the SDK"), failure.getMessage());
+    }
+
+    @Test
+    void anUnrecognisedRequiredEnumFailsLoudlyAndSaysWhy() {
+        // CORE-12: the codec nulls an unknown enum, so a required field cannot tell "absent" from
+        // "unrecognised" — it must name both.
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(
+                okJson(productBody("sku-1").replace("\"status\":\"active\"", "\"status\":\"embargoed\""))));
+
+        IllegalStateException failure =
+                assertThrows(IllegalStateException.class, () -> products().get(SKU_1));
+
+        assertTrue(failure.getMessage().contains("status"), failure.getMessage());
+        assertTrue(failure.getMessage().contains("does not recognise"), failure.getMessage());
+    }
+
+    @Test
+    void anUnrecognisedOptionalEnumReadsAsAbsentRatherThanFailing() {
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(
+                okJson(productBody("sku-1").replaceFirst("\\}$", ",\"taxRate\":\"TAX_11\"}"))));
+
+        Product product = products().get(SKU_1).orElseThrow();
+
+        assertTrue(product.taxRate().isEmpty(),
+                "an optional enum the SDK cannot read degrades to absent, not to an exception");
     }
 
     // --- The mandatory error-path table (TESTING.md) ------------------------------------------------
