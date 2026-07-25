@@ -38,6 +38,7 @@ public final class HttpRuntime {
     private static final String METHOD_POST = "POST";
     private static final String METHOD_PUT = "PUT";
     private static final String METHOD_PATCH = "PATCH";
+    private static final String METHOD_DELETE = "DELETE";
 
     private static final boolean IDEMPOTENT = true;
     private static final boolean NON_IDEMPOTENT = false;
@@ -114,6 +115,21 @@ public final class HttpRuntime {
      */
     public <T> T delete(String path, QueryParameters queryParameters, Class<T> responseType) {
         HttpRequest request = queryRequest(path, queryParameters).DELETE().build();
+        return execute(request, path, IDEMPOTENT, body -> decodeObject(body, responseType));
+    }
+
+    /**
+     * {@code DELETE path} with a JSON request body — a few Erli deletes take one (e.g.
+     * {@code DELETE /dictionaries/attachments} with an id array). DELETE is idempotent, so it is
+     * retried; an empty response decodes to {@code null} (use {@code Void.class}).
+     */
+    public <T> T delete(String path, Object requestBody, QueryParameters queryParameters, Class<T> responseType) {
+        HttpRequest.BodyPublisher publisher =
+                HttpRequest.BodyPublishers.ofString(codec.write(requestBody), StandardCharsets.UTF_8);
+        HttpRequest request = queryRequest(path, queryParameters)
+                .header(HEADER_CONTENT_TYPE, MEDIA_TYPE_JSON)
+                .method(METHOD_DELETE, publisher)
+                .build();
         return execute(request, path, IDEMPOTENT, body -> decodeObject(body, responseType));
     }
 
