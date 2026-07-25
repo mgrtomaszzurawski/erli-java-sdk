@@ -84,6 +84,34 @@ themselves in `toString()` — printing an `OrderEvent` will not leak an e-mail,
 account number. The values are available through the record components; handling them is your
 responsibility.
 
+## Values this SDK version does not recognise
+
+Erli adds enum values (carriers, tax rates, statuses) faster than a released SDK can vendor them. The
+SDK never fails a whole page over one such value: an unrecognised value decodes as **absent**, so an
+`Optional` component simply comes back empty.
+
+That means an empty `Optional` has two possible causes — the API sent nothing, or it sent something
+newer than this SDK. Where it matters you can tell them apart from the siblings. For the carrier:
+
+```java
+DeliveryTracking tracking = order.deliveryTracking().orElseThrow();
+if (tracking.vendor().isEmpty() && tracking.trackingNumber().isPresent()) {
+    // The API always sends carrier and tracking number together, so a tracking number without a
+    // carrier means the carrier is newer than this SDK. The number still identifies the parcel;
+    // upgrade the SDK to get the carrier itself.
+    log.warn("unknown carrier for parcel {}", tracking.trackingNumber().get());
+}
+```
+
+The affected components are `DeliveryTracking.vendor()`, `OrderLine.taxRate()`,
+`PickupPlace.provider()` and `OrderPaymentSummary.status()`; each says so in its own javadoc.
+
+A **required** property is different: the SDK cannot build the record without it, so the message fails
+to map and the exception names the property and says it is absent *or* unrecognised — it will not
+claim the property was missing, because at that point the SDK genuinely cannot tell. That failure is
+per message and it names the message id, so you can acknowledge that one and keep draining (see the
+loop above).
+
 ## Filtering
 
 ```java

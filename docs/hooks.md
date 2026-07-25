@@ -43,6 +43,10 @@ there.
 A subscription already stored on the shop is read back as-is even if it breaks those rules, so
 `list()` can still show you an insecure hook you need to replace.
 
+`list()` throws `ErliTransportException` if the shop holds a subscription this SDK version cannot
+represent — a hook name newer than the SDK, or a URL that is not a valid one. The message names the
+subscription so you can delete or replace it; `delete(HookKind)` needs no decoding and still works.
+
 `save` creates or overwrites the subscription named by `hook.kind()` — there is one subscription per
 kind, so saving twice replaces rather than duplicates. `delete` succeeds even when nothing was
 registered.
@@ -68,7 +72,8 @@ for (ProductBuyability answer : answers) {
 ```
 
 Both components are `Optional`: the API declares `status` explicitly nullable, and a shop may report
-availability without a stock figure. With no `CHECK_BUYABILITY` subscription registered the call
+availability without a stock figure. An absent `status` is therefore a stated answer here ("the shop
+did not say"), not the SDK hiding something it failed to understand. With no `CHECK_BUYABILITY` subscription registered the call
 succeeds and returns an empty list rather than failing.
 
 ```java
