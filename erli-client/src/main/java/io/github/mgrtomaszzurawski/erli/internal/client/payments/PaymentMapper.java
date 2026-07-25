@@ -48,7 +48,7 @@ final class PaymentMapper {
                 MinorUnits.fromMajorUnits(require(rawPayment.getAmount(), FIELD_AMOUNT)),
                 toStatus(require(rawPayment.getStatus(), FIELD_STATUS)),
                 require(rawPayment.getCreatedAt(), FIELD_CREATED_AT),
-                require(rawPayment.getCompletedAt(), FIELD_COMPLETED_AT),
+                Optional.ofNullable(rawPayment.getCompletedAt()),
                 toOperator(require(rawPayment.getOperator(), FIELD_OPERATOR).getValue()),
                 require(rawPayment.getMethodCode(), FIELD_METHOD_CODE).getValue(),
                 Optional.ofNullable(rawPayment.getMethodName())
@@ -67,6 +67,8 @@ final class PaymentMapper {
 
     static Transaction toTransaction(io.github.mgrtomaszzurawski.erli.rest.model.Transaction rawTransaction) {
         Objects.requireNonNull(rawTransaction, "raw Transaction");
+        // Transaction lines state their own currency; everything else in Finance is PLN grosze.
+        String currencyCode = rawTransaction.getCurrency();
         return new Transaction(
                 Optional.ofNullable(rawTransaction.getType()),
                 Optional.ofNullable(rawTransaction.getStatus()),
@@ -74,34 +76,35 @@ final class PaymentMapper {
                 Optional.ofNullable(rawTransaction.getEventDate()),
                 Optional.ofNullable(rawTransaction.getErliCreationDate()),
                 Optional.ofNullable(rawTransaction.getSortDate()),
-                money(rawTransaction.getAmount()),
-                money(rawTransaction.getAmountWithFee()),
-                money(rawTransaction.getFee()),
-                money(rawTransaction.getCommissionFee()),
+                money(rawTransaction.getAmount(), currencyCode),
+                money(rawTransaction.getAmountWithFee(), currencyCode),
+                money(rawTransaction.getFee(), currencyCode),
+                money(rawTransaction.getCommissionFee(), currencyCode),
                 Optional.ofNullable(rawTransaction.getCurrency()),
                 Optional.ofNullable(rawTransaction.getPaymentId()).map(BigDecimal::longValue),
                 Optional.ofNullable(rawTransaction.getPayoutId()).map(BigDecimal::longValue),
                 Optional.ofNullable(rawTransaction.getFeeId()).map(BigDecimal::longValue),
                 Optional.ofNullable(rawTransaction.getProviderId()),
-                toTransactionOrders(rawTransaction.getOrders()),
+                toTransactionOrders(rawTransaction.getOrders(), currencyCode),
                 Optional.ofNullable(rawTransaction.getRefund()).map(PaymentMapper::toRefund),
                 Optional.ofNullable(rawTransaction.getCustomer()).map(PaymentMapper::toCustomer),
                 Optional.ofNullable(rawTransaction.getBalanceSnapshot()),
                 Boolean.TRUE.equals(rawTransaction.getHasExternalOperationAssigned()));
     }
 
-    private static List<TransactionOrder> toTransactionOrders(List<TransactionOrdersInner> rawOrders) {
+    private static List<TransactionOrder> toTransactionOrders(
+            List<TransactionOrdersInner> rawOrders, String currencyCode) {
         if (rawOrders == null) {
             return List.of();
         }
-        return rawOrders.stream().map(PaymentMapper::toTransactionOrder).toList();
+        return rawOrders.stream().map(rawOrder -> toTransactionOrder(rawOrder, currencyCode)).toList();
     }
 
-    private static TransactionOrder toTransactionOrder(TransactionOrdersInner rawOrder) {
+    private static TransactionOrder toTransactionOrder(TransactionOrdersInner rawOrder, String currencyCode) {
         return new TransactionOrder(
                 Optional.ofNullable(rawOrder.getOrderId()).map(OrderId::of),
                 Optional.ofNullable(rawOrder.getSubjectType()).map(PaymentMapper::toSubjectType),
-                money(rawOrder.getDeliveryPrice()),
+                money(rawOrder.getDeliveryPrice(), currencyCode),
                 toOrderItems(rawOrder.getItems()),
                 Optional.ofNullable(rawOrder.getShop()),
                 Optional.ofNullable(rawOrder.getLockedFund()));
@@ -135,11 +138,11 @@ final class PaymentMapper {
     }
 
     /**
-     * Transaction amounts arrive in major units with their own currency field, unlike the grosze used
-     * by the rest of the Finance domain.
+     * Transaction amounts arrive in major units and carry their own currency, unlike the PLN grosze
+     * used by the rest of the Finance domain.
      */
-    private static Optional<Money> money(BigDecimal majorUnits) {
-        return Optional.ofNullable(majorUnits).map(MinorUnits::fromMajorUnits);
+    private static Optional<Money> money(BigDecimal majorUnits, String currencyCode) {
+        return Optional.ofNullable(majorUnits).map(amount -> MinorUnits.fromMajorUnits(amount, currencyCode));
     }
 
     private static List<OrderId> toOrderIds(List<Integer> rawOrderIds) {

@@ -203,11 +203,16 @@ class CommissionsAccessImplTest {
     }
 
     @Test
-    void doesNotRetryTheNonIdempotentPostOnAValidationError() {
+    void doesNotRetryTheNonIdempotentPostOnAServerError() {
+        // 500 is a retryable STATUS, so this is decided purely by POST being non-idempotent - the
+        // one condition that can actually change. (A 400 would be blocked by both rules at once and
+        // would therefore pass no matter which of them broke.)
         server.stubFor(post(urlEqualTo(ESTIMATE_PATH))
-                .willReturn(aResponse().withStatus(400).withBody(NON_LEAF_ERROR_BODY)));
+                .willReturn(aResponse().withStatus(500).withBody("{\"message\":\"boom\"}")));
 
-        assertThrows(ErliValidationException.class, () -> client.commissions().estimate(leafRequest()));
+        try (ErliClient retryingClient = clientWith(fastRetry())) {
+            assertThrows(ErliServerException.class, () -> retryingClient.commissions().estimate(leafRequest()));
+        }
 
         server.verify(1, postRequestedFor(urlEqualTo(ESTIMATE_PATH)));
     }

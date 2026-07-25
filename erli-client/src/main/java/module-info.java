@@ -39,5 +39,11 @@ module io.github.mgrtomaszzurawski.erli {
     exports io.github.mgrtomaszzurawski.erli.domain.campaigns;
     exports io.github.mgrtomaszzurawski.erli.domain.commissions;
     exports io.github.mgrtomaszzurawski.erli.domain.payments;
+    // The payments search body is hand-written (the generated models cannot express the live
+    // contract), so unlike Layer 1 — an automatic, therefore open, module — Jackson cannot reflect
+    // on it unless this package is opened. Without this, every payments search fails at runtime on
+    // the module path with InaccessibleObjectException while passing on the classpath.
+    // `opens` grants reflective access only: the package stays unexported and uncompilable against.
+    opens io.github.mgrtomaszzurawski.erli.internal.client.payments to com.fasterxml.jackson.databind;
     // --- APPEND BLOCK: bucket F Comms & Automation ----------------------------------------------
 }

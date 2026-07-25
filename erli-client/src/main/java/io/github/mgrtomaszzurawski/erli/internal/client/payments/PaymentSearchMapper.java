@@ -28,7 +28,23 @@ final class PaymentSearchMapper {
 
     private static final String SORT_ASCENDING = "ASC";
     private static final String SORT_DESCENDING = "DESC";
+
+    // Wire names for the sortable/filterable fields, exactly as the API spells them.
+    private static final String FIELD_ID = "id";
+    private static final String FIELD_CREATED_AT = "createdAt";
+    private static final String FIELD_COMPLETED_AT = "completedAt";
+    private static final String FIELD_ORDER_ID = "orderId";
     private static final String AMOUNT_FIELD = "amount";
+
+    // Wire spellings of the comparison operators.
+    private static final String OPERATOR_EQUAL = "=";
+    private static final String OPERATOR_NOT_EQUAL = "!=";
+    private static final String OPERATOR_GREATER_THAN = ">";
+    private static final String OPERATOR_GREATER_THAN_OR_EQUAL = ">=";
+    private static final String OPERATOR_LESS_THAN = "<";
+    private static final String OPERATOR_LESS_THAN_OR_EQUAL = "<=";
+    private static final String OPERATOR_IN = "in";
+    private static final String OPERATOR_NOT_IN = "nin";
     private static final DateTimeFormatter DAY_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private PaymentSearchMapper() {
@@ -96,9 +112,8 @@ final class PaymentSearchMapper {
     /** A comparison operator takes one value; {@code in}/{@code nin} take the whole list. */
     private static Object comparisonValue(PaymentSearch.ComparisonOperator operator, List<Object> values) {
         List<Object> wireValues = values.stream().map(PaymentSearchMapper::wireValue).toList();
-        boolean multiValued = operator == PaymentSearch.ComparisonOperator.IN
-                || operator == PaymentSearch.ComparisonOperator.NOT_IN;
-        return multiValued ? wireValues : wireValues.get(0);
+        // The record's constructor already guarantees a single value for a scalar operator.
+        return operator.multiValued() ? wireValues : wireValues.get(0);
     }
 
     private static Object wireValue(Object value) {
@@ -118,47 +133,47 @@ final class PaymentSearchMapper {
 
     private static String wireName(PaymentSortField sortField) {
         return switch (sortField) {
-            case ID -> "id";
-            case CREATED_AT -> "createdAt";
-            case COMPLETED_AT -> "completedAt";
+            case ID -> FIELD_ID;
+            case CREATED_AT -> FIELD_CREATED_AT;
+            case COMPLETED_AT -> FIELD_COMPLETED_AT;
         };
     }
 
     private static String wireName(PayoutSortField sortField) {
         return switch (sortField) {
-            case ID -> "id";
-            case CREATED_AT -> "createdAt";
+            case ID -> FIELD_ID;
+            case CREATED_AT -> FIELD_CREATED_AT;
             case AMOUNT -> AMOUNT_FIELD;
         };
     }
 
     private static String wireName(PaymentSearch.PaymentFilterField field) {
         return switch (field) {
-            case ID -> "id";
-            case ORDER_ID -> "orderId";
-            case CREATED_AT -> "createdAt";
-            case COMPLETED_AT -> "completedAt";
+            case ID -> FIELD_ID;
+            case ORDER_ID -> FIELD_ORDER_ID;
+            case CREATED_AT -> FIELD_CREATED_AT;
+            case COMPLETED_AT -> FIELD_COMPLETED_AT;
         };
     }
 
     private static String wireName(PayoutSearch.PayoutFilterField field) {
         return switch (field) {
-            case ID -> "id";
-            case CREATED_AT -> "createdAt";
+            case ID -> FIELD_ID;
+            case CREATED_AT -> FIELD_CREATED_AT;
             case AMOUNT -> AMOUNT_FIELD;
         };
     }
 
     private static String wireOperator(PaymentSearch.ComparisonOperator operator) {
         return switch (operator) {
-            case EQUAL -> "=";
-            case NOT_EQUAL -> "!=";
-            case GREATER_THAN -> ">";
-            case GREATER_THAN_OR_EQUAL -> ">=";
-            case LESS_THAN -> "<";
-            case LESS_THAN_OR_EQUAL -> "<=";
-            case IN -> "in";
-            case NOT_IN -> "nin";
+            case EQUAL -> OPERATOR_EQUAL;
+            case NOT_EQUAL -> OPERATOR_NOT_EQUAL;
+            case GREATER_THAN -> OPERATOR_GREATER_THAN;
+            case GREATER_THAN_OR_EQUAL -> OPERATOR_GREATER_THAN_OR_EQUAL;
+            case LESS_THAN -> OPERATOR_LESS_THAN;
+            case LESS_THAN_OR_EQUAL -> OPERATOR_LESS_THAN_OR_EQUAL;
+            case IN -> OPERATOR_IN;
+            case NOT_IN -> OPERATOR_NOT_IN;
         };
     }
 

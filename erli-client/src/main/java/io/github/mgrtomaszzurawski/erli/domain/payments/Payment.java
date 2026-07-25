@@ -20,7 +20,7 @@ import java.util.Optional;
  * @param amount            the amount paid
  * @param status            where the payment is in its lifecycle
  * @param createdAt         when the payment was started
- * @param completedAt       when the payment finished
+ * @param completedAt       when the payment finished; empty while it is still in flight
  * @param operator          the provider that settled it
  * @param methodCode        the operator's code for the method used, e.g. {@code PAYU.blik}
  * @param methodName        the operator's display name for that method, when supplied
@@ -32,7 +32,7 @@ public record Payment(
         Money amount,
         PaymentStatus status,
         OffsetDateTime createdAt,
-        OffsetDateTime completedAt,
+        Optional<OffsetDateTime> completedAt,
         PaymentOperator operator,
         String methodCode,
         Optional<String> methodName,

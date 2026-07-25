@@ -18,7 +18,6 @@ import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
 import io.github.mgrtomaszzurawski.erli.internal.client.finance.PathParameters;
 
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -102,27 +101,27 @@ public final class PaymentsAccessImpl implements PaymentsAccess {
     }
 
     private Page<Payment> fetchPaymentsPage(PaymentSearch search, Cursor after) {
-        io.github.mgrtomaszzurawski.erli.rest.model.Payment[] rawPayments = runtime.post(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
+        List<io.github.mgrtomaszzurawski.erli.rest.model.Payment> rawPayments = runtime.postList(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
                 PaymentSearchMapper.toPaymentBody(search, after),
-                io.github.mgrtomaszzurawski.erli.rest.model.Payment[].class);
-        List<Payment> payments = Arrays.stream(rawPayments).map(PaymentMapper::toPayment).toList();
+                io.github.mgrtomaszzurawski.erli.rest.model.Payment.class);
+        List<Payment> payments = rawPayments.stream().map(PaymentMapper::toPayment).toList();
         return new Page<>(payments, nextPaymentCursor(payments, search));
     }
 
     private Page<Payout> fetchPayoutsPage(PayoutSearch search, Cursor after) {
-        io.github.mgrtomaszzurawski.erli.rest.model.Payout[] rawPayouts = runtime.post(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
+        List<io.github.mgrtomaszzurawski.erli.rest.model.Payout> rawPayouts = runtime.postList(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
                 PaymentSearchMapper.toPayoutBody(search, after),
-                io.github.mgrtomaszzurawski.erli.rest.model.Payout[].class);
-        List<Payout> payouts = Arrays.stream(rawPayouts).map(PaymentMapper::toPayout).toList();
+                io.github.mgrtomaszzurawski.erli.rest.model.Payout.class);
+        List<Payout> payouts = rawPayouts.stream().map(PaymentMapper::toPayout).toList();
         return new Page<>(payouts, nextPayoutCursor(payouts, search));
     }
 
     private Page<Transaction> fetchReturnsPage(ReturnSearch search, int pageNumber) {
-        io.github.mgrtomaszzurawski.erli.rest.model.Transaction[] rawTransactions = runtime.post(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
+        List<io.github.mgrtomaszzurawski.erli.rest.model.Transaction> rawTransactions = runtime.postList(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
                 PaymentSearchMapper.toReturnBody(search, pageNumber),
-                io.github.mgrtomaszzurawski.erli.rest.model.Transaction[].class);
+                io.github.mgrtomaszzurawski.erli.rest.model.Transaction.class);
         List<Transaction> transactions =
-                Arrays.stream(rawTransactions).map(PaymentMapper::toTransaction).toList();
+                rawTransactions.stream().map(PaymentMapper::toTransaction).toList();
         // A short page is the last one; otherwise hand back any non-null cursor so the spliterator
         // asks again and the page counter advances.
         Cursor next = transactions.size() < search.pageSize() ? null : Cursor.of(Integer.toString(pageNumber));
@@ -138,11 +137,16 @@ public final class PaymentsAccessImpl implements PaymentsAccess {
             return null;
         }
         Payment last = payments.get(payments.size() - 1);
-        return Cursor.of(switch (search.sortField()) {
+        String cursorValue = switch (search.sortField()) {
             case ID -> Long.toString(last.id());
             case CREATED_AT -> DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(last.createdAt());
-            case COMPLETED_AT -> DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(last.completedAt());
-        });
+            // A payment still in flight has no completedAt; without one there is no cursor to
+            // continue from, so stop rather than send a malformed one.
+            case COMPLETED_AT -> last.completedAt()
+                    .map(DateTimeFormatter.ISO_OFFSET_DATE_TIME::format)
+                    .orElse(null);
+        };
+        return cursorValue == null ? null : Cursor.of(cursorValue);
     }
 
     private static Cursor nextPayoutCursor(List<Payout> payouts, PayoutSearch search) {

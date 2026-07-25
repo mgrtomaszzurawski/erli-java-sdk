@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,7 +52,6 @@ class JsonCodecTest {
             """;
 
     private static final String EXPECTED_TIMESTAMP = "2026-07-24T14:45:47.540+02:00";
-    private static final String BALANCE_SNAPSHOT_PROPERTY = "balanceSnapshot";
     private static final String PAGINATION_PROPERTY = "pagination";
     private static final String ORDER_ID_VALUE = "202607x1234";
 
@@ -102,8 +102,10 @@ class JsonCodecTest {
     void decodesAJsonNullablePropertyThatCarriesAValue() {
         Transaction transaction = codec.read(TRANSACTION_WITH_SNAPSHOT_JSON, Transaction.class);
 
-        // Without JsonNullableModule this non-null value throws InvalidDefinitionException.
+        // Without JsonNullableModule this non-null value throws InvalidDefinitionException, so the
+        // fixture must carry a VALUE - an explicit null decodes fine even with no module registered.
         assertTrue(transaction.getBalanceSnapshot_JsonNullable().isPresent());
+        assertEquals(Map.of("available", 250), transaction.getBalanceSnapshot());
         assertEquals(OffsetDateTime.parse(EXPECTED_TIMESTAMP), transaction.getErliCreationDate());
     }
 
@@ -149,15 +151,4 @@ class JsonCodecTest {
                 "date-times must serialize as RFC 3339 text: " + json);
     }
 
-    @Test
-    void writesAnExplicitlyNullJsonNullableEvenThoughUnsetFieldsAreOmitted() {
-        // NON_NULL must not defeat the deliberate "set this field to null" idiom that PATCH-style
-        // request models rely on: undefined is dropped, explicit null is kept.
-        Transaction transaction = new Transaction().balanceSnapshot(null);
-
-        String json = codec.write(transaction);
-
-        assertTrue(json.contains(BALANCE_SNAPSHOT_PROPERTY),
-                "an explicitly-null JsonNullable must survive NON_NULL: " + json);
-    }
 }

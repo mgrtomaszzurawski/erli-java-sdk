@@ -4,6 +4,7 @@ import io.github.mgrtomaszzurawski.erli.core.model.Money;
 
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -49,6 +50,32 @@ public final class MinorUnits {
     public static Money fromMajorUnits(BigDecimal zloty) {
         Objects.requireNonNull(zloty, "zloty");
         return new Money(zloty, PLN);
+    }
+
+    /**
+     * Convert an amount in major units that carries its own currency on the wire. Transaction lines
+     * are the one place the API states a currency per amount, so they must not be stamped PLN — the
+     * SDK exposes a German marketplace too, and a EUR line summed as PLN is silently wrong.
+     *
+     * @param majorUnits  the amount as the API sent it
+     * @param currencyCode the ISO-4217 code from the same payload, or {@code null} to fall back to PLN
+     */
+    public static Money fromMajorUnits(BigDecimal majorUnits, String currencyCode) {
+        Objects.requireNonNull(majorUnits, "majorUnits");
+        return new Money(majorUnits, toCurrency(currencyCode));
+    }
+
+    /** Resolve a wire currency code, defaulting to PLN when the API omits or misreports it. */
+    private static Currency toCurrency(String currencyCode) {
+        if (currencyCode == null || currencyCode.isBlank()) {
+            return PLN;
+        }
+        try {
+            return Currency.getInstance(currencyCode.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException unknownCurrency) {
+            // An unrecognised code must not fail the whole page; PLN is the marketplace default.
+            return PLN;
+        }
     }
 
     /**

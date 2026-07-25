@@ -36,6 +36,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -120,6 +121,7 @@ class PaymentsAccessImplTest {
         assertEquals("PAYU.blik", payment.methodCode());
         assertEquals("BLIK", payment.methodName().orElseThrow());
         assertEquals("PAYU-XYZ", payment.externalPaymentId().orElseThrow());
+        assertTrue(payment.completedAt().isPresent());
     }
 
     @Test
@@ -282,6 +284,79 @@ class PaymentsAccessImplTest {
         assertEquals(Money.ofPln("9.99"), transaction.orders().get(0).deliveryPrice().orElseThrow());
         assertEquals("Widget", transaction.orders().get(0).items().get(0).name().orElseThrow());
         assertTrue(transaction.balanceSnapshot().isPresent());
+    }
+
+    @Test
+    void usesTheWireCurrencyForTransactionAmountsRatherThanAssumingZloty() {
+        // Transaction lines are the one place the API states a currency per amount; stamping PLN on
+        // a EUR line would make cross-market sums silently wrong.
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(aResponse().withStatus(200).withBody("""
+                        [{"type":"RETURN","amount":12.5,"currency":"EUR","fee":1.0,
+                          "orders":[{"orderId":"202607x1234","deliveryPrice":9.99}]}]""")));
+
+        Transaction transaction = client.payments()
+                .searchReturns(ReturnSearch.between(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 7, 20)))
+                .findFirst().orElseThrow();
+
+        assertEquals("EUR", transaction.amount().orElseThrow().currency().getCurrencyCode());
+        assertEquals("EUR", transaction.fee().orElseThrow().currency().getCurrencyCode());
+        assertEquals("EUR",
+                transaction.orders().get(0).deliveryPrice().orElseThrow().currency().getCurrencyCode());
+    }
+
+    @Test
+    void fallsBackToZlotyWhenATransactionOmitsItsCurrency() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(aResponse().withStatus(200).withBody("[{\"type\":\"RETURN\",\"amount\":12.5}]")));
+
+        Transaction transaction = client.payments()
+                .searchReturns(ReturnSearch.between(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 7, 20)))
+                .findFirst().orElseThrow();
+
+        assertEquals("PLN", transaction.amount().orElseThrow().currency().getCurrencyCode());
+    }
+
+    @Test
+    void mapsAPaymentThatHasNotCompletedYet() {
+        // The spec marks completedAt required, but a PENDING payment cannot have one. Failing the
+        // whole page on a missing value would be worse than modelling it as absent.
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(aResponse().withStatus(200).withBody("""
+                        [{"id":80,"orderIds":[1236],"amount":10.00,"status":"PENDING",
+                          "createdAt":"2026-07-24T11:00:00.000+02:00","operator":"PAYU",
+                          "methodCode":"PAYU.blik"}]""")));
+
+        Payment payment = client.payments().searchPayments(PaymentSearch.all()).findFirst().orElseThrow();
+
+        assertEquals(PaymentStatus.PENDING, payment.status());
+        assertTrue(payment.completedAt().isEmpty());
+    }
+
+    @Test
+    void decodesAnEmptyResponseBodyWithoutFailing() {
+        // A blank 200 body decodes to null with Class<T[]>; postList yields an empty list instead.
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(aResponse().withStatus(200).withBody("")));
+
+        assertTrue(client.payments().searchPayments(PaymentSearch.all()).toList().isEmpty());
+    }
+
+    @Test
+    void refusesToSilentlyNarrowAMultiValuedFilterOntoAScalarOperator() {
+        // Sending only the first of several values would quietly return a different result set.
+        assertThrows(IllegalArgumentException.class, () -> PaymentSearch.builder()
+                .matchingAnyOf(PaymentSearch.PaymentFilterField.ID,
+                        PaymentSearch.ComparisonOperator.EQUAL, List.of(1L, 2L))
+                .build());
+    }
+
+    @Test
+    void refusesAFilterWithNoValueRatherThanThrowingLaterFromTheStream() {
+        assertThrows(IllegalArgumentException.class, () -> PaymentSearch.builder()
+                .matchingAnyOf(PaymentSearch.PaymentFilterField.ID,
+                        PaymentSearch.ComparisonOperator.IN, List.of())
+                .build());
     }
 
     @Test

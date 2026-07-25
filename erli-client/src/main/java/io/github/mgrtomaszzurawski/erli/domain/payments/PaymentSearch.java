@@ -4,6 +4,7 @@ import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -58,7 +59,19 @@ public record PaymentSearch(
     public record PaymentComparison(PaymentFilterField field, ComparisonOperator operator, List<Object> value) {
 
         public PaymentComparison {
+            Objects.requireNonNull(field, "field");
+            Objects.requireNonNull(operator, "operator");
             value = List.copyOf(value);
+            if (value.isEmpty()) {
+                throw new IllegalArgumentException("a filter needs at least one value to compare against");
+            }
+            // Only in/nin take a list. Silently sending just the first of several would narrow the
+            // filter without saying so, which on a money query is worse than refusing.
+            if (value.size() > 1 && !operator.multiValued()) {
+                throw new IllegalArgumentException(
+                        "operator " + operator + " compares against a single value, got " + value.size()
+                                + "; use IN or NOT_IN to match several");
+            }
         }
     }
 
@@ -91,7 +104,12 @@ public record PaymentSearch(
         /** One of the given values. */
         IN,
         /** None of the given values. */
-        NOT_IN
+        NOT_IN;
+
+        /** Whether this operator compares against a list rather than a single value. */
+        public boolean multiValued() {
+            return this == IN || this == NOT_IN;
+        }
     }
 
     /** Builder for {@link PaymentSearch}. */

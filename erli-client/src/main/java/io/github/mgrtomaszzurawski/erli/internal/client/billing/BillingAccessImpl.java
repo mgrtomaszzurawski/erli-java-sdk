@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.Page;
 import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntriesResponseInner;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -44,19 +43,19 @@ public final class BillingAccessImpl implements BillingAccess {
     }
 
     private Page<BillingEntry> fetchEntriesPage(BillingEntryFilter filter, Cursor after) {
-        BillingEntriesResponseInner[] rawEntries = runtime.post(ApiPaths.BILLING_COMPANY_ENTRIES,
-                BillingMapper.toRaw(filter, after), BillingEntriesResponseInner[].class);
+        List<BillingEntriesResponseInner> rawEntries = runtime.postList(ApiPaths.BILLING_COMPANY_ENTRIES,
+                BillingMapper.toRaw(filter, after), BillingEntriesResponseInner.class);
         return toPage(rawEntries, filter.pageSize());
     }
 
     private Page<BillingEntry> fetchRebatesPage(BillingEntryFilter filter, Cursor after) {
-        BillingEntriesResponseInner[] rawEntries = runtime.post(ApiPaths.BILLING_COMPANY_REBATES,
-                BillingMapper.toRaw(filter, after), BillingEntriesResponseInner[].class);
+        List<BillingEntriesResponseInner> rawEntries = runtime.postList(ApiPaths.BILLING_COMPANY_REBATES,
+                BillingMapper.toRaw(filter, after), BillingEntriesResponseInner.class);
         return toPage(rawEntries, filter.pageSize());
     }
 
-    private static Page<BillingEntry> toPage(BillingEntriesResponseInner[] rawEntries, int pageSize) {
-        List<BillingEntry> entries = Arrays.stream(rawEntries).map(BillingMapper::toDomain).toList();
+    private static Page<BillingEntry> toPage(List<BillingEntriesResponseInner> rawEntries, int pageSize) {
+        List<BillingEntry> entries = rawEntries.stream().map(BillingMapper::toDomain).toList();
         return new Page<>(entries, nextCursor(entries, pageSize));
     }
 
