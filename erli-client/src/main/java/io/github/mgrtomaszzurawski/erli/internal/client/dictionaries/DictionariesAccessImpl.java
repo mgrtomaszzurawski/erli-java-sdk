@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
@@ -30,6 +31,7 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingOperator;
 import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.CursorPagination;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
+import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.internal.Page;
 import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
 import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
@@ -69,9 +71,11 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     private static final int CATEGORY_PAGE_SIZE = 200;
 
     private final HttpRuntime runtime;
+    private final JsonCodec codec;
 
-    public DictionariesAccessImpl(HttpRuntime runtime) {
+    public DictionariesAccessImpl(HttpRuntime runtime, JsonCodec codec) {
         this.runtime = Objects.requireNonNull(runtime, "runtime");
+        this.codec = Objects.requireNonNull(codec, "codec");
     }
 
     @Override
@@ -165,10 +169,10 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
                 .add(PARAM_OPERATOR, operator == null ? null : operator.wireValue())
                 .addBoolean(PARAM_COD, query.cashOnDelivery())
                 .build();
-        return runtime.getList(ApiPaths.DICTIONARIES_SHIPPING_METHODS, parameters,
-                        io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod.class)
+        // Read as a tree: the maxDimensions anyOf can only be discriminated before it is decoded.
+        return runtime.getList(ApiPaths.DICTIONARIES_SHIPPING_METHODS, parameters, JsonNode.class)
                 .stream()
-                .map(ShippingMethodMapper::toDomain)
+                .map(rawMethod -> ShippingMethodMapper.toDomain(rawMethod, codec))
                 .toList();
     }
 

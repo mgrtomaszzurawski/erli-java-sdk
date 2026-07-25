@@ -1,10 +1,11 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ParcelDimensions;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingMethod;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingOperator;
-import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensions;
+import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensionsAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensionsAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxPointDimensions;
@@ -20,11 +21,26 @@ import java.util.Optional;
  */
 final class ShippingMethodMapper {
 
+    /** The size bound, read from the raw tree because its {@code anyOf} cannot survive decoding. */
+    private static final String MAX_DIMENSIONS_FIELD = "maxDimensions";
+    /** Required on the girth branch and forbidden on the box branch, so it discriminates the two. */
+    private static final String LONGEST_SIDE_FIELD = "longestSide";
+
     private ShippingMethodMapper() {
     }
 
-    static ShippingMethod toDomain(io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod rawMethod) {
-        Objects.requireNonNull(rawMethod, "raw ShippingMethod");
+    /**
+     * Map one shipping method from its raw JSON.
+     *
+     * <p>Every field except the size bound comes straight from Layer 1 — the node is bound to the
+     * generated model by the shared codec. Only {@code maxDimensions} needs the tree, because its
+     * {@code anyOf} cannot be discriminated after decoding (see {@link #toBound}).
+     */
+    static ShippingMethod toDomain(JsonNode rawNode, JsonCodec codec) {
+        Objects.requireNonNull(rawNode, "raw ShippingMethod");
+        Objects.requireNonNull(codec, "codec");
+        io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod rawMethod =
+                codec.convert(rawNode, io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod.class);
         return new ShippingMethod(
                 ShippingMethodId.of(requireId(rawMethod)),
                 requireName(rawMethod),
@@ -34,7 +50,7 @@ final class ShippingMethodMapper {
                 requireCashOnDelivery(rawMethod),
                 Optional.ofNullable(rawMethod.getMaxUnitPrice()),
                 Optional.ofNullable(rawMethod.getMinDimensions()).map(ShippingMethodMapper::toBox),
-                Optional.ofNullable(rawMethod.getMaxDimensions()).flatMap(ShippingMethodMapper::toBound),
+                toBound(rawNode.path(MAX_DIMENSIONS_FIELD), codec),
                 Optional.ofNullable(rawMethod.getMaxPointDimensions()).map(ShippingMethodMapper::toBox));
     }
 
@@ -64,44 +80,51 @@ final class ShippingMethodMapper {
     }
 
     /**
-     * The {@code anyOf} bound: box dimensions, or the longest-side/dimensions-sum form.
+     * The {@code anyOf} size bound: explicit box dimensions, or the longest-side/dimensions-sum form.
      *
-     * <p><strong>Under-reports the girth form today (BACKLOG CORE-3).</strong> The generated
-     * discriminator tries its branches in order and returns the first that binds, but core's
-     * {@code JsonCodec} disables {@code FAIL_ON_UNKNOWN_PROPERTIES}, so the box branch accepts a girth
-     * payload — every field unknown to it is ignored and every field it declares stays null. By the
-     * time the mapper runs, {@code longestSide} and {@code dimensionsSum} are already gone, so no
-     * mapping can recover them.
+     * <p><strong>CORE-3 workaround — tree dispatch, not hand-copied fields.</strong> The generated
+     * {@code anyOf} deserializer takes the first branch that parses, and because the shared codec
+     * ignores unknown properties the box branch always parses: a girth payload would bind to it with
+     * every declared field null, silently losing {@code longestSide} and {@code dimensionsSum}. About
+     * 20 of the sandbox's 49 methods use that form. So the discriminator is read off the raw tree
+     * ({@code longestSide} appears only on the girth branch) and the node is then bound to the right
+     * generated type by the codec — every field still comes from Layer 1.
      *
-     * <p>A box branch with no linear dimension at all is therefore a mis-bound girth payload rather
-     * than a real bound, and is reported as absent instead of as a box whose dimensions are all
-     * unknown — an absent bound is checked by callers, a zero-dimension box silently is not. Roughly
-     * 20 of the sandbox's 49 shipping methods use the girth form, so this is not a rare edge case; it
-     * is fixed for good in core, not here (see BACKLOG for the one-line mix-in fix).
+     * <p>Unlike the tracking-shaped composites, this one is <em>not</em> fixed by CORE-3's
+     * {@code normalizeSpec} merge, and correctly so: that rule refuses a composite whose branches
+     * declare a property differently, and {@code weight} is {@code maximum: 700000} on the box branch
+     * against {@code 50000} on the girth branch. Merging would document one bound for both. This
+     * collapses to a single {@code getActualInstance()} switch only once core discriminates the
+     * branches itself (the strict-branch mix-in in the BACKLOG).
      */
-    private static Optional<ParcelDimensions> toBound(ShippingMethodMaxDimensions rawBound) {
-        Object actual = rawBound.getActualInstance();
-        if (actual instanceof ShippingMethodMaxDimensionsAnyOf box) {
-            if (box.getHeight() == null && box.getWidth() == null && box.getLength() == null) {
-                return Optional.empty();
-            }
-            return Optional.of(new ParcelDimensions.Box(
-                    Optional.ofNullable(box.getHeight()),
-                    Optional.ofNullable(box.getWidth()),
-                    Optional.ofNullable(box.getLength()),
-                    Optional.ofNullable(box.getWeight()),
-                    Optional.ofNullable(box.getWithVolumetricScales())));
+    private static Optional<ParcelDimensions> toBound(JsonNode rawBound, JsonCodec codec) {
+        if (rawBound == null || !rawBound.isObject()) {
+            return Optional.empty();
         }
-        if (actual instanceof ShippingMethodMaxDimensionsAnyOf1 girth) {
+        // hasNonNull, not has: an explicit "longestSide": null is not a girth bound.
+        if (rawBound.hasNonNull(LONGEST_SIDE_FIELD)) {
+            ShippingMethodMaxDimensionsAnyOf1 girth =
+                    codec.convert(rawBound, ShippingMethodMaxDimensionsAnyOf1.class);
             return Optional.of(new ParcelDimensions.Girth(
                     Optional.ofNullable(girth.getLongestSide()),
                     Optional.ofNullable(girth.getDimensionsSum()),
                     Optional.ofNullable(girth.getWeight()),
                     Optional.ofNullable(girth.getWithVolumetricScales())));
         }
-        throw new IllegalStateException(
-                "ShippingMethod.maxDimensions is neither of the two documented shapes, got: "
-                        + (actual == null ? "null" : actual.getClass().getName()));
+        ShippingMethodMaxDimensionsAnyOf box = codec.convert(rawBound, ShippingMethodMaxDimensionsAnyOf.class);
+        if (box.getHeight() == null && box.getWidth() == null && box.getLength() == null) {
+            // Neither documented shape: the box branch accepts any object, so a payload with no linear
+            // dimension is a shape this SDK does not know, not a box. Report it absent rather than as a
+            // box whose every dimension is unknown — callers check an absent bound, a hollow one they
+            // silently do not.
+            return Optional.empty();
+        }
+        return Optional.of(new ParcelDimensions.Box(
+                Optional.ofNullable(box.getHeight()),
+                Optional.ofNullable(box.getWidth()),
+                Optional.ofNullable(box.getLength()),
+                Optional.ofNullable(box.getWeight()),
+                Optional.ofNullable(box.getWithVolumetricScales())));
     }
 
     private static ParcelDimensions toBox(ShippingMethodMinDimensions rawBox) {
