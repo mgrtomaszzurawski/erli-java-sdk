@@ -22,6 +22,8 @@ public final class ApiPaths {
     // --- APPEND BLOCK: bucket B Orders ------------------------------------------------------------
 
     // --- APPEND BLOCK: bucket C Shipping & Delivery -----------------------------------------------
+    /** {@code GET /shipping/parcels/{id}} — one parcel by id. */
+    public static final String SHIPPING_PARCEL_BY_ID = "/shipping/parcels/{id}";
 
     // --- APPEND BLOCK: bucket D Dictionaries ------------------------------------------------------
     /** {@code GET /dictionaries/deliveryMethods} — delivery methods reference list. */
