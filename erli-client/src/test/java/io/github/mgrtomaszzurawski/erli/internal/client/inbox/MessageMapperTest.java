@@ -230,8 +230,13 @@ class MessageMapperTest {
     void rejectsDeliveryTrackingWithoutAStatus() {
         String withoutStatus = withTrackingBlock("\"trackingUrl\": \"" + TRACKING_URL + "\"");
 
-        assertThrows(IllegalStateException.class,
+        IllegalStateException thrown = assertThrows(IllegalStateException.class,
                 () -> MessageMapper.toDomain(codec.readTreeLenient(withoutStatus), codec));
+
+        // The type alone does not discriminate: every missing required field in this mapper throws
+        // IllegalStateException, so assert the message names the check that actually fired.
+        assertTrue(thrown.getMessage().contains("status"),
+                "the failure should name the missing field, got: " + thrown.getMessage());
     }
 
     /**

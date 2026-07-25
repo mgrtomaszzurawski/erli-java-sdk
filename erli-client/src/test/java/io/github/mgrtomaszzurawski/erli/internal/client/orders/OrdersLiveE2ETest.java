@@ -42,7 +42,14 @@ class OrdersLiveE2ETest {
     private static final int RATE_LIMIT_ATTEMPTS = 4;
     private static final Duration RATE_LIMIT_BACKOFF = Duration.ofSeconds(2);
 
-    /** Generous enough for the retry budget above, short enough that a cursor loop fails rather than hangs. */
+    /**
+     * Generous enough for the retry budget above (at most ~14s of equal-jitter backoff across three
+     * retries, plus four round trips), short enough that a cursor loop fails rather than hangs.
+     *
+     * <p>Diagnostic caveat: {@link RetryPolicy} honours a server {@code Retry-After} floor verbatim, so
+     * a single {@code 429} carrying {@code Retry-After: 60} would surface here as a timeout that reads
+     * like a non-terminating walk. Check the response headers before concluding the cursor logic broke.
+     */
     private static final Duration ROUND_TRIP_TIMEOUT = Duration.ofSeconds(60);
 
     /**
