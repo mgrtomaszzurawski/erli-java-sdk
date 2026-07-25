@@ -54,8 +54,44 @@ public final class ApiPaths {
     public static final String DELIVERY_PRICE_LISTS_DETAILS = "/delivery/priceListsDetails";
 
     // --- APPEND BLOCK: bucket D Dictionaries ------------------------------------------------------
+    /** Name of the {@link #DICTIONARIES_DELIVERY_METHODS_BY_PRICE_LIST} placeholder, for {@link PathTemplate#expand}. */
+    public static final String PRICE_LIST_PARAM = "priceList";
+    /** Name of the responsible-party path placeholder, for {@link PathTemplate#expand}. */
+    public static final String RESPONSIBLE_ID_PARAM = "id";
+
+    /** {@code POST}/{@code PATCH /dictionaries/attachment} — create or update one attachment. */
+    public static final String DICTIONARIES_ATTACHMENT = "/dictionaries/attachment";
+    /** {@code PATCH /dictionaries/attachment/attach} — attach products to an attachment. */
+    public static final String DICTIONARIES_ATTACHMENT_ATTACH = "/dictionaries/attachment/attach";
+    /** {@code PATCH /dictionaries/attachment/detach} — detach products from an attachment. */
+    public static final String DICTIONARIES_ATTACHMENT_DETACH = "/dictionaries/attachment/detach";
+    /** {@code GET}/{@code DELETE /dictionaries/attachments} — list or remove attachments. */
+    public static final String DICTIONARIES_ATTACHMENTS = "/dictionaries/attachments";
+    /** {@code POST /dictionaries/attributes/_search} — attributes defined for a category. */
+    public static final String DICTIONARIES_ATTRIBUTES_SEARCH = "/dictionaries/attributes/_search";
+    /** {@code POST /dictionaries/attributeValues/_search} — allowed values of dictionary attributes. */
+    public static final String DICTIONARIES_ATTRIBUTE_VALUES_SEARCH = "/dictionaries/attributeValues/_search";
+    /** {@code GET /dictionaries/billingEntryTypes} — billing operation types. */
+    public static final String DICTIONARIES_BILLING_ENTRY_TYPES = "/dictionaries/billingEntryTypes";
+    /** {@code POST /dictionaries/category/_search} — the marketplace category tree. */
+    public static final String DICTIONARIES_CATEGORY_SEARCH = "/dictionaries/category/_search";
     /** {@code GET /dictionaries/deliveryMethods} — delivery methods reference list. */
     public static final String DICTIONARIES_DELIVERY_METHODS = "/dictionaries/deliveryMethods";
+    /** {@code GET /dictionaries/deliveryMethods/{priceList}} — delivery methods for one price list. */
+    public static final String DICTIONARIES_DELIVERY_METHODS_BY_PRICE_LIST =
+            "/dictionaries/deliveryMethods/{priceList}";
+    /** {@code GET /dictionaries/deliveryVendors} — carriers ERLI accepts tracking numbers for. */
+    public static final String DICTIONARIES_DELIVERY_VENDORS = "/dictionaries/deliveryVendors";
+    /** {@code GET}/{@code POST /dictionaries/responsiblePersons} — persons who introduced a product. */
+    public static final String DICTIONARIES_RESPONSIBLE_PERSONS = "/dictionaries/responsiblePersons";
+    /** {@code PATCH}/{@code DELETE /dictionaries/responsiblePersons/{id}} — update or remove one person. */
+    public static final String DICTIONARIES_RESPONSIBLE_PERSON_BY_ID = "/dictionaries/responsiblePersons/{id}";
+    /** {@code GET}/{@code POST /dictionaries/responsibleProducers} — product producers. */
+    public static final String DICTIONARIES_RESPONSIBLE_PRODUCERS = "/dictionaries/responsibleProducers";
+    /** {@code PATCH}/{@code DELETE /dictionaries/responsibleProducers/{id}} — update or remove one producer. */
+    public static final String DICTIONARIES_RESPONSIBLE_PRODUCER_BY_ID = "/dictionaries/responsibleProducers/{id}";
+    /** {@code GET /dictionaries/shippingMethods} — ERLI's own shipping methods. */
+    public static final String DICTIONARIES_SHIPPING_METHODS = "/dictionaries/shippingMethods";
 
     // --- APPEND BLOCK: bucket E Finance -----------------------------------------------------------
     /** {@code POST /billing/company/entries} — settlement history for the whole company. */

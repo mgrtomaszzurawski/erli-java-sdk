@@ -4,7 +4,10 @@ import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliException;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.domain.shop.Shop;
+
+import java.util.List;
 
 /**
  * Exercises the public API from a real JPMS module. If this compiles, the exported surface is
@@ -23,7 +26,13 @@ public final class JpmsConsumer {
                 .apiKey(ApiKey.of(rawApiKey))
                 .build()) {
             Shop shop = client.shop().me();
-            return shop.name() + " / " + orderId.value();
+            // Bucket D: the dictionary facade and its domain records are reachable, and the raw
+            // Layer-1 types behind them are not — this only compiles if nothing internal leaked.
+            List<DeliveryMethod> deliveryMethods = client.dictionaries().deliveryMethods();
+            String firstCarrier = deliveryMethods.isEmpty()
+                    ? "none"
+                    : deliveryMethods.get(0).vendor().wireValue();
+            return shop.name() + " / " + orderId.value() + " / " + firstCarrier;
         } catch (ErliException failure) {
             return failure.getMessage();
         }
