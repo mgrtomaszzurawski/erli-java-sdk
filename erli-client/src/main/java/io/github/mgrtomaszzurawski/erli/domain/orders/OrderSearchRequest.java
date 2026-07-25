@@ -28,7 +28,8 @@ public final class OrderSearchRequest {
     /** The page size Erli applies when none is requested. */
     public static final int DEFAULT_PAGE_SIZE = 50;
 
-    private static final int MIN_PAGE_SIZE = 1;
+    /** The smallest page Erli will return. */
+    public static final int MIN_PAGE_SIZE = 1;
 
     /** Which timestamp orders are sorted on. Erli dropped sorting by id in March 2025. */
     public enum SortField {
@@ -121,7 +122,8 @@ public final class OrderSearchRequest {
         }
 
         /**
-         * How many orders to fetch per request, between 1 and {@value #MAX_PAGE_SIZE}.
+         * How many orders to fetch per request, between {@value OrderSearchRequest#MIN_PAGE_SIZE} and
+         * {@value OrderSearchRequest#MAX_PAGE_SIZE}.
          *
          * @throws IllegalArgumentException if the value is outside the range Erli accepts
          */

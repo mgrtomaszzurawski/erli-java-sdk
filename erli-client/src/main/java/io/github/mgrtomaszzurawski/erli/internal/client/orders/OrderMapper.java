@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
@@ -57,10 +58,13 @@ import java.util.OptionalLong;
  *   <li><strong>Money.</strong> Erli sends every amount as an integer count of minor units (grosze)
  *       with the order's currency alongside, so amounts are rebuilt with the currency's own scale
  *       rather than divided by a hard-coded hundred.</li>
- *   <li><strong>Enums.</strong> Every enum is translated with an explicit exhaustive {@code switch},
- *       never {@code valueOf(name())}. That decouples the public enums from the generated constant
- *       names and turns a new upstream value into a compile error here — a deliberate signal to map
- *       it — instead of a runtime surprise for a consumer.</li>
+ *   <li><strong>Closed enums</strong> are translated with an explicit exhaustive {@code switch}, never
+ *       {@code valueOf(name())}. That decouples the public enums from the generated constant names and
+ *       turns a new upstream value into a compile error here — a deliberate signal to map it — instead
+ *       of a runtime surprise for a consumer.</li>
+ *   <li><strong>Growing reference sets</strong> ({@link ShippingVendor}) are mapped by wire value
+ *       instead, so a carrier Erli adds tomorrow arrives as data rather than as an exception. The
+ *       split follows the guideline in {@code KNOWN-SERVER-BEHAVIORS.md}.</li>
  * </ul>
  *
  * <p>Required fields are validated: a payload missing one fails fast with a message naming the field,
@@ -341,36 +345,12 @@ final class OrderMapper {
         };
     }
 
-
+    /**
+     * Mapped by wire value rather than by an exhaustive switch, because the carrier list is a growing
+     * reference set — the guideline in {@code KNOWN-SERVER-BEHAVIORS.md} for exactly this shape.
+     */
     private static ShippingVendor toShippingVendor(OrderDeliveryTracking.VendorEnum rawVendor) {
-        return switch (rawVendor) {
-            case INPOST -> ShippingVendor.INPOST;
-            case POCZTA_POLSKA -> ShippingVendor.POCZTA_POLSKA;
-            case POCZTEX24 -> ShippingVendor.POCZTEX_24;
-            case DHL -> ShippingVendor.DHL;
-            case DPD -> ShippingVendor.DPD;
-            case DTS -> ShippingVendor.DTS;
-            case FEDEX -> ShippingVendor.FEDEX;
-            case RHENUS -> ShippingVendor.RHENUS;
-            case RABEN -> ShippingVendor.RABEN;
-            case GLS -> ShippingVendor.GLS;
-            case UPS -> ShippingVendor.UPS;
-            case RUCH -> ShippingVendor.RUCH;
-            case ORLEN -> ShippingVendor.ORLEN;
-            case GEIS -> ShippingVendor.GEIS;
-            case PATRON_SERVICE -> ShippingVendor.PATRON_SERVICE;
-            case PEKAES -> ShippingVendor.PEKAES;
-            case TNT_EXPRESS -> ShippingVendor.TNT_EXPRESS;
-            case SCHENKER -> ShippingVendor.SCHENKER;
-            case AMBRO_EXPRESS -> ShippingVendor.AMBRO_EXPRESS;
-            case DSV -> ShippingVendor.DSV;
-            case JAS_FBG -> ShippingVendor.JAS_FBG;
-            case ROHLIG_SUUS -> ShippingVendor.ROHLIG_SUUS;
-            case HELLMANN -> ShippingVendor.HELLMANN;
-            case OWN_TRANSPORT -> ShippingVendor.OWN_TRANSPORT;
-            case SELF_PICKUP -> ShippingVendor.SELF_PICKUP;
-            case OTHER -> ShippingVendor.OTHER;
-        };
+        return ShippingVendor.of(rawVendor.getValue());
     }
 
     @SuppressWarnings("deprecation")
@@ -414,9 +394,17 @@ final class OrderMapper {
         return value == null ? OptionalInt.empty() : OptionalInt.of(value);
     }
 
+    /**
+     * A response that omits a field the spec marks required is a server contract violation, so it is
+     * reported as {@link ErliTransportException} — part of the documented {@code ErliException}
+     * taxonomy — rather than as a bare {@code IllegalStateException} a caller would have to catch
+     * separately from every other API failure. The message names the field; it never carries the value,
+     * which could be buyer personal data.
+     */
     private static <T> T required(T value, String fieldName) {
         if (value == null) {
-            throw new IllegalStateException("Order is missing the required '" + fieldName + "' field");
+            throw new ErliTransportException(
+                    "Order response is missing the required '" + fieldName + "' field");
         }
         return value;
     }

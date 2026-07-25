@@ -76,6 +76,17 @@ class JsonCodecTest {
     }
 
     @Test
+    void preservesANonUtcOffsetInsteadOfRewritingItToUtc() {
+        // Same instant either way; the offset is the part that would be silently lost.
+        Order decoded = codec.read(
+                "{\"id\":\"221201x1\",\"created\":\"2026-07-20T10:15:30+02:00\"}", Order.class);
+
+        assertEquals(OffsetDateTime.of(2026, 7, 20, 10, 15, 30, 0, ZoneOffset.ofHours(2)),
+                decoded.getCreated());
+        assertEquals(ZoneOffset.ofHours(2), decoded.getCreated().getOffset());
+    }
+
+    @Test
     void writesRequestBodyWithoutNullValuedOptionalProperties() {
         // On a PATCH an explicit null is a request to clear the field, so unset properties must be
         // omitted rather than serialized as null.

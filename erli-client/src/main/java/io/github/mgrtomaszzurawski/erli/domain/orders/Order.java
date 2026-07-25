@@ -64,4 +64,28 @@ public record Order(
         items = List.copyOf(items);
         returns = List.copyOf(returns);
     }
+
+    /**
+     * A log-safe rendering: order identity, state, totals and timestamps only.
+     *
+     * <p>The record's generated {@code toString} would recurse into everything, so the components that
+     * carry personal data are omitted here by name rather than left to their own redaction. That
+     * includes the obvious ones ({@link #buyer()}) but also two that are easy to miss: {@link
+     * #comment()} and {@link OrderReturn#comment()} are buyer-authored free text, which is exactly
+     * where a buyer writes a phone number, and {@link Delivery#pickupPlace()} carries a street address.
+     *
+     * <p>Reach for the accessors when you genuinely need those values; they are never redacted there.
+     */
+    @Override
+    public String toString() {
+        return "Order[id=" + id
+                + ", status=" + status
+                + ", sellerStatus=" + sellerStatus
+                + ", totalPrice=" + totalPrice.amount() + " " + totalPrice.currency()
+                + ", items=" + items.size()
+                + ", returns=" + returns.size()
+                + ", created=" + created
+                + ", updated=" + updated
+                + "]";
+    }
 }

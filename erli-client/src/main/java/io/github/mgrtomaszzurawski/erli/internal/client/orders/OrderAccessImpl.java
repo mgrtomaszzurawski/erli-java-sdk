@@ -76,6 +76,18 @@ public final class OrderAccessImpl implements OrderAccess {
      * cursor for the next page is not a top-level field: it is the {@code cursor} carried by the last
      * order on this page. An empty page therefore ends the walk, which is also what
      * {@link CursorPagination} treats as terminal.
+     *
+     * <p><strong>A page whose last order has no {@code cursor} also ends the walk.</strong> The cursor
+     * is the only continuation token the endpoint offers, so without one there is nothing to ask for;
+     * the spec marks it optional, which leaves "there is no more data" and "the server omitted it"
+     * indistinguishable. Ending is the only behaviour available, but it does mean a caller could in
+     * principle receive a short result set that looks complete.
+     *
+     * <p>Page size deliberately is <em>not</em> used to tell those apart. Neither the spec nor the
+     * official guide promises a full page while more data exists, so treating a short page as the tail
+     * would be inventing a server contract — and getting it wrong would truncate silently in the other
+     * direction. Whether a live server ever omits the cursor mid-walk is recorded as an open question
+     * in {@code KNOWN-SERVER-BEHAVIORS.md}, to settle during the Phase 3 sweep on seeded data.
      */
     private Page<Order> fetchPage(OrderSearchRequest request, Cursor after) {
         var body = OrderRequestMapper.toSearchBody(request, after);

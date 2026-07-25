@@ -25,4 +25,16 @@ public record OrderReturn(
     public OrderReturn {
         items = List.copyOf(items);
     }
+
+    /**
+     * A log-safe rendering. {@link #comment()} is the buyer's own words and {@link #bankAccount()} is a
+     * payment credential, so neither appears here; the accessors still return them.
+     */
+    @Override
+    public String toString() {
+        return "OrderReturn[reason=" + reason
+                + ", items=" + items.size()
+                + ", created=" + created
+                + "]";
+    }
 }

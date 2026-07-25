@@ -201,6 +201,23 @@ class OrderAccessImplTest {
         server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
     }
 
+    /**
+     * The cursor is the only continuation token the endpoint offers, so a page whose last order lacks
+     * one ends the walk. Pinned as a deliberate contract rather than left as an accident of
+     * {@code orElse(null)} — see {@code OrderAccessImpl.fetchPage}.
+     */
+    @Test
+    void searchStopsWhenTheLastOrderOfAPageCarriesNoCursor() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(okJson(pageOf(orderJson("221201x1", "cursor-a"), orderJson("221201x2")))));
+
+        List<Order> found = orders().search(OrderSearchRequest.all()).toList();
+
+        assertEquals(2, found.size());
+        assertTrue(found.get(1).cursor().isEmpty());
+        server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
+    }
+
     @Test
     void searchStopsWhenAPageComesBackEmpty() {
         server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[]")));

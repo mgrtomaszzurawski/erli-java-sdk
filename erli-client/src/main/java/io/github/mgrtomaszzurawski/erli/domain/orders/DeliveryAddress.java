@@ -16,7 +16,7 @@ import java.util.Optional;
  * @param street         the street name
  * @param buildingNumber the building number
  * @param flatNumber     the flat number, when the address has one
- * @param zip            the postal code, in Polish {@code NN-NNN} form
+ * @param postalCode            the postal code, in Polish {@code NN-NNN} form
  * @param city           the city
  * @param country        the country
  * @param phone          the contact phone number, nine digits
@@ -29,7 +29,7 @@ public record DeliveryAddress(
         String street,
         String buildingNumber,
         Optional<String> flatNumber,
-        String zip,
+        String postalCode,
         String city,
         Country country,
         String phone) {

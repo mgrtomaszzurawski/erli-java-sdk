@@ -20,7 +20,7 @@ import java.util.OptionalLong;
  * @param city        the city
  * @param country     the country, as the provider reports it
  * @param open24h     whether the point is accessible around the clock
- * @param zip         the postal code, in Polish {@code NN-NNN} form
+ * @param postalCode         the postal code, in Polish {@code NN-NNN} form
  */
 public record PickupPlace(
         OptionalLong id,
@@ -34,5 +34,5 @@ public record PickupPlace(
         Optional<String> city,
         Optional<String> country,
         Optional<Boolean> open24h,
-        Optional<String> zip) {
+        Optional<String> postalCode) {
 }

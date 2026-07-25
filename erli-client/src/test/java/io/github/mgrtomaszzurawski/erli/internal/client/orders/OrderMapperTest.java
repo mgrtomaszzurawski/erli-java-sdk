@@ -1,5 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
+import io.github.mgrtomaszzurawski.erli.core.error.ErliException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Buyer;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Country;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Delivery;
@@ -30,6 +32,7 @@ import java.util.Currency;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -130,7 +133,7 @@ class OrderMapperTest {
         assertEquals("Kwiatowa", delivery.street());
         assertEquals("12", delivery.buildingNumber());
         assertEquals("3", delivery.flatNumber().orElseThrow());
-        assertEquals("00-950", delivery.zip());
+        assertEquals("00-950", delivery.postalCode());
         assertEquals("Warszawa", delivery.city());
         assertEquals(Country.PL, delivery.country());
         assertEquals("600100200", delivery.phone());
@@ -141,13 +144,13 @@ class OrderMapperTest {
         assertEquals("Fabryczna", invoice.street());
         assertEquals("7", invoice.buildingNumber());
         assertEquals("2", invoice.flatNumber().orElseThrow());
-        assertEquals("31-553", invoice.zip());
+        assertEquals("31-553", invoice.postalCode());
         assertEquals("Krakow", invoice.city());
         assertEquals(Country.PL, invoice.country());
         assertEquals("Anna", invoice.firstName().orElseThrow());
         assertEquals("Kowalska", invoice.lastName().orElseThrow());
         assertEquals("Kowalska Sp. z o.o.", invoice.companyName().orElseThrow());
-        assertEquals("1234563218", invoice.nip().orElseThrow());
+        assertEquals("1234563218", invoice.taxIdentificationNumber().orElseThrow());
     }
 
     @Test
@@ -194,7 +197,7 @@ class OrderMapperTest {
         assertEquals("Krakow", place.city().orElseThrow());
         assertEquals("pl", place.country().orElseThrow());
         assertEquals(Boolean.TRUE, place.open24h().orElseThrow());
-        assertEquals("31-553", place.zip().orElseThrow());
+        assertEquals("31-553", place.postalCode().orElseThrow());
     }
 
     @Test
@@ -278,12 +281,60 @@ class OrderMapperTest {
                  "created":"2026-07-23T10:00:00Z","updated":"2026-07-23T10:00:00Z",
                  "delivery":{"name":"Kurier","typeId":"courier","price":0,"cod":false}}""";
 
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> OrderMapper
+        // Reported inside the documented ErliException taxonomy, so a caller catching ErliException
+        // handles a malformed response like any other failure of the call.
+        ErliTransportException thrown = assertThrows(ErliTransportException.class, () -> OrderMapper
                 .toDomain(codec.read(missingSellerStatus,
                         io.github.mgrtomaszzurawski.erli.rest.model.Order.class)));
 
+        assertInstanceOf(ErliException.class, thrown);
         assertTrue(thrown.getMessage().contains("sellerStatus"),
                 "the failure should name the missing field, got: " + thrown.getMessage());
+    }
+
+    @Test
+    void rebuildsAmountsInEuroToo() {
+        // The PLN fixture alone cannot prove the scale comes from the currency, since a hard-coded
+        // /100 gives the same answer. EUR is the only other currency Erli sends, and exercising it
+        // also covers the second branch of the currency mapping.
+        String euroOrder = """
+                {"id":"221205x1","status":"purchased","items":[],"currency":"EUR","totalPrice":12787,
+                 "sellerStatus":"created","created":"2026-07-23T10:00:00Z","updated":"2026-07-23T10:00:00Z",
+                 "delivery":{"name":"Kurier","typeId":"courier","price":1290,"cod":false}}""";
+
+        Order order = OrderMapper.toDomain(
+                codec.read(euroOrder, io.github.mgrtomaszzurawski.erli.rest.model.Order.class));
+
+        assertEquals(Currency.getInstance("EUR"), order.totalPrice().currency());
+        assertEquals(new BigDecimal("127.87"), order.totalPrice().amount());
+        assertEquals(new BigDecimal("12.90"), order.delivery().price().amount());
+    }
+
+    @Test
+    void keepsACarrierThisSdkDoesNotKnowInsteadOfFailing() {
+        // The carrier list grows upstream; an unrecognised value must arrive as data, not an exception.
+        ShippingVendor future = ShippingVendor.of("someCarrierAddedNextYear");
+
+        assertEquals("someCarrierAddedNextYear", future.wireValue());
+        assertFalse(future.isKnown());
+        assertTrue(ShippingVendor.INPOST.isKnown());
+        assertEquals(ShippingVendor.INPOST, ShippingVendor.of("inpost"));
+    }
+
+    @Test
+    void keepsBuyerFreeTextOutOfStringRenderings() {
+        // A buyer types a phone number into the comment box far more often than anyone expects.
+        Order order = mapFixture(FULL_FIXTURE);
+
+        assertFalse(order.toString().contains("Prosze zapakowac"),
+                "buyer comment leaked into Order.toString(): " + order);
+        assertFalse(order.returns().get(0).toString().contains("Ukruszone ucho"),
+                "buyer return comment leaked into OrderReturn.toString()");
+        assertFalse(order.toString().contains("Fabryczna"),
+                "pickup place address leaked into Order.toString(): " + order);
+        // Still useful for debugging.
+        assertTrue(order.toString().contains("221201x12345"), order.toString());
+        assertTrue(order.toString().contains("PURCHASED"), order.toString());
     }
 
     @Test

@@ -6,7 +6,10 @@ package io.github.mgrtomaszzurawski.erli.domain.orders;
  */
 public enum InvoiceAddressType {
 
-    /** Issued to a business — {@link InvoiceAddress#companyName()} and {@link InvoiceAddress#nip()} are set. */
+    /**
+     * Issued to a business — {@link InvoiceAddress#companyName()} and
+     * {@link InvoiceAddress#taxIdentificationNumber()} are set.
+     */
     COMPANY,
 
     /** Issued to a private person — {@link InvoiceAddress#firstName()} and {@link InvoiceAddress#lastName()} are set. */

@@ -31,6 +31,11 @@ List<Order> recent = client.orders()
 Page size tunes how often the stream goes to the network (1–200, default 50); it does not limit the
 result set. Consume the stream before closing the client.
 
+`_search` is a read, but Erli exposes it as a `POST`, so it is not retried by default — a single
+transient 429 or 503 aborts a long sync. For an unattended job either opt in with
+`RetryPolicy.builder().retryPost(true)`, or catch the failure and resume from the last cursor you
+processed (below).
+
 ### Resuming a walk
 
 Every `Order` carries the `cursor` to continue after it. Store the last one you processed and resume
@@ -95,17 +100,24 @@ Item prices are **per unit** — multiply by `quantity()` for a line total.
 
 ## Buyer personal data
 
-`Buyer`, `DeliveryAddress`, `InvoiceAddress` and `BankAccount` are personal data. Their `toString()`
-renders only the type name, and `Order.toString()` therefore never contains a buyer's name, address,
-phone, e-mail or account number. Accessors return the real values — the redaction guards accidental
-disclosure through logging, not deliberate use.
+`Buyer`, `DeliveryAddress`, `InvoiceAddress` and `BankAccount` are personal data, and their
+`toString()` renders only the type name.
+
+`Order.toString()` and `OrderReturn.toString()` go further and render a curated subset — identity,
+state, totals, counts and timestamps. They deliberately omit the buyer, the pickup place (a street
+address), and **the free-text comments**, because `Order.comment()` and `OrderReturn.comment()` are
+written by the buyer and that is exactly where a phone number ends up. Accessors return the real
+values throughout — the redaction guards accidental disclosure through logging, not deliberate use.
 
 ```java
-log.info("processing {}", order);          // safe: no personal data in the rendering
+log.info("processing {}", order);          // safe: renders no personal data
 String city = order.buyer()                // deliberate access still works
         .map(buyer -> buyer.deliveryAddress().city())
         .orElse("unknown");
 ```
+
+Two things are still yours to handle: anything you log from an accessor, and `OrderFilter`, whose
+`toString()` shows the value you filtered on — which may be a buyer's e-mail address.
 
 ## Errors
 
@@ -117,11 +129,27 @@ String city = order.buyer()                // deliberate access still works
 | 5xx | `ErliServerException` |
 
 All extend `ErliException` and carry `details()` with the Erli code, `traceId`/`spanId` and the
-original Polish message where the API supplied one.
+original Polish message where the API supplied one. A response that omits a field the spec marks
+required is reported as `ErliTransportException`, naming the field — so catching `ErliException`
+covers every failure of a call.
 
 ## Optionality
 
 Fields Erli documents as optional are `Optional` (or `OptionalInt`/`OptionalLong`) rather than
 nullable, and `items()`/`returns()` are always present — empty rather than null. `deliveryTracking`
-merges Erli's two shapes into one record: `status` is always set, while `vendor` +`trackingNumber`
+merges Erli's two shapes into one record: `status` is always set, while `vendor` + `trackingNumber`
 or `trackingUrl` are populated depending on what the carrier reported.
+
+## Carriers
+
+`ShippingVendor` is a value object, not an enum. Erli's carrier list grows as it signs carriers, and
+the spec, the `deliveryVendors` dictionary and observed `DeliveryMethod.vendor` values do not agree
+on it — so a closed enum would turn a new carrier into an exception and force an SDK release before
+you could see it. Compare against the constants, and fall back to the wire value:
+
+```java
+ShippingVendor vendor = tracking.vendor().orElseThrow();
+if (ShippingVendor.INPOST.equals(vendor)) { ... }
+myErp.setCarrier(vendor.wireValue());       // always round-trips, known or not
+if (!vendor.isKnown()) { log.info("carrier not in this SDK's list: {}", vendor); }
+```

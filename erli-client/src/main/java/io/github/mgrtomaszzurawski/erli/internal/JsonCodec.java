@@ -35,6 +35,10 @@ public final class JsonCodec {
         this.mapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                // Jackson otherwise rewrites every parsed offset to UTC. The instant survives, but an
+                // OffsetDateTime the SDK hands a consumer would silently lose the offset the server
+                // actually sent, which is a detail a public java.time type is expected to preserve.
+                .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }

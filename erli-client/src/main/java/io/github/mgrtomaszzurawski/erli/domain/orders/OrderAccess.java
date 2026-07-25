@@ -20,6 +20,11 @@ public interface OrderAccess {
      * only the pages it actually reads — {@code search(request).limit(10)} performs a single request.
      * The stream is sequential and ordered; consume it before closing the client.
      *
+     * <p>The walk continues from the {@link Order#cursor()} of the last order on each page, and stops
+     * when a page comes back empty or its last order carries no cursor — the cursor being the only
+     * continuation token the endpoint offers. Keep the last cursor you processed and pass it to
+     * {@link OrderSearchRequest.Builder#startAfter} to resume later.
+     *
      * @param request what to look for, how to sort it, and how large a page to fetch
      * @return a lazy stream over the matching orders, in the requested order
      */
