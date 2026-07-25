@@ -31,8 +31,6 @@ import io.github.mgrtomaszzurawski.erli.domain.orders.TrackingStatus;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDelivery;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryPickupPlace;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryTracking;
-import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryTrackingAnyOf;
-import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryTrackingAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderItemsInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderRebate;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderReturnsInner;
@@ -201,29 +199,16 @@ final class OrderMapper {
     }
 
     /**
-     * Collapses Erli's two tracking shapes — {@code {status, trackingUrl}} and
-     * {@code {status, vendor, trackingNumber}} — into one record whose optional fields say which
-     * shape arrived.
+     * Erli declares tracking as a choice between {@code {status, trackingUrl}} and
+     * {@code {status, vendor, trackingNumber}}. Layer 1 merges the two into one object (see the
+     * {@code normalizeSpec} step), so which shape arrived is simply which optional fields are set.
      */
     private static DeliveryTracking toDeliveryTracking(OrderDeliveryTracking rawTracking) {
-        Object branch = rawTracking.getActualInstance();
-        if (branch instanceof OrderDeliveryTrackingAnyOf1 tracked) {
-            return new DeliveryTracking(
-                    toTrackingStatus(tracked.getStatus()),
-                    Optional.ofNullable(tracked.getVendor()).map(OrderMapper::toShippingVendor),
-                    Optional.ofNullable(tracked.getTrackingNumber()),
-                    Optional.empty());
-        }
-        if (branch instanceof OrderDeliveryTrackingAnyOf linked) {
-            return new DeliveryTracking(
-                    toTrackingStatus(linked.getStatus()),
-                    Optional.empty(),
-                    Optional.empty(),
-                    Optional.ofNullable(linked.getTrackingUrl()));
-        }
-        throw new IllegalStateException(
-                "Order.deliveryTracking has an unrecognized shape: "
-                        + (branch == null ? "null" : branch.getClass().getName()));
+        return new DeliveryTracking(
+                toTrackingStatus(rawTracking.getStatus()),
+                Optional.ofNullable(rawTracking.getVendor()).map(OrderMapper::toShippingVendor),
+                Optional.ofNullable(rawTracking.getTrackingNumber()),
+                Optional.ofNullable(rawTracking.getTrackingUrl()));
     }
 
     // --- payment and returns ----------------------------------------------------------------------
@@ -342,7 +327,7 @@ final class OrderMapper {
         };
     }
 
-    private static TrackingStatus toTrackingStatus(OrderDeliveryTrackingAnyOf1.StatusEnum rawStatus) {
+    private static TrackingStatus toTrackingStatus(OrderDeliveryTracking.StatusEnum rawStatus) {
         return switch (required(rawStatus, "deliveryTracking.status")) {
             case PREPARING -> TrackingStatus.PREPARING;
             case READY_TO_SEND -> TrackingStatus.READY_TO_SEND;
@@ -356,21 +341,8 @@ final class OrderMapper {
         };
     }
 
-    private static TrackingStatus toTrackingStatus(OrderDeliveryTrackingAnyOf.StatusEnum rawStatus) {
-        return switch (required(rawStatus, "deliveryTracking.status")) {
-            case PREPARING -> TrackingStatus.PREPARING;
-            case READY_TO_SEND -> TrackingStatus.READY_TO_SEND;
-            case WAITING_FOR_COURIER -> TrackingStatus.WAITING_FOR_COURIER;
-            case SENT -> TrackingStatus.SENT;
-            case ON_THE_WAY -> TrackingStatus.ON_THE_WAY;
-            case READY_TO_PICKUP -> TrackingStatus.READY_TO_PICKUP;
-            case RETURNED -> TrackingStatus.RETURNED;
-            case CANCELED -> TrackingStatus.CANCELED;
-            case TRACKING_UNAVAILABLE -> TrackingStatus.TRACKING_UNAVAILABLE;
-        };
-    }
 
-    private static ShippingVendor toShippingVendor(OrderDeliveryTrackingAnyOf1.VendorEnum rawVendor) {
+    private static ShippingVendor toShippingVendor(OrderDeliveryTracking.VendorEnum rawVendor) {
         return switch (rawVendor) {
             case INPOST -> ShippingVendor.INPOST;
             case POCZTA_POLSKA -> ShippingVendor.POCZTA_POLSKA;

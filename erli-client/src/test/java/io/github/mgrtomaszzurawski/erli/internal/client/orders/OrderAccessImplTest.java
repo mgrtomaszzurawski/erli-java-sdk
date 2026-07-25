@@ -1,0 +1,348 @@
+package io.github.mgrtomaszzurawski.erli.internal.client.orders;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
+import io.github.mgrtomaszzurawski.erli.ErliClient;
+import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliNotFoundException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
+import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
+import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
+import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
+import io.github.mgrtomaszzurawski.erli.domain.orders.Order;
+import io.github.mgrtomaszzurawski.erli.domain.orders.OrderAccess;
+import io.github.mgrtomaszzurawski.erli.domain.orders.OrderFilter;
+import io.github.mgrtomaszzurawski.erli.domain.orders.OrderSearchRequest;
+import io.github.mgrtomaszzurawski.erli.domain.orders.OrderUpdateRequest;
+import io.github.mgrtomaszzurawski.erli.domain.orders.SellerStatus;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+
+import java.util.List;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.patch;
+import static com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Wire contract for the four {@code /orders} operations, driven through a real {@link ErliClient}
+ * against a local WireMock server. Every test verifies the request the SDK <em>produced</em>, not only
+ * the response it got back — a stub that answers 200 to anything would otherwise pass while the SDK
+ * sent the wrong method, path or body (see {@code TESTING.md}).
+ */
+class OrderAccessImplTest {
+
+    private static final String SEARCH_PATH = "/orders/_search";
+    private static final String ORDER_ID = "221201x12345";
+    private static final String ORDER_PATH = "/orders/" + ORDER_ID;
+    private static final String STATUS_PATH = ORDER_PATH + "/status";
+    private static final String TEST_KEY = "test-key";
+    private static final String CURSOR_PAGE_ONE = "1753178730;221201x12345";
+
+    private WireMockServer server;
+    private ErliClient client;
+
+    @BeforeEach
+    void startServer() {
+        server = new WireMockServer(options().dynamicPort());
+        server.start();
+        client = ErliClient.builder()
+                .baseUrl(server.baseUrl())
+                .apiKey(ApiKey.of(TEST_KEY))
+                .retryPolicy(RetryPolicy.none())
+                .build();
+    }
+
+    @AfterEach
+    void stopServer() {
+        client.close();
+        server.stop();
+    }
+
+    private OrderAccess orders() {
+        return client.orders();
+    }
+
+    private static String pageOf(String... orderJson) {
+        return "[" + String.join(",", orderJson) + "]";
+    }
+
+    private static String orderJson(String id, String cursor) {
+        return TestFixtures.read("fixtures/orders/order-minimal.json")
+                .replace("221202x12346", id)
+                .replaceFirst("\\{", "{\"cursor\":\"" + cursor + "\",");
+    }
+
+    // --- search -----------------------------------------------------------------------------------
+
+    @Test
+    void searchPostsTheDefaultPaginationBodyAndMapsTheResult() {
+        String scenario = "single-page-search";
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).inScenario(scenario)
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(okJson(pageOf(TestFixtures.read("fixtures/orders/order-full.json"))))
+                .willSetStateTo("drained"));
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).inScenario(scenario)
+                .whenScenarioStateIs("drained")
+                .willReturn(okJson("[]")));
+
+        List<Order> found = orders().search(OrderSearchRequest.all()).toList();
+
+        assertEquals(1, found.size());
+        assertEquals(ORDER_ID, found.get(0).id().value());
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_KEY))
+                .withHeader("Content-Type", equalTo("application/json"))
+                .withRequestBody(equalToJson(
+                        "{\"pagination\":{\"sortField\":\"updated\",\"order\":\"ASC\",\"limit\":50}}")));
+    }
+
+    @Test
+    void searchSendsTheRequestedSortDirectionAndPageSize() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[]")));
+
+        orders().search(OrderSearchRequest.builder()
+                .sortBy(OrderSearchRequest.SortField.CREATED)
+                .direction(OrderSearchRequest.SortDirection.DESCENDING)
+                .pageSize(200)
+                .build()).toList();
+
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(equalToJson(
+                        "{\"pagination\":{\"sortField\":\"created\",\"order\":\"DESC\",\"limit\":200}}")));
+    }
+
+    @Test
+    void searchOmitsTheCursorOnTheFirstPage() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[]")));
+
+        orders().search(OrderSearchRequest.all()).toList();
+
+        // An explicit null "after" would be a different request from omitting it; assert it is absent.
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.pagination[?(!@.after)]")));
+    }
+
+    @Test
+    void searchWalksPagesUsingTheCursorCarriedByTheLastOrderOfThePage() {
+        String scenario = "paged-search";
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).inScenario(scenario)
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(okJson(pageOf(orderJson("221201x1", "cursor-a"), orderJson("221201x2", CURSOR_PAGE_ONE))))
+                .willSetStateTo("second"));
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).inScenario(scenario)
+                .whenScenarioStateIs("second")
+                .willReturn(okJson("[]")));
+
+        List<Order> found = orders().search(OrderSearchRequest.all()).toList();
+
+        assertEquals(List.of("221201x1", "221201x2"), found.stream().map(order -> order.id().value()).toList());
+        // The second request must resume after the LAST order's cursor, not the first one's.
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.pagination.after", equalTo(CURSOR_PAGE_ONE))));
+        server.verify(2, postRequestedFor(urlEqualTo(SEARCH_PATH)));
+    }
+
+    @Test
+    void searchIsLazyAndFetchesOnlyThePagesActuallyConsumed() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(okJson(pageOf(orderJson("221201x1", "cursor-a"), orderJson("221201x2", "cursor-b")))));
+
+        List<Order> firstOnly = orders().search(OrderSearchRequest.all()).limit(1).toList();
+
+        assertEquals(1, firstOnly.size());
+        server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
+    }
+
+    @Test
+    void searchStopsWhenAPageComesBackEmpty() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[]")));
+
+        assertTrue(orders().search(OrderSearchRequest.all()).toList().isEmpty());
+        server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
+    }
+
+    @Test
+    void searchResumesFromAnExplicitStartCursor() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[]")));
+
+        orders().search(OrderSearchRequest.builder()
+                .startAfter(Cursor.of(CURSOR_PAGE_ONE))
+                .build()).toList();
+
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.pagination.after", equalTo(CURSOR_PAGE_ONE))));
+    }
+
+    @Test
+    void searchSerializesANestedFilterTree() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[]")));
+
+        orders().search(OrderSearchRequest.builder()
+                .filter(OrderFilter.and(
+                        OrderFilter.paymentCompleted(),
+                        OrderFilter.or(
+                                OrderFilter.in(OrderFilter.Field.ID, List.of("221201x1", "221201x2")),
+                                OrderFilter.not(OrderFilter.userEmail("buyer@example.com")))))
+                .build()).toList();
+
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH)).withRequestBody(equalToJson("""
+                {"pagination":{"sortField":"updated","order":"ASC","limit":50},
+                 "filter":{"operator":"and","value":[
+                   {"field":"paymentStatus","operator":"=","value":"completed"},
+                   {"operator":"or","value":[
+                     {"field":"id","operator":"in","value":["221201x1","221201x2"]},
+                     {"operator":"not","value":{"field":"userEmail","operator":"=","value":"buyer@example.com"}}
+                   ]}
+                 ]}}""")));
+    }
+
+    // --- byId -------------------------------------------------------------------------------------
+
+    @Test
+    void byIdGetsTheTemplatedPathAndMapsTheOrder() {
+        server.stubFor(get(urlEqualTo(ORDER_PATH))
+                .willReturn(okJson(TestFixtures.read("fixtures/orders/order-full.json"))));
+
+        Order order = orders().byId(OrderId.of(ORDER_ID));
+
+        assertEquals(ORDER_ID, order.id().value());
+        assertEquals("erp-1001", order.externalOrderId().orElseThrow());
+        server.verify(getRequestedFor(urlEqualTo(ORDER_PATH))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_KEY)));
+    }
+
+    // --- update -----------------------------------------------------------------------------------
+
+    @Test
+    void updateSendsOnlyTheFieldThatChanged() {
+        server.stubFor(patch(urlEqualTo(ORDER_PATH)).willReturn(aResponse().withStatus(202)));
+
+        orders().update(OrderId.of(ORDER_ID), OrderUpdateRequest.ofExternalOrderId("erp-1001"));
+
+        // deliveryTracking must be absent, not null: on a PATCH an explicit null clears the field.
+        server.verify(patchRequestedFor(urlEqualTo(ORDER_PATH))
+                .withRequestBody(equalToJson("{\"externalOrderId\":\"erp-1001\"}"))
+                .withRequestBody(matchingJsonPath("$[?(!@.deliveryTracking)]")));
+    }
+
+    @Test
+    void updateRejectsARequestThatWouldChangeNothingWithoutCallingTheApi() {
+        assertThrows(IllegalArgumentException.class,
+                () -> orders().update(OrderId.of(ORDER_ID), OrderUpdateRequest.builder().build()));
+
+        server.verify(0, patchRequestedFor(urlEqualTo(ORDER_PATH)));
+    }
+
+    @Test
+    void changeStatusPatchesTheStatusSubResource() {
+        server.stubFor(patch(urlEqualTo(STATUS_PATH)).willReturn(aResponse().withStatus(204)));
+
+        orders().changeStatus(OrderId.of(ORDER_ID), SellerStatus.READY_TO_PROCESS);
+
+        server.verify(patchRequestedFor(urlEqualTo(STATUS_PATH))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_KEY))
+                .withRequestBody(equalToJson("{\"status\":\"readyToProcess\"}")));
+    }
+
+    @Test
+    void aClosedClientRejectsFurtherUse() {
+        client.close();
+
+        assertThrows(IllegalStateException.class, () -> client.orders());
+    }
+
+    // --- the mandatory error-path table -----------------------------------------------------------
+
+    @ParameterizedTest(name = "HTTP {0} maps to {1}")
+    @CsvSource({
+            "401, io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException",
+            "403, io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException",
+            "404, io.github.mgrtomaszzurawski.erli.core.error.ErliNotFoundException",
+            "400, io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException",
+            "409, io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException",
+            "422, io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException",
+            "500, io.github.mgrtomaszzurawski.erli.core.error.ErliServerException",
+            "503, io.github.mgrtomaszzurawski.erli.core.error.ErliServerException",
+    })
+    void mapsEveryErrorStatusToItsRemediationException(int status, Class<? extends ErliException> expected) {
+        server.stubFor(get(urlEqualTo(ORDER_PATH)).willReturn(aResponse().withStatus(status)));
+
+        ErliException thrown = assertThrows(ErliException.class, () -> orders().byId(OrderId.of(ORDER_ID)));
+
+        assertInstanceOf(expected, thrown);
+    }
+
+    @Test
+    void mapsTheObservedNotFoundBodyPreservingTraceAndPolishMessage() {
+        // Shaped after the live 401 recorded in KNOWN-SERVER-BEHAVIORS: the payload is richer than the
+        // spec (httpCode, failureType) and traceId may be missing entirely.
+        String body = """
+                {"code":1400,"failureType":"notFound","message":"Order not found",
+                 "polishMessage":"Nie znaleziono zamowienia","httpCode":404,"spanId":"span-7"}""";
+        server.stubFor(get(urlEqualTo(ORDER_PATH))
+                .willReturn(aResponse().withStatus(404).withBody(body)));
+
+        ErliNotFoundException thrown = assertThrows(ErliNotFoundException.class,
+                () -> orders().byId(OrderId.of(ORDER_ID)));
+
+        assertEquals("notFound", thrown.details().failureType());
+        assertEquals("span-7", thrown.details().spanId());
+        assertEquals("Nie znaleziono zamowienia", thrown.details().polishMessage());
+    }
+
+    @Test
+    void mapsAValidationFailureOnAWriteToTheValidationException() {
+        server.stubFor(patch(urlEqualTo(ORDER_PATH))
+                .willReturn(aResponse().withStatus(400)
+                        .withBody("{\"code\":1200,\"message\":\"Order is cancelled\"}")));
+
+        ErliValidationException thrown = assertThrows(ErliValidationException.class, () -> orders()
+                .update(OrderId.of(ORDER_ID), OrderUpdateRequest.ofExternalOrderId("erp-1")));
+
+        assertTrue(thrown.getMessage().contains("Order is cancelled"), thrown.getMessage());
+    }
+
+    @Test
+    void mapsANonJsonErrorBodyWithoutLosingIt() {
+        server.stubFor(patch(urlEqualTo(STATUS_PATH))
+                .willReturn(aResponse().withStatus(502).withBody("<html>Bad Gateway</html>")));
+
+        ErliServerException thrown = assertThrows(ErliServerException.class,
+                () -> orders().changeStatus(OrderId.of(ORDER_ID), SellerStatus.SENT));
+
+        assertTrue(thrown.details().rawBody().contains("Bad Gateway"), thrown.details().rawBody());
+    }
+
+    @Test
+    void authFailureOnSearchSurfacesAsAnAuthException() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(aResponse().withStatus(401)
+                        .withBody("{\"failureType\":\"security\",\"message\":\"Invalid API key\"}")));
+
+        ErliAuthException thrown = assertThrows(ErliAuthException.class,
+                () -> orders().search(OrderSearchRequest.all()).toList());
+
+        assertEquals("security", thrown.details().failureType());
+    }
+}
