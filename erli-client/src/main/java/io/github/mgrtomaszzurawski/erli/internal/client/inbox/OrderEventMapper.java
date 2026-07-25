@@ -264,10 +264,7 @@ final class OrderEventMapper {
     }
 
     private static Currency toCurrency(MessagePayloadAnyOf rawPayload) {
-        MessagePayloadAnyOf.CurrencyEnum rawCurrency = rawPayload.getCurrency();
-        if (rawCurrency == null) {
-            throw new IllegalStateException("order payload is missing the required 'currency' field");
-        }
+        MessagePayloadAnyOf.CurrencyEnum rawCurrency = requireKnownEnum(rawPayload.getCurrency(), "currency");
         return switch (rawCurrency) {
             case PLN -> Currency.getInstance(CURRENCY_CODE_PLN);
             case EUR -> Currency.getInstance(CURRENCY_CODE_EUR);
@@ -275,10 +272,7 @@ final class OrderEventMapper {
     }
 
     private static OrderStatus toOrderStatus(MessagePayloadAnyOf rawPayload) {
-        MessagePayloadAnyOf.StatusEnum rawStatus = rawPayload.getStatus();
-        if (rawStatus == null) {
-            throw new IllegalStateException("order payload is missing the required 'status' field");
-        }
+        MessagePayloadAnyOf.StatusEnum rawStatus = requireKnownEnum(rawPayload.getStatus(), "status");
         return switch (rawStatus) {
             case PENDING -> OrderStatus.PENDING;
             case PURCHASED -> OrderStatus.PURCHASED;
@@ -288,10 +282,8 @@ final class OrderEventMapper {
     }
 
     private static SellerStatus toSellerStatus(MessagePayloadAnyOf rawPayload) {
-        MessagePayloadAnyOf.SellerStatusEnum rawStatus = rawPayload.getSellerStatus();
-        if (rawStatus == null) {
-            throw new IllegalStateException("order payload is missing the required 'sellerStatus' field");
-        }
+        MessagePayloadAnyOf.SellerStatusEnum rawStatus =
+                requireKnownEnum(rawPayload.getSellerStatus(), "sellerStatus");
         return switch (rawStatus) {
             case CREATED -> SellerStatus.CREATED;
             case CANCELED -> SellerStatus.CANCELED;
@@ -320,27 +312,21 @@ final class OrderEventMapper {
     }
 
     private static Country toCountry(OrderUserDeliveryAddress.CountryEnum rawCountry) {
-        if (rawCountry == null) {
-            throw new IllegalStateException("deliveryAddress is missing the required 'country' field");
-        }
+        requireKnownEnum(rawCountry, "deliveryAddress.country");
         return switch (rawCountry) {
             case PL -> Country.PL;
         };
     }
 
     private static Country toInvoiceCountry(OrderUserInvoiceAddress.CountryEnum rawCountry) {
-        if (rawCountry == null) {
-            throw new IllegalStateException("invoiceAddress is missing the required 'country' field");
-        }
+        requireKnownEnum(rawCountry, "invoiceAddress.country");
         return switch (rawCountry) {
             case PL -> Country.PL;
         };
     }
 
     private static InvoiceAddressType toInvoiceAddressType(OrderUserInvoiceAddress.TypeEnum rawType) {
-        if (rawType == null) {
-            throw new IllegalStateException("invoiceAddress is missing the required 'type' field");
-        }
+        requireKnownEnum(rawType, "invoiceAddress.type");
         return switch (rawType) {
             case COMPANY -> InvoiceAddressType.COMPANY;
             case PERSON -> InvoiceAddressType.PERSON;
@@ -359,11 +345,7 @@ final class OrderEventMapper {
     }
 
     private static OrderDeliveryTracking.StatusEnum requireStatus(OrderDeliveryTracking tracking) {
-        OrderDeliveryTracking.StatusEnum status = tracking.getStatus();
-        if (status == null) {
-            throw new IllegalStateException("deliveryTracking is missing the required 'status' field");
-        }
-        return status;
+        return requireKnownEnum(tracking.getStatus(), "deliveryTracking.status");
     }
 
     private static TrackingStatus toTrackingStatus(OrderDeliveryTracking.StatusEnum rawStatus) {
@@ -383,7 +365,11 @@ final class OrderEventMapper {
     /**
      * Mapped by wire value rather than a 26-arm switch: this is a large, growing reference enum, and
      * the fleet convention is a {@code fromWire} lookup for those (see {@code KNOWN-SERVER-BEHAVIORS.md}).
-     * An unknown carrier already fails earlier, when the generated enum decodes it.
+     *
+     * <p>A carrier newer than the vendored spec never reaches here: since CORE-12 the codec decodes it
+     * to {@code null}, and the caller's {@code Optional.ofNullable} turns that into an empty
+     * {@link DeliveryTracking#vendor()}. So {@code fromWire}'s guard now only catches drift between this
+     * domain enum and the generated one — a packaging bug, not a wire condition.
      */
     private static DeliveryVendor toDeliveryVendor(OrderDeliveryTracking.VendorEnum rawVendor) {
         return DeliveryVendor.fromWire(rawVendor.getValue());
@@ -400,9 +386,7 @@ final class OrderEventMapper {
     }
 
     private static ReturnReason toReturnReason(OrderReturnsInner.ReasonEnum rawReason) {
-        if (rawReason == null) {
-            throw new IllegalStateException("order return is missing the required 'reason' field");
-        }
+        requireKnownEnum(rawReason, "returns[].reason");
         return switch (rawReason) {
             case RESIGN -> ReturnReason.RESIGN;
             case MISTAKE -> ReturnReason.MISTAKE;
@@ -432,6 +416,24 @@ final class OrderEventMapper {
             throw new IllegalStateException("order user is missing the required 'deliveryAddress' field");
         }
         return rawAddress;
+    }
+
+    /**
+     * Guard for a <em>required enum-typed</em> property.
+     *
+     * <p>Since CORE-12 the codec decodes an unrecognised enum value to {@code null} rather than failing
+     * the whole response, so a {@code null} here means one of two things and the SDK cannot tell them
+     * apart: the API omitted the property, or it sent a value newer than the vendored spec. The message
+     * states both rather than asserting the wrong one — "missing" would send a reader hunting for a bug
+     * in a payload that is actually fine.
+     */
+    private static <T extends Enum<T>> T requireKnownEnum(T value, String field) {
+        if (value == null) {
+            throw new IllegalStateException("order payload property '" + field
+                    + "' is absent, or holds a value this SDK version does not recognise"
+                    + " — regenerate Layer 1 from a current spec if the API has added one");
+        }
+        return value;
     }
 
     private static String requireText(String value, String field) {

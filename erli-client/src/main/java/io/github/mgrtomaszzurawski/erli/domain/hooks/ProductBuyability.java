@@ -12,7 +12,8 @@ import java.util.Optional;
  * a shop may report availability without a stock figure.
  *
  * @param productId the product's id in the shop's own system
- * @param status    whether the shop reports the product as sellable, if it said
+ * @param status    whether the shop reports the product as sellable, if it said. Also absent if the
+ *                  API used a status this SDK version does not recognise (CORE-12)
  * @param stock     the units the shop reports available, if it said
  */
 public record ProductBuyability(

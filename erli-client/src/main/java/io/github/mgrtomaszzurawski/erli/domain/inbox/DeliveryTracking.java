@@ -13,16 +13,15 @@ import java.util.Optional;
  * flattens them into a single record with optional components rather than making callers switch over
  * two near-identical types.
  *
- * <p>{@link #vendor()} is the carrier enum owned by {@code domain.dictionaries} — the fan-out plan's
- * reference hub. Duplicating those 26 constants into this package would put two mutually incompatible
- * carrier types on the SDK's exported surface, which is worse for consumers than the one cross-package
- * reference; promoting it to {@code core.model} is filed as a backlog item.
+ * <p>{@link #vendor()} is the core-owned {@link DeliveryVendor}, shared with every other bucket that
+ * names a carrier.
  *
  * @param status         where the parcel is
  * @param trackingUrl    a page the buyer can follow the parcel on
- * @param vendor         the carrier, when the API identifies one. Reuses the dictionaries bucket's
- *                       {@link DeliveryVendor} rather than minting a second copy of the same 26-value
- *                       carrier list — see the note in the class javadoc
+ * @param vendor         the carrier, when the API identifies one — or when this SDK version recognises
+ *                       the one it sent: an unrecognised carrier decodes to absent rather than failing
+ *                       the response (CORE-12), so re-generate Layer 1 from a current spec if a carrier
+ *                       you expect keeps coming back empty
  * @param trackingNumber the carrier's tracking number, when the API reports one
  */
 public record DeliveryTracking(
