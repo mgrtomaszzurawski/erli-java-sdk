@@ -1,9 +1,8 @@
-package io.github.mgrtomaszzurawski.erli.domain.orders;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 /**
  * The order's status in the <em>seller's</em> own system. This is the writable status: it is what
- * {@code PATCH /orders/{id}/status} sets, via {@link OrderAccess#changeStatus}. The marketplace-side
- * {@link OrderStatus} is read-only.
+ * {@code PATCH /orders/{id}/status} sets. The marketplace-side {@link OrderStatus} is read-only.
  */
 public enum SellerStatus {
 

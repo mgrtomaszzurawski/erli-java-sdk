@@ -3,7 +3,7 @@ package io.github.mgrtomaszzurawski.erli.domain.orders;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliNotFoundException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
-
+import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
 import java.util.stream.Stream;
 
 /**

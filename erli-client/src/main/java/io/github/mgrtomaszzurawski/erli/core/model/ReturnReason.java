@@ -1,4 +1,4 @@
-package io.github.mgrtomaszzurawski.erli.domain.orders;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 /**
  * Why the buyer returned an order. Erli requires exactly one reason per return.

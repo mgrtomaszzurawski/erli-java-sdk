@@ -2,17 +2,16 @@ package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
+import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Order;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderAccess;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderUpdateRequest;
-import io.github.mgrtomaszzurawski.erli.domain.orders.SellerStatus;
 import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.CursorPagination;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.Page;
 import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

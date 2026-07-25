@@ -14,20 +14,19 @@ import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
+import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Order;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderAccess;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderFilter;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderUpdateRequest;
-import io.github.mgrtomaszzurawski.erli.domain.orders.SellerStatus;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;

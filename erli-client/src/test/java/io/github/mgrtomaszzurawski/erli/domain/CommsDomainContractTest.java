@@ -1,5 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Country;
+import io.github.mgrtomaszzurawski.erli.core.model.InvoiceAddressType;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.BuyabilityQuery;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.Hook;
@@ -7,19 +9,16 @@ import io.github.mgrtomaszzurawski.erli.domain.hooks.HookKind;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.ProductSyncNotification;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.BankAccount;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Buyer;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.Country;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddress;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddressType;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.MessageQuery;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.MessageType;
-import org.junit.jupiter.api.Test;
-
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

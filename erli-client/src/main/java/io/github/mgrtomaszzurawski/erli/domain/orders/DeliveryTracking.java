@@ -1,7 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.orders;
 
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
-
+import io.github.mgrtomaszzurawski.erli.core.model.TrackingStatus;
 import java.util.Optional;
 
 /**
