@@ -251,17 +251,17 @@ class ProductMapperTest {
 
     @Test
     void appliesTheDayDefaultWhenDispatchUnitIsAbsent() throws IOException {
-        ProductResponse raw = decodeFixture(FULL_PRODUCT_FIXTURE);
-        raw.getDispatchTime().setUnit(null);
-        assertEquals(DispatchTimeUnit.DAY, ProductMapper.toDomain(raw).dispatchTime().unit());
+        ProductResponse rawProduct = decodeFixture(FULL_PRODUCT_FIXTURE);
+        rawProduct.getDispatchTime().setUnit(null);
+        assertEquals(DispatchTimeUnit.DAY, ProductMapper.toDomain(rawProduct).dispatchTime().unit());
     }
 
     @Test
     void rejectsAResponseMissingARequiredField() throws IOException {
-        ProductResponse raw = decodeFixture(FULL_PRODUCT_FIXTURE);
-        raw.setPrice(null);
+        ProductResponse rawProduct = decodeFixture(FULL_PRODUCT_FIXTURE);
+        rawProduct.setPrice(null);
         IllegalStateException failure =
-                assertThrows(IllegalStateException.class, () -> ProductMapper.toDomain(raw));
+                assertThrows(IllegalStateException.class, () -> ProductMapper.toDomain(rawProduct));
         assertTrue(failure.getMessage().contains("price"), failure.getMessage());
     }
 }

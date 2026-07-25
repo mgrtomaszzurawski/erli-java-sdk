@@ -150,39 +150,39 @@ final class ProductMapper {
         return ProductExternalId.of(String.valueOf(value));
     }
 
-    private static ProductDescription toDescription(ProductCreateDescriptionAnyOf rawProduct) {
-        return new ProductDescription(ProductValues.mapEach(rawProduct.getSections(), ProductMapper::toSection));
+    private static ProductDescription toDescription(ProductCreateDescriptionAnyOf rawDescription) {
+        return new ProductDescription(ProductValues.mapEach(rawDescription.getSections(), ProductMapper::toSection));
     }
 
-    private static DescriptionSection toSection(ProductCreateDescriptionAnyOfSectionsInner rawProduct) {
-        return new DescriptionSection(ProductValues.mapEach(rawProduct.getItems(), ProductMapper::toDescriptionItem));
+    private static DescriptionSection toSection(ProductCreateDescriptionAnyOfSectionsInner rawSection) {
+        return new DescriptionSection(ProductValues.mapEach(rawSection.getItems(), ProductMapper::toDescriptionItem));
     }
 
-    private static DescriptionItem toDescriptionItem(ProductCreateDescriptionAnyOfSectionsInnerItemsInner rawProduct) {
+    private static DescriptionItem toDescriptionItem(ProductCreateDescriptionAnyOfSectionsInnerItemsInner rawItem) {
         return new DescriptionItem(
-                ProductEnums.toDescriptionItemType(require(rawProduct.getType(), "description item type").getValue()),
-                Optional.ofNullable(rawProduct.getContent()),
-                Optional.ofNullable(rawProduct.getUrl()));
+                ProductEnums.toDescriptionItemType(require(rawItem.getType(), "description item type").getValue()),
+                Optional.ofNullable(rawItem.getContent()),
+                Optional.ofNullable(rawItem.getUrl()));
     }
 
-    private static ProductImage toImage(ProductResponseImagesInner rawProduct) {
+    private static ProductImage toImage(ProductResponseImagesInner rawImage) {
         return new ProductImage(
-                require(rawProduct.getUrl(), "image url"),
-                Optional.ofNullable(rawProduct.getIsVariantImage()),
-                Optional.ofNullable(rawProduct.getIsLifestyleImage()),
-                Optional.ofNullable(rawProduct.getIsFrozenImage()),
-                Optional.ofNullable(rawProduct.getOriginalExternalUrl()),
-                ProductValues.mapOptional(rawProduct.getAppliedTransformation(),
+                require(rawImage.getUrl(), "image url"),
+                Optional.ofNullable(rawImage.getIsVariantImage()),
+                Optional.ofNullable(rawImage.getIsLifestyleImage()),
+                Optional.ofNullable(rawImage.getIsFrozenImage()),
+                Optional.ofNullable(rawImage.getOriginalExternalUrl()),
+                ProductValues.mapOptional(rawImage.getAppliedTransformation(),
                         value -> ProductEnums.toImageTransformation(value.getValue())),
-                Optional.ofNullable(rawProduct.getInternalUrl()));
+                Optional.ofNullable(rawImage.getInternalUrl()));
     }
 
-    private static ProductFile toFile(ProductCreateFilesInner rawProduct) {
-        return new ProductFile(require(rawProduct.getUrl(), "file url"));
+    private static ProductFile toFile(ProductCreateFilesInner rawFile) {
+        return new ProductFile(require(rawFile.getUrl(), "file url"));
     }
 
-    private static ExternalReference toExternalReference(ProductCreateExternalReferencesInner rawProduct) {
-        Object instance = rawProduct.getActualInstance();
+    private static ExternalReference toExternalReference(ProductCreateExternalReferencesInner rawReference) {
+        Object instance = rawReference.getActualInstance();
         if (instance instanceof ProductCreateExternalReferencesInnerAnyOf reference) {
             return new ExternalReference(
                     Optional.ofNullable(reference.getId()),
@@ -197,8 +197,8 @@ final class ProductMapper {
                 Optional.ofNullable(instance).map(String::valueOf), Optional.empty());
     }
 
-    private static ExternalAttribute toExternalAttribute(ProductCreateExternalAttributesInner rawProduct) {
-        Object instance = rawProduct.getActualInstance();
+    private static ExternalAttribute toExternalAttribute(ProductCreateExternalAttributesInner rawAttribute) {
+        Object instance = rawAttribute.getActualInstance();
         if (instance instanceof ProductCreateExternalAttributesInnerAnyOf numeric) {
             return externalAttribute(
                     AttributeValueMapper.identifierText(numeric.getId()), numeric.getName(),
@@ -239,60 +239,60 @@ final class ProductMapper {
                 Optional.ofNullable(unit));
     }
 
-    private static ExternalCategory toExternalCategory(ProductCreateExternalCategoriesInner rawProduct) {
+    private static ExternalCategory toExternalCategory(ProductCreateExternalCategoriesInner rawCategory) {
         return new ExternalCategory(
-                ProductValues.mapOptional(rawProduct.getSource(), value -> ProductEnums.toExternalSource(value.getValue())),
-                ProductValues.mapEach(rawProduct.getBreadcrumb(), entry -> new DictionaryValue(
+                ProductValues.mapOptional(rawCategory.getSource(), value -> ProductEnums.toExternalSource(value.getValue())),
+                ProductValues.mapEach(rawCategory.getBreadcrumb(), entry -> new DictionaryValue(
                         AttributeValueMapper.identifierText(entry.getId()),
                         Optional.ofNullable(entry.getName()))),
-                Optional.ofNullable(rawProduct.getIndex()));
+                Optional.ofNullable(rawCategory.getIndex()));
     }
 
-    private static ExternalVariantGroup toVariantGroup(ProductCreateExternalVariantGroup rawProduct) {
+    private static ExternalVariantGroup toVariantGroup(ProductCreateExternalVariantGroup rawGroup) {
         return new ExternalVariantGroup(
-                Optional.ofNullable(rawProduct.getId()),
-                ProductValues.mapOptional(rawProduct.getSource(),
+                Optional.ofNullable(rawGroup.getId()),
+                ProductValues.mapOptional(rawGroup.getSource(),
                         value -> ProductEnums.toVariantGroupSource(value.getValue())),
-                ProductValues.mapEach(rawProduct.getAttributes(),
+                ProductValues.mapEach(rawGroup.getAttributes(),
                         attribute -> String.valueOf(attribute.getActualInstance())));
     }
 
     private static ExternalResponsibleEntity toResponsibleProducer(
-            ProductCreateExternalResponsibleProducerInner rawProduct) {
+            ProductCreateExternalResponsibleProducerInner rawProducer) {
         return new ExternalResponsibleEntity(
-                Optional.ofNullable(rawProduct.getExternalId()),
-                ProductValues.mapOptional(rawProduct.getSource(),
+                Optional.ofNullable(rawProducer.getExternalId()),
+                ProductValues.mapOptional(rawProducer.getSource(),
                         value -> ProductEnums.toResponsibleEntitySource(value.getValue())));
     }
 
-    private static ExternalResponsibleEntity toResponsiblePerson(ProductCreateExternalResponsiblePersonInner rawProduct) {
+    private static ExternalResponsibleEntity toResponsiblePerson(ProductCreateExternalResponsiblePersonInner rawPerson) {
         return new ExternalResponsibleEntity(
-                Optional.ofNullable(rawProduct.getExternalId()),
-                ProductValues.mapOptional(rawProduct.getSource(),
+                Optional.ofNullable(rawPerson.getExternalId()),
+                ProductValues.mapOptional(rawPerson.getSource(),
                         value -> ProductEnums.toResponsibleEntitySource(value.getValue())));
     }
 
-    private static ExternalProductSet toExternalProductSet(ProductCreateExternalProductSets rawProduct) {
-        return new ExternalProductSet(ProductValues.mapEach(rawProduct.getItems(),
+    private static ExternalProductSet toExternalProductSet(ProductCreateExternalProductSets rawSet) {
+        return new ExternalProductSet(ProductValues.mapEach(rawSet.getItems(),
                 item -> new ExternalProductSetItem(
                         Optional.ofNullable(item.getExternalMetaProductId()),
                         Optional.ofNullable(item.getQuantity()))));
     }
 
-    private static ProductSet toProductSet(ProductCreateProductSets rawProduct) {
-        return new ProductSet(ProductValues.mapEach(rawProduct.getItems(),
+    private static ProductSet toProductSet(ProductCreateProductSets rawSet) {
+        return new ProductSet(ProductValues.mapEach(rawSet.getItems(),
                 item -> new ProductSetItem(
                         Optional.ofNullable(item.getMetaProductId()),
                         Optional.ofNullable(item.getQuantity()))));
     }
 
-    private static ProductAttribute toAttribute(ProductResponseAttributesInner rawProduct) {
+    private static ProductAttribute toAttribute(ProductResponseAttributesInner rawAttribute) {
         return new ProductAttribute(
-                Optional.ofNullable(rawProduct.getId()),
-                Optional.ofNullable(rawProduct.getName()),
-                AttributeValueMapper.fromUntyped(rawProduct.getValues()),
-                ProductValues.orEmpty(rawProduct.getValueIds()),
-                Optional.ofNullable(rawProduct.getUnit()));
+                Optional.ofNullable(rawAttribute.getId()),
+                Optional.ofNullable(rawAttribute.getName()),
+                AttributeValueMapper.fromUntyped(rawAttribute.getValues()),
+                ProductValues.orEmpty(rawAttribute.getValueIds()),
+                Optional.ofNullable(rawAttribute.getUnit()));
     }
 
     private static List<List<ProductCategory>> toCategoryPaths(ProductResponse rawProduct) {
@@ -310,25 +310,25 @@ final class ProductMapper {
         return mapped;
     }
 
-    private static ProductAttachment toAttachment(ProductCreateProductAttachmentsInner rawProduct) {
+    private static ProductAttachment toAttachment(ProductCreateProductAttachmentsInner rawAttachment) {
         return new ProductAttachment(
-                Optional.ofNullable(rawProduct.getId()),
-                ProductValues.mapOptional(rawProduct.getKind(), value -> ProductEnums.toAttachmentKind(value.getValue())),
-                Optional.ofNullable(rawProduct.getUrl()),
-                ProductValues.mapEach(rawProduct.getMarkets(), ProductEnums::toMarket));
+                Optional.ofNullable(rawAttachment.getId()),
+                ProductValues.mapOptional(rawAttachment.getKind(), value -> ProductEnums.toAttachmentKind(value.getValue())),
+                Optional.ofNullable(rawAttachment.getUrl()),
+                ProductValues.mapEach(rawAttachment.getMarkets(), ProductEnums::toMarket));
     }
 
-    private static Translations toTranslations(ProductResponseTranslations rawProduct) {
+    private static Translations toTranslations(ProductResponseTranslations rawTranslations) {
         return new Translations(
-                ProductValues.mapOptional(rawProduct.getPl(), ProductMapper::toTranslation),
-                ProductValues.mapOptional(rawProduct.getDe(), ProductMapper::toTranslation));
+                ProductValues.mapOptional(rawTranslations.getPl(), ProductMapper::toTranslation),
+                ProductValues.mapOptional(rawTranslations.getDe(), ProductMapper::toTranslation));
     }
 
-    private static Translation toTranslation(ProductResponseTranslationsPl rawProduct) {
+    private static Translation toTranslation(ProductResponseTranslationsPl rawTranslation) {
         return new Translation(
-                Optional.ofNullable(rawProduct.getName()),
-                Optional.ofNullable(rawProduct.getDescriptionId()),
-                ProductValues.mapEach(rawProduct.getAttributes(), attribute -> new TranslatedAttribute(
+                Optional.ofNullable(rawTranslation.getName()),
+                Optional.ofNullable(rawTranslation.getDescriptionId()),
+                ProductValues.mapEach(rawTranslation.getAttributes(), attribute -> new TranslatedAttribute(
                         Optional.ofNullable(attribute.getKey()),
                         Optional.ofNullable(attribute.getName()),
                         AttributeValueMapper.fromUntyped(attribute.getValues()),
@@ -340,47 +340,47 @@ final class ProductMapper {
      * to working days, so a missing unit is passed through as {@code null} for
      * {@link DispatchTime} to resolve rather than being rejected here.
      */
-    private static DispatchTime toDispatchTime(ProductCreateDispatchTime rawProduct) {
-        int period = ((Number) require(rawProduct.getPeriod(), "dispatchTime period").getActualInstance()).intValue();
-        DispatchTimeUnit unit = rawProduct.getUnit() == null
+    private static DispatchTime toDispatchTime(ProductCreateDispatchTime rawDispatchTime) {
+        int period = ((Number) require(rawDispatchTime.getPeriod(), "dispatchTime period").getActualInstance()).intValue();
+        DispatchTimeUnit unit = rawDispatchTime.getUnit() == null
                 ? DispatchTime.DEFAULT_UNIT
-                : ProductEnums.toDispatchTimeUnit(rawProduct.getUnit().getValue());
+                : ProductEnums.toDispatchTimeUnit(rawDispatchTime.getUnit().getValue());
         return new DispatchTime(unit, period);
     }
 
-    private static Packaging toPackaging(ProductCreatePackaging rawProduct) {
-        return new Packaging(ProductValues.orEmpty(rawProduct.getTags()), Optional.ofNullable(rawProduct.getWeight()));
+    private static Packaging toPackaging(ProductCreatePackaging rawPackaging) {
+        return new Packaging(ProductValues.orEmpty(rawPackaging.getTags()), Optional.ofNullable(rawPackaging.getWeight()));
     }
 
     /**
      * The {@code frozen} object is a flag per freezable field; collect the flags that are set into the
      * domain's {@link FrozenFields} set.
      */
-    private static FrozenFields toFrozenFields(ProductResponseFrozen rawProduct) {
+    private static FrozenFields toFrozenFields(ProductResponseFrozen rawFrozen) {
         Set<ProductField> frozen = EnumSet.noneOf(ProductField.class);
-        addIfFrozen(frozen, ProductField.NAME, rawProduct.getName());
-        addIfFrozen(frozen, ProductField.DESCRIPTION, rawProduct.getDescription());
-        addIfFrozen(frozen, ProductField.EAN, rawProduct.getEan());
-        addIfFrozen(frozen, ProductField.SKU, rawProduct.getSku());
-        addIfFrozen(frozen, ProductField.EXTERNAL_ATTRIBUTES, rawProduct.getExternalAttributes());
-        addIfFrozen(frozen, ProductField.EXTERNAL_CATEGORIES, rawProduct.getExternalCategories());
-        addIfFrozen(frozen, ProductField.EXTERNAL_VARIANT_GROUP, rawProduct.getExternalVariantGroup());
-        addIfFrozen(frozen, ProductField.IMAGES, rawProduct.getImages());
-        addIfFrozen(frozen, ProductField.FILES, rawProduct.getFiles());
-        addIfFrozen(frozen, ProductField.PRICE, rawProduct.getPrice());
-        addIfFrozen(frozen, ProductField.MOBILE_PRICE, rawProduct.getMobilePrice());
-        addIfFrozen(frozen, ProductField.CATALOGUE_PRICE, rawProduct.getCataloguePrice());
-        addIfFrozen(frozen, ProductField.IMPORTANT_FEATURES, rawProduct.getImportantFeatures());
-        addIfFrozen(frozen, ProductField.STOCK, rawProduct.getStock());
-        addIfFrozen(frozen, ProductField.STATUS, rawProduct.getStatus());
-        addIfFrozen(frozen, ProductField.DISPATCH_TIME, rawProduct.getDispatchTime());
-        addIfFrozen(frozen, ProductField.INVOICE_TYPE, rawProduct.getInvoiceType());
-        addIfFrozen(frozen, ProductField.TAX_RATE, rawProduct.getTaxRate());
-        addIfFrozen(frozen, ProductField.OBLIGATORY_IDENTIFIER, rawProduct.getObligatoryIdentifier());
-        addIfFrozen(frozen, ProductField.VOLUNTARY_IDENTIFIER, rawProduct.getVoluntaryIdentifier());
-        addIfFrozen(frozen, ProductField.RETURN_IDENTIFIER, rawProduct.getReturnIdentifier());
-        addIfFrozen(frozen, ProductField.DELIVERY_PRICE_LIST, rawProduct.getDeliveryPriceList());
-        addIfFrozen(frozen, ProductField.WEIGHT, rawProduct.getWeight());
+        addIfFrozen(frozen, ProductField.NAME, rawFrozen.getName());
+        addIfFrozen(frozen, ProductField.DESCRIPTION, rawFrozen.getDescription());
+        addIfFrozen(frozen, ProductField.EAN, rawFrozen.getEan());
+        addIfFrozen(frozen, ProductField.SKU, rawFrozen.getSku());
+        addIfFrozen(frozen, ProductField.EXTERNAL_ATTRIBUTES, rawFrozen.getExternalAttributes());
+        addIfFrozen(frozen, ProductField.EXTERNAL_CATEGORIES, rawFrozen.getExternalCategories());
+        addIfFrozen(frozen, ProductField.EXTERNAL_VARIANT_GROUP, rawFrozen.getExternalVariantGroup());
+        addIfFrozen(frozen, ProductField.IMAGES, rawFrozen.getImages());
+        addIfFrozen(frozen, ProductField.FILES, rawFrozen.getFiles());
+        addIfFrozen(frozen, ProductField.PRICE, rawFrozen.getPrice());
+        addIfFrozen(frozen, ProductField.MOBILE_PRICE, rawFrozen.getMobilePrice());
+        addIfFrozen(frozen, ProductField.CATALOGUE_PRICE, rawFrozen.getCataloguePrice());
+        addIfFrozen(frozen, ProductField.IMPORTANT_FEATURES, rawFrozen.getImportantFeatures());
+        addIfFrozen(frozen, ProductField.STOCK, rawFrozen.getStock());
+        addIfFrozen(frozen, ProductField.STATUS, rawFrozen.getStatus());
+        addIfFrozen(frozen, ProductField.DISPATCH_TIME, rawFrozen.getDispatchTime());
+        addIfFrozen(frozen, ProductField.INVOICE_TYPE, rawFrozen.getInvoiceType());
+        addIfFrozen(frozen, ProductField.TAX_RATE, rawFrozen.getTaxRate());
+        addIfFrozen(frozen, ProductField.OBLIGATORY_IDENTIFIER, rawFrozen.getObligatoryIdentifier());
+        addIfFrozen(frozen, ProductField.VOLUNTARY_IDENTIFIER, rawFrozen.getVoluntaryIdentifier());
+        addIfFrozen(frozen, ProductField.RETURN_IDENTIFIER, rawFrozen.getReturnIdentifier());
+        addIfFrozen(frozen, ProductField.DELIVERY_PRICE_LIST, rawFrozen.getDeliveryPriceList());
+        addIfFrozen(frozen, ProductField.WEIGHT, rawFrozen.getWeight());
         return FrozenFields.of(frozen);
     }
 

@@ -149,7 +149,14 @@ final class ProductEnums {
     private static <T extends Enum<T>> Map<String, T> index(T[] constants, Function<T, String> wireName) {
         Map<String, T> byWireName = new HashMap<>();
         for (T constant : constants) {
-            byWireName.put(wireName.apply(constant), constant);
+            T clashing = byWireName.put(wireName.apply(constant), constant);
+            if (clashing != null) {
+                // Two constants claiming one wire value would leave one of them unreachable when reading.
+                // Failing at class-init makes that a startup error rather than a silent mis-mapping.
+                throw new IllegalStateException(constant.getDeclaringClass().getSimpleName()
+                        + " has two constants with the wire value '" + wireName.apply(constant)
+                        + "': " + clashing + " and " + constant);
+            }
         }
         return Map.copyOf(byWireName);
     }

@@ -136,12 +136,12 @@ share the last row's value and did not fit on the page, the next page would begi
 those products would never be returned.
 
 Only `EXTERNAL_ID` (the default) and `MARKETPLACE_ID` are unique per product. Sorting by anything else —
-`UPDATED`, `NAME`, `EAN` — is fine within a single page, but the SDK stops with an `IllegalStateException`
-rather than paging past the first page and silently returning an incomplete answer. Note `updateAll`
-stamps the same `updated` on every product it touches, so that field ties readily.
+`UPDATED`, `NAME`, `EAN` — always returns the first page, but the stream throws `IllegalStateException`
+if you ask it to continue, rather than paging on and silently returning an incomplete answer. Note
+`updateAll` stamps the same `updated` on every product it touches, so that field ties readily.
 
 ```java
-// Fine: one page, any sort.
+// Fine: the first page only, any sort. `limit` at or below the page size never asks for page two.
 client.products().search(ProductSearchRequest.builder()
         .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
         .pageSize(50)

@@ -122,7 +122,11 @@ class ProductAccessTest {
         return "{\"externalId\":\"" + externalId + "\",\"marketplaceId\":987654,"
                 + "\"name\":\"Kurtka\",\"slug\":\"kurtka\",\"status\":\"active\",\"stock\":10,"
                 + "\"price\":10000,\"dispatchTime\":{\"unit\":\"day\",\"period\":1},"
-                + "\"frozen\":{},\"created\":\"2026-07-24T13:50:23.961+02:00\"}";
+                + "\"frozen\":{},\"created\":\"2026-07-24T13:50:23.961+02:00\","
+                // `updated` is present so a walk sorted by it can actually derive a cursor; without it
+                // the stream would stop after page one for a different reason and the paging guard below
+                // would never be reached.
+                + "\"updated\":\"2026-07-25T09:00:00.000+02:00\"}";
     }
 
     private ProductAccess products() {
@@ -416,7 +420,23 @@ class ProductAccessTest {
     }
 
     @Test
-    void aSinglePageOnANonUniqueSortIsStillAllowed() {
+    void deliversAFullFirstPageOnANonUniqueSortWithoutRefusing() {
+        // The guard must fire only when a *further* page is asked for. A caller reading exactly one page
+        // is never skipping anything, so refusing here would throw away a page already fetched and mapped.
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(okJson("[" + productBody("sku-a") + "," + productBody("sku-b") + "]")));
+
+        List<Product> page = products().search(ProductSearchRequest.builder()
+                .pageSize(2)
+                .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
+                .build()).limit(2).toList();
+
+        assertEquals(2, page.size());
+        server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
+    }
+
+    @Test
+    void aShortPageOnANonUniqueSortIsStillAllowed() {
         server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[" + productBody("sku-a") + "]")));
 
         List<Product> page = products().search(ProductSearchRequest.builder()
@@ -425,6 +445,51 @@ class ProductAccessTest {
                 .build()).toList();
 
         assertEquals(1, page.size());
+    }
+
+    @Test
+    void sendsNumericFilterValuesAsJsonNumbersNotStrings() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[]")));
+
+        products().search(ProductSearchRequest.builder()
+                .filter(ProductFilter.greaterThan(ProductFilterField.STOCK, "0"))
+                .build()).count();
+
+        // Erli compares a filter value against the column's own type: "0" would simply not match.
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.filter[?(@.value == 0)]")));
+    }
+
+    @Test
+    void sendsANumericCursorAsAJsonNumberWhenPagingByMarketplaceId() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$[?(!@.pagination.after)]"))
+                .willReturn(okJson("[" + productBody("sku-a") + "," + productBody("sku-b") + "]")));
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.pagination[?(@.after == 987654)]"))
+                .willReturn(okJson("[]")));
+
+        products().search(ProductSearchRequest.builder()
+                .pageSize(2)
+                .sortBy(ProductSortField.MARKETPLACE_ID, SortOrder.ASC)
+                .build()).toList();
+
+        // A numeric column compared against a quoted cursor would end the walk after one page.
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.pagination[?(@.after == 987654)]")));
+    }
+
+    @Test
+    void rejectsAFilterValueThatDoesNotMatchTheFieldType() {
+        assertThrows(IllegalArgumentException.class,
+                () -> products().search(ProductSearchRequest.builder()
+                        .filter(ProductFilter.greaterThan(ProductFilterField.STOCK, "plenty"))
+                        .build()).count());
+        // Boolean.valueOf would have turned this typo into `false` and returned the wrong products.
+        assertThrows(IllegalArgumentException.class,
+                () -> products().search(ProductSearchRequest.builder()
+                        .filter(ProductFilter.equalTo(ProductFilterField.ARCHIVED, "yes"))
+                        .build()).count());
     }
 
     @Test

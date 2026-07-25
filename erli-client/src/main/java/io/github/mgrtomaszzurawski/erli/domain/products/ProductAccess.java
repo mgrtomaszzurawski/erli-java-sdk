@@ -54,6 +54,11 @@ public interface ProductAccess {
      * read. Fields left out arrive empty, so select at least what you intend to use. An empty set asks
      * for the whole product, exactly like {@link #get(ProductExternalId)}.
      *
+     * <p>The selection is widened with the handful of fields a {@link Product} cannot be built without
+     * ({@code externalId}, {@code name}, {@code price}, {@code slug}, {@code created}, …) — otherwise a
+     * projection that omitted one would return a payload the SDK could not map. The costly parts of a
+     * product (description, attributes, translations, images) stay excluded unless selected.
+     *
      * @param externalId the seller-assigned product id
      * @param fields     the fields to return
      * @return the product, or empty when the catalog has no product under that id
@@ -107,6 +112,12 @@ public interface ProductAccess {
      *
      * @param request what to match and how to order it
      * @return a lazy stream over every matching product
+     * @throws IllegalStateException when the stream is asked to continue past the first page while
+     *                               sorted by a field that can repeat. Erli's cursor is a strict bound,
+     *                               so products sharing the last row's value would be skipped; only
+     *                               {@link ProductSortField#EXTERNAL_ID} and
+     *                               {@link ProductSortField#MARKETPLACE_ID} are unique per product. A
+     *                               single page is always delivered, whatever the sort.
      */
     Stream<Product> search(ProductSearchRequest request);
 

@@ -12,56 +12,73 @@ package io.github.mgrtomaszzurawski.erli.domain.products;
 public enum ProductFilterField {
 
     /** The seller-assigned external id. Ordered comparisons and membership. */
-    EXTERNAL_ID(true, true),
+    EXTERNAL_ID("externalId", true, true, FilterValueKind.TEXT),
 
     /** The marketplace's numeric id. Ordered comparisons and membership. */
-    MARKETPLACE_ID(true, true),
+    MARKETPLACE_ID("marketplaceId", true, true, FilterValueKind.NUMBER),
 
     /** The product name. Ordered comparisons and membership. */
-    NAME(true, true),
+    NAME("name", true, true, FilterValueKind.TEXT),
 
     /** The EAN barcode. Ordered comparisons and membership. */
-    EAN(true, true),
+    EAN("ean", true, true, FilterValueKind.TEXT),
 
     /** The seller's SKU. Ordered comparisons and membership. */
-    SKU(true, true),
+    SKU("sku", true, true, FilterValueKind.TEXT),
 
     /** The creation timestamp. Ordered comparisons and membership. */
-    CREATED(true, true),
+    CREATED("created", true, true, FilterValueKind.DATE_TIME),
 
     /** The last-update timestamp. Ordered comparisons and membership. */
-    UPDATED(true, true),
+    UPDATED("updated", true, true, FilterValueKind.DATE_TIME),
 
     /** The archival timestamp. Ordered comparisons and membership. */
-    ARCHIVED_AT(true, true),
+    ARCHIVED_AT("archivedAt", true, true, FilterValueKind.DATE_TIME),
 
     /** The selling price, in grosze as the API states it. Ordered comparisons and membership. */
-    PRICE(true, true),
+    PRICE("price", true, true, FilterValueKind.NUMBER),
 
     /** Units available. Ordered comparisons and membership. */
-    STOCK(true, true),
+    STOCK("stock", true, true, FilterValueKind.NUMBER),
 
     /** The marketplace category id. Ordered comparisons and membership. */
-    CATEGORY_ID(true, true),
+    CATEGORY_ID("categoryId", true, true, FilterValueKind.NUMBER),
 
     /** The VAT rate. Ordered comparisons and membership. */
-    TAX_RATE(true, true),
+    TAX_RATE("taxRate", true, true, FilterValueKind.TEXT),
 
     /** An external reference id. Equality and membership only. */
-    EXTERNAL_REFERENCE_ID(false, true),
+    EXTERNAL_REFERENCE_ID("externalReferenceId", false, true, FilterValueKind.TEXT),
 
     /** Whether the product is offered for sale. Equality only. */
-    STATUS(false, false),
+    STATUS("status", false, false, FilterValueKind.TEXT),
 
     /** Whether the product is archived. Equality only. */
-    ARCHIVED(false, false);
+    ARCHIVED("archived", false, false, FilterValueKind.BOOLEAN);
 
+    private final String wireName;
     private final boolean ordered;
     private final boolean membership;
+    private final FilterValueKind valueKind;
 
-    ProductFilterField(boolean ordered, boolean membership) {
+    ProductFilterField(String wireName, boolean ordered, boolean membership, FilterValueKind valueKind) {
+        this.wireName = wireName;
         this.ordered = ordered;
         this.membership = membership;
+        this.valueKind = valueKind;
+    }
+
+    /** The value the Erli API uses for this field on the wire. */
+    public String wireName() {
+        return wireName;
+    }
+
+    /**
+     * The JSON type this field's filter value takes. Erli types a filter value per field and rejects a
+     * number sent as a string, so the SDK converts the caller's text before it reaches the wire.
+     */
+    public FilterValueKind valueKind() {
+        return valueKind;
     }
 
     /** Whether this field supports the ordered comparisons, not just equality. */

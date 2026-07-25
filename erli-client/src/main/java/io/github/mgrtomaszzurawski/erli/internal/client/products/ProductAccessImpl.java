@@ -121,6 +121,13 @@ public final class ProductAccessImpl implements ProductAccess {
      * than spending a request to discover an empty page.
      */
     private Page<Product> fetchPage(ProductSearchRequest request, Cursor after) {
+        if (after != null) {
+            // Only a request for a *further* page can skip products; the first page never can. Checking
+            // here rather than when the first page comes back full means a caller who reads one page —
+            // `search(...).limit(pageSize)` — is never refused, and the stream is lazy, so this runs only
+            // once the consumer has actually asked to go past page one.
+            requireUniqueSortForPaging(request.sortField());
+        }
         ProductSearchRequest page = after == null ? request : request.after(after);
         ProductResponse[] rawResponse = runtime.post(ApiPaths.PRODUCTS_SEARCH,
                 ProductSearchMapper.toRequest(page), ProductResponse[].class);
@@ -133,19 +140,20 @@ public final class ProductAccessImpl implements ProductAccess {
             // to discover an empty page.
             return new Page<>(products, null);
         }
-        requireUniqueSortForPaging(page.sortField());
         return new Page<>(products,
                 ProductSearchMapper.cursorOf(products.get(products.size() - 1), page.sortField()).orElse(null));
     }
 
     /**
-     * Refuse to page past the first page on a sort field that can repeat.
+     * Refuse to continue a walk whose sort field can repeat.
      *
      * <p>Erli's cursor is a <strong>strict</strong> bound on the sort field, so when several products
      * share the last row's value and did not fit on the page, the next page begins past all of them and
-     * those products are silently never returned. That is a wrong answer presented as a complete one —
-     * worse than an error — so the walk stops with an explanation instead. A single page is unaffected,
-     * which keeps {@code search(...).limit(n)} on a non-unique sort perfectly usable.
+     * those products are silently never returned. A wrong answer presented as a complete one is worse
+     * than an error, so the walk stops with an explanation instead.
+     *
+     * <p>Only continuation is refused. The first page is always delivered whatever the sort, so reading
+     * a single page — the common "newest 50 products" query — keeps working.
      */
     private static void requireUniqueSortForPaging(ProductSortField sortField) {
         if (!sortField.isUniquePerProduct()) {

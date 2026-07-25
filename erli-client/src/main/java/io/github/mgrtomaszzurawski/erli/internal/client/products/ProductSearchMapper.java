@@ -1,7 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
-import io.github.mgrtomaszzurawski.erli.domain.products.ComparisonOperator;
+import io.github.mgrtomaszzurawski.erli.domain.products.FilterValueKind;
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilter;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilterField;
@@ -18,6 +18,9 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ProductSearch;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductSearchPagination;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductSearchPaginationAfter;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -50,7 +53,7 @@ final class ProductSearchMapper {
         // against the size it asked for, so leaving the server to apply its own default would silently
         // truncate every search the day that default changes.
         pagination.setLimit(request.effectivePageSize());
-        request.after().ifPresent(cursor -> pagination.setAfter(afterValue(cursor)));
+        request.after().ifPresent(cursor -> pagination.setAfter(afterValue(cursor, request.sortField())));
         rawSearch.pagination(pagination);
         request.filter().ifPresent(filter -> rawSearch.setFilter(toRawFilter(filter)));
         // The generator pre-populates `fields` with ALL 58 selectable names, so leaving it alone would
@@ -87,7 +90,13 @@ final class ProductSearchMapper {
      * The cursor as the request's polymorphic {@code after}. It is sent as text: the SDK never parses a
      * cursor, and the marketplace compares it against the sort field's own type.
      */
-    private static ProductSearchPaginationAfter afterValue(Cursor cursor) {
+    private static ProductSearchPaginationAfter afterValue(Cursor cursor, ProductSortField sortField) {
+        if (sortField.cursorKind() == FilterValueKind.NUMBER) {
+            return new ProductSearchPaginationAfter(new BigDecimal(cursor.value()));
+        }
+        if (sortField.cursorKind() == FilterValueKind.DATE_TIME) {
+            return new ProductSearchPaginationAfter(OffsetDateTime.parse(cursor.value()));
+        }
         return new ProductSearchPaginationAfter(cursor.value());
     }
 
@@ -96,27 +105,29 @@ final class ProductSearchMapper {
             return comparisonFilter(comparison);
         }
         if (filter instanceof ProductFilter.Membership membership) {
-            ProductFilterAnyOf2 rawSearch = new ProductFilterAnyOf2();
-            rawSearch.setField(ProductFilterAnyOf2.FieldEnum.fromValue(filterFieldName(membership.field())));
-            rawSearch.setOperator(membership.included()
+            ProductFilterAnyOf2 rawFilter = new ProductFilterAnyOf2();
+            rawFilter.setField(ProductFilterAnyOf2.FieldEnum.fromValue(membership.field().wireName()));
+            rawFilter.setOperator(membership.included()
                     ? ProductFilterAnyOf2.OperatorEnum.IN
                     : ProductFilterAnyOf2.OperatorEnum.NIN);
-            rawSearch.setValue(membership.values());
-            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawSearch);
+            rawFilter.setValue(membership.values().stream()
+                    .map(value -> typedValue(membership.field().valueKind(), value))
+                    .toList());
+            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawFilter);
         }
         if (filter instanceof ProductFilter.Junction junction) {
-            ProductFilterAnyOf3 rawSearch = new ProductFilterAnyOf3();
-            rawSearch.setOperator(junction.conjunction()
+            ProductFilterAnyOf3 rawFilter = new ProductFilterAnyOf3();
+            rawFilter.setOperator(junction.conjunction()
                     ? ProductFilterAnyOf3.OperatorEnum.AND
                     : ProductFilterAnyOf3.OperatorEnum.OR);
-            rawSearch.setValue(junction.operands().stream().map(ProductSearchMapper::toRawFilter).toList());
-            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawSearch);
+            rawFilter.setValue(junction.operands().stream().map(ProductSearchMapper::toRawFilter).toList());
+            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawFilter);
         }
         if (filter instanceof ProductFilter.Negation negation) {
-            ProductFilterAnyOf4 rawSearch = new ProductFilterAnyOf4();
-            rawSearch.setOperator(ProductFilterAnyOf4.OperatorEnum.NOT);
-            rawSearch.setValue(toRawFilter(negation.operand()));
-            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawSearch);
+            ProductFilterAnyOf4 rawFilter = new ProductFilterAnyOf4();
+            rawFilter.setOperator(ProductFilterAnyOf4.OperatorEnum.NOT);
+            rawFilter.setValue(toRawFilter(negation.operand()));
+            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawFilter);
         }
         throw new IllegalStateException("Unhandled ProductFilter variant: " + filter.getClass());
     }
@@ -128,20 +139,20 @@ final class ProductSearchMapper {
      */
     private static io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter comparisonFilter(
             ProductFilter.Comparison comparison) {
-        String fieldName = filterFieldName(comparison.field());
-        String operator = comparisonOperatorName(comparison.operator());
+        String fieldName = comparison.field().wireName();
+        String operator = comparison.operator().wireName();
         if (comparison.field().supportsOrderedComparison()) {
-            ProductFilterAnyOf rawSearch = new ProductFilterAnyOf();
-            rawSearch.setField(ProductFilterAnyOf.FieldEnum.fromValue(fieldName));
-            rawSearch.setOperator(ProductFilterAnyOf.OperatorEnum.fromValue(operator));
-            rawSearch.setValue(new ProductFilterAnyOfValue(comparison.value()));
-            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawSearch);
+            ProductFilterAnyOf rawFilter = new ProductFilterAnyOf();
+            rawFilter.setField(ProductFilterAnyOf.FieldEnum.fromValue(fieldName));
+            rawFilter.setOperator(ProductFilterAnyOf.OperatorEnum.fromValue(operator));
+            rawFilter.setValue(orderedValue(comparison.field(), comparison.value()));
+            return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawFilter);
         }
-        ProductFilterAnyOf1 rawSearch = new ProductFilterAnyOf1();
-        rawSearch.setField(ProductFilterAnyOf1.FieldEnum.fromValue(fieldName));
-        rawSearch.setOperator(ProductFilterAnyOf1.OperatorEnum.fromValue(operator));
-        rawSearch.setValue(equalityValue(comparison.field(), comparison.value()));
-        return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawSearch);
+        ProductFilterAnyOf1 rawFilter = new ProductFilterAnyOf1();
+        rawFilter.setField(ProductFilterAnyOf1.FieldEnum.fromValue(fieldName));
+        rawFilter.setOperator(ProductFilterAnyOf1.OperatorEnum.fromValue(operator));
+        rawFilter.setValue(equalityValue(comparison.field(), comparison.value()));
+        return new io.github.mgrtomaszzurawski.erli.rest.model.ProductFilter(rawFilter);
     }
 
     /**
@@ -150,40 +161,67 @@ final class ProductSearchMapper {
      * for {@code archived} makes the marketplace reject the filter.
      */
     private static ProductFilterAnyOf1Value equalityValue(ProductFilterField field, String value) {
-        if (field == ProductFilterField.ARCHIVED) {
-            return new ProductFilterAnyOf1Value(Boolean.valueOf(value));
+        if (field.valueKind() == FilterValueKind.BOOLEAN) {
+            return new ProductFilterAnyOf1Value(parseBoolean(field, value));
         }
         return new ProductFilterAnyOf1Value(value);
     }
 
-    private static String filterFieldName(ProductFilterField field) {
-        return switch (field) {
-            case EXTERNAL_ID -> "externalId";
-            case MARKETPLACE_ID -> "marketplaceId";
-            case NAME -> "name";
-            case EAN -> "ean";
-            case SKU -> "sku";
-            case CREATED -> "created";
-            case UPDATED -> "updated";
-            case ARCHIVED_AT -> "archivedAt";
-            case PRICE -> "price";
-            case STOCK -> "stock";
-            case CATEGORY_ID -> "categoryId";
-            case TAX_RATE -> "taxRate";
-            case EXTERNAL_REFERENCE_ID -> "externalReferenceId";
-            case STATUS -> "status";
-            case ARCHIVED -> "archived";
-        };
+    /**
+     * The ordered branch's value, in the JSON type the field takes. Erli compares a filter value against
+     * the column's own type, so a numeric field given {@code "0"} rather than {@code 0} simply does not
+     * match — a wrong answer with no error, which is exactly what the SDK exists to prevent.
+     */
+    private static ProductFilterAnyOfValue orderedValue(ProductFilterField field, String value) {
+        if (field.valueKind() == FilterValueKind.NUMBER) {
+            return new ProductFilterAnyOfValue(parseNumber(field, value));
+        }
+        if (field.valueKind() == FilterValueKind.DATE_TIME) {
+            return new ProductFilterAnyOfValue(parseTimestamp(field, value));
+        }
+        return new ProductFilterAnyOfValue(value);
     }
 
-    private static String comparisonOperatorName(ComparisonOperator operator) {
-        return switch (operator) {
-            case EQUALS -> "=";
-            case NOT_EQUALS -> "!=";
-            case GREATER_THAN -> ">";
-            case GREATER_OR_EQUAL -> ">=";
-            case LESS_THAN -> "<";
-            case LESS_OR_EQUAL -> "<=";
-        };
+    /** A membership entry in the field's own JSON type; the branch is free-form at Layer 1. */
+    private static Object typedValue(FilterValueKind kind, String value) {
+        return kind == FilterValueKind.NUMBER ? new BigDecimal(value) : value;
     }
+
+    private static BigDecimal parseNumber(ProductFilterField field, String value) {
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException notNumeric) {
+            throw new IllegalArgumentException(
+                    "Filter field '" + field + "' compares a number, but '" + value + "' is not one",
+                    notNumeric);
+        }
+    }
+
+    private static OffsetDateTime parseTimestamp(ProductFilterField field, String value) {
+        try {
+            return OffsetDateTime.parse(value);
+        } catch (DateTimeParseException notATimestamp) {
+            throw new IllegalArgumentException(
+                    "Filter field '" + field + "' compares a timestamp, but '" + value
+                            + "' is not an ISO-8601 instant", notATimestamp);
+        }
+    }
+
+    /**
+     * A boolean filter value. Rejects anything other than {@code true}/{@code false} rather than letting
+     * {@link Boolean#valueOf} turn a typo into {@code false} and return the wrong products.
+     */
+    private static boolean parseBoolean(ProductFilterField field, String value) {
+        if ("true".equalsIgnoreCase(value)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(value)) {
+            return false;
+        }
+        throw new IllegalArgumentException(
+                "Filter field '" + field + "' compares a boolean, but '" + value + "' is neither"
+                        + " 'true' nor 'false'");
+    }
+
+
 }

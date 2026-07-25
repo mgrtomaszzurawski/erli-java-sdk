@@ -3,7 +3,6 @@ package io.github.mgrtomaszzurawski.erli.internal.client.products;
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -18,7 +17,7 @@ import java.util.Set;
  * fail with {@code IllegalStateException} instead of returning the smaller product the caller asked for.
  *
  * <p>So a projection is always widened by {@link #MAPPING_ESSENTIALS}. The caller still gets the payload
- * reduction they asked for — these ten fields are scalars, while the expensive parts of a product
+ * reduction they asked for — these ten are cheap — eight scalars plus two small objects — while the expensive parts of a product
  * (description, attributes, translations, images) remain excluded unless selected. Widening is silent by
  * design: it is the SDK keeping its own contract, not a choice the caller needs to make.
  *
@@ -31,7 +30,7 @@ final class ProductProjection {
      * {@code require(...)} calls there — adding a required component to {@code Product} means adding it
      * here, or projected reads start failing.
      */
-    private static final Set<ProductField> MAPPING_ESSENTIALS = Collections.unmodifiableSet(EnumSet.of(
+    private static final Set<ProductField> MAPPING_ESSENTIALS = EnumSet.of(
             ProductField.EXTERNAL_ID,
             ProductField.MARKETPLACE_ID,
             ProductField.NAME,
@@ -41,14 +40,9 @@ final class ProductProjection {
             ProductField.PRICE,
             ProductField.DISPATCH_TIME,
             ProductField.FROZEN,
-            ProductField.CREATED));
+            ProductField.CREATED);
 
     private ProductProjection() {
-    }
-
-    /** The fields a {@link Product} cannot be built without. */
-    static Set<ProductField> mappingEssentials() {
-        return MAPPING_ESSENTIALS;
     }
 
     /**
