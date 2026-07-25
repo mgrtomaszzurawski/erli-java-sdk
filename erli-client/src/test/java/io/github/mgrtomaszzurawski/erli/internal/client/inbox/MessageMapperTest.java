@@ -103,6 +103,20 @@ class MessageMapperTest {
     }
 
     @Test
+    void keepsBuyerFreeTextOutOfOrderEventStringRendering() {
+        // The realistic leak path: an order event is logged whole. Its buyer-authored comment is
+        // exactly where a phone number ends up, so OrderEvent.toString() must not carry it.
+        OrderEvent order = mapFixture(ORDER_FIXTURE).orderEvent().orElseThrow();
+
+        String rendered = order.toString();
+        assertFalse(rendered.contains("Prosze zapakowac na prezent"),
+                "buyer comment leaked into OrderEvent.toString(): " + rendered);
+        // Still useful for debugging: identity and state are present.
+        assertTrue(rendered.contains("ORD-1"), rendered);
+        assertTrue(rendered.contains("PURCHASED"), rendered);
+    }
+
+    @Test
     void mapsBuyerAndBothAddresses() {
         Buyer buyer = mapFixture(ORDER_FIXTURE).orderEvent().orElseThrow().buyer().orElseThrow();
 
