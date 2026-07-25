@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelType;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingVendor;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
+import io.github.mgrtomaszzurawski.erli.rest.model.CreateExternalParcelInnerTrackingNumber;
 import io.github.mgrtomaszzurawski.erli.rest.model.CreateExternalParcelResponseAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.CreateExternalParcelResponseAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.ErrorResponseInner;
@@ -82,7 +83,7 @@ final class ExternalParcelMapper {
                         .map(CreateExternalParcelResponseAnyOf1.VendorEnum::getValue)
                         .map(ShippingVendor::fromWire),
                 Optional.ofNullable(raw.getTrackingNumber())
-                        .map(trackingNumber -> String.valueOf(trackingNumber.getActualInstance())),
+                        .map(CreateExternalParcelInnerTrackingNumber::getString),
                 toErrors(raw.getError()));
     }
 

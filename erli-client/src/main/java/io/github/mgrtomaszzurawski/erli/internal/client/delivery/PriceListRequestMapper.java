@@ -15,6 +15,7 @@ import io.github.mgrtomaszzurawski.erli.rest.model.CreatePriceListSchemaPricesIn
 import io.github.mgrtomaszzurawski.erli.rest.model.UpdatePriceListSchema;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,9 +29,10 @@ final class PriceListRequestMapper {
 
     private static final String DIMENSION_KEY = "dimension";
     private static final String LIMIT_KEY = "limit";
-    private static final BigDecimal TEN = BigDecimal.TEN;
     /** Erli prices delivery in grosze; the read side decodes the same way. */
     private static final String CURRENCY_CODE = "PLN";
+    /** Grosze per złoty — the scale {@link #CURRENCY_CODE} fixes. */
+    private static final BigDecimal MINOR_UNITS_PER_MAJOR = new BigDecimal("100");
 
     private PriceListRequestMapper() {
     }
@@ -109,9 +111,10 @@ final class PriceListRequestMapper {
     }
 
     /**
-     * Mirror of {@link PriceListMapper}'s read side: the wire carries minor units, the domain carries
-     * {@link Money}. The scale comes from the currency itself rather than a hardcoded 100, so the
-     * conversion stays exact for any currency Erli adds — and the two failure modes are reported
+     * Mirror of {@link PriceListMapper}'s read side: the wire carries grosze, the domain carries
+     * {@link Money}. Delivery is priced in {@link #CURRENCY_CODE} only — the price-list schemas carry no
+     * currency field at all, and the read side decodes grosze unconditionally — so another currency is
+     * refused rather than silently sent at the wrong scale. The two remaining failures are reported
      * apart, because "0.5 grosza" and "more than a billion złoty" need different fixes.
      */
     private static Integer toMinorUnits(Money amount, String fieldName) {
@@ -120,11 +123,10 @@ final class PriceListRequestMapper {
                     + "; Erli prices delivery in grosze and the read side decodes it as such, got "
                     + amount.currency().getCurrencyCode());
         }
-        int fractionDigits = amount.currency().getDefaultFractionDigits();
-        BigDecimal minorUnits = amount.amount().multiply(TEN.pow(Math.max(fractionDigits, 0)));
+        BigDecimal minorUnits = amount.amount().multiply(MINOR_UNITS_PER_MAJOR);
         BigDecimal whole;
         try {
-            whole = minorUnits.setScale(0, java.math.RoundingMode.UNNECESSARY);
+            whole = minorUnits.setScale(0, RoundingMode.UNNECESSARY);
         } catch (ArithmeticException notAWholeNumber) {
             throw new IllegalArgumentException("'" + fieldName + "' is not a whole number of "
                     + amount.currency().getCurrencyCode() + " minor units: " + amount.amount(),

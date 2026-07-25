@@ -318,6 +318,20 @@ class ShippingWriteOperationsTest {
     }
 
     @Test
+    void treatsAnExplicitNullErrorAsACreatedParcelRatherThanARefusal() {
+        server.stubFor(post(urlEqualTo(EXTERNAL_PATH)).willReturn(okJson("""
+                [ { "id": 77, "orderId": "100007x1234", "type": "external", "error": null,
+                    "shipping": { "vendor": "dpd" }, "status": "sent",
+                    "createdAt": "2026-07-20T08:14:00Z", "updatedAt": "2026-07-21T09:30:00Z" } ]
+                """)));
+
+        List<ExternalParcelResult> results = shippingAccess().registerExternalParcels(List.of(
+                ExternalParcelDraft.builder(OrderId.of("100007x1234"), ShippingVendor.DPD).build()));
+
+        assertInstanceOf(ExternalParcelResult.Created.class, results.get(0));
+    }
+
+    @Test
     void mapsTheStatusHistoryOfAnExternalParcel() {
         server.stubFor(get(urlEqualTo(EXTERNAL_BY_ID_PATH)).willReturn(okJson("""
                 { "id": 77, "orderId": "100007x1234", "type": "external",
