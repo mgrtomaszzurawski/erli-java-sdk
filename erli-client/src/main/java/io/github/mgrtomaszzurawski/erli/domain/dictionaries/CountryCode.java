@@ -1,39 +1,300 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
-import java.util.Locale;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * An ISO 3166-1 alpha-2 country code as the Erli API spells it — lower case, e.g. {@code pl}.
- *
- * <p>A value type rather than a 249-constant Java enum: the country list is reference data, and an
- * enum of that size buys no type safety a two-letter check does not already give.
- *
- * @param value the lower-case two-letter country code
+ * An ISO 3166-1 alpha-2 country, as accepted for a {@link ResponsibleParty}'s registered address.
+ * Constants mirror the Erli dictionary; the SDK maps by the wire string (via {@link #fromWire}), not
+ * by enum name, following the fleet enum guideline for large reference enums.
  */
-public record CountryCode(String value) {
+public enum CountryCode {
 
-    public static final CountryCode POLAND = new CountryCode("pl");
-    public static final CountryCode GERMANY = new CountryCode("de");
+    PL("pl"),
+    AF("af"),
+    AX("ax"),
+    AL("al"),
+    DZ("dz"),
+    AS("as"),
+    AD("ad"),
+    AO("ao"),
+    AI("ai"),
+    AQ("aq"),
+    AG("ag"),
+    AR("ar"),
+    AM("am"),
+    AW("aw"),
+    AU("au"),
+    AT("at"),
+    AZ("az"),
+    BS("bs"),
+    BH("bh"),
+    BD("bd"),
+    BB("bb"),
+    BY("by"),
+    BE("be"),
+    BZ("bz"),
+    BJ("bj"),
+    BM("bm"),
+    BT("bt"),
+    BO("bo"),
+    BQ("bq"),
+    BA("ba"),
+    BW("bw"),
+    BV("bv"),
+    BR("br"),
+    IO("io"),
+    BN("bn"),
+    BG("bg"),
+    BF("bf"),
+    BI("bi"),
+    CV("cv"),
+    KH("kh"),
+    CM("cm"),
+    CA("ca"),
+    KY("ky"),
+    CF("cf"),
+    TD("td"),
+    CL("cl"),
+    CN("cn"),
+    CX("cx"),
+    CC("cc"),
+    CO("co"),
+    KM("km"),
+    CG("cg"),
+    CD("cd"),
+    CK("ck"),
+    CR("cr"),
+    HR("hr"),
+    CU("cu"),
+    CW("cw"),
+    CY("cy"),
+    CZ("cz"),
+    CI("ci"),
+    DK("dk"),
+    DJ("dj"),
+    DM("dm"),
+    DO("do"),
+    EC("ec"),
+    EG("eg"),
+    SV("sv"),
+    GQ("gq"),
+    ER("er"),
+    EE("ee"),
+    SZ("sz"),
+    ET("et"),
+    FK("fk"),
+    FO("fo"),
+    FJ("fj"),
+    FI("fi"),
+    FR("fr"),
+    GF("gf"),
+    PF("pf"),
+    TF("tf"),
+    GA("ga"),
+    GM("gm"),
+    GE("ge"),
+    DE("de"),
+    GH("gh"),
+    GI("gi"),
+    GR("gr"),
+    GL("gl"),
+    GD("gd"),
+    GP("gp"),
+    GU("gu"),
+    GT("gt"),
+    GG("gg"),
+    GN("gn"),
+    GW("gw"),
+    GY("gy"),
+    HT("ht"),
+    HM("hm"),
+    VA("va"),
+    HN("hn"),
+    HK("hk"),
+    HU("hu"),
+    IS("is"),
+    IN("in"),
+    ID("id"),
+    IR("ir"),
+    IQ("iq"),
+    IE("ie"),
+    IM("im"),
+    IL("il"),
+    IT("it"),
+    JM("jm"),
+    JP("jp"),
+    JE("je"),
+    JO("jo"),
+    KZ("kz"),
+    KE("ke"),
+    KI("ki"),
+    KP("kp"),
+    KR("kr"),
+    KW("kw"),
+    KG("kg"),
+    LA("la"),
+    LV("lv"),
+    LB("lb"),
+    LS("ls"),
+    LR("lr"),
+    LY("ly"),
+    LI("li"),
+    LT("lt"),
+    LU("lu"),
+    MO("mo"),
+    MG("mg"),
+    MW("mw"),
+    MY("my"),
+    MV("mv"),
+    ML("ml"),
+    MT("mt"),
+    MH("mh"),
+    MQ("mq"),
+    MR("mr"),
+    MU("mu"),
+    YT("yt"),
+    MX("mx"),
+    FM("fm"),
+    MD("md"),
+    MC("mc"),
+    MN("mn"),
+    ME("me"),
+    MS("ms"),
+    MA("ma"),
+    MZ("mz"),
+    MM("mm"),
+    NA("na"),
+    NR("nr"),
+    NP("np"),
+    NL("nl"),
+    NC("nc"),
+    NZ("nz"),
+    NI("ni"),
+    NE("ne"),
+    NG("ng"),
+    NU("nu"),
+    NF("nf"),
+    MK("mk"),
+    MP("mp"),
+    NO("no"),
+    OM("om"),
+    PK("pk"),
+    PW("pw"),
+    PS("ps"),
+    PA("pa"),
+    PG("pg"),
+    PY("py"),
+    PE("pe"),
+    PH("ph"),
+    PN("pn"),
+    PT("pt"),
+    PR("pr"),
+    QA("qa"),
+    RO("ro"),
+    RU("ru"),
+    RW("rw"),
+    RE("re"),
+    BL("bl"),
+    SH("sh"),
+    KN("kn"),
+    LC("lc"),
+    MF("mf"),
+    PM("pm"),
+    VC("vc"),
+    WS("ws"),
+    SM("sm"),
+    ST("st"),
+    SA("sa"),
+    SN("sn"),
+    RS("rs"),
+    SC("sc"),
+    SL("sl"),
+    SG("sg"),
+    SX("sx"),
+    SK("sk"),
+    SI("si"),
+    SB("sb"),
+    SO("so"),
+    ZA("za"),
+    GS("gs"),
+    SS("ss"),
+    ES("es"),
+    LK("lk"),
+    SD("sd"),
+    SR("sr"),
+    SJ("sj"),
+    SE("se"),
+    CH("ch"),
+    SY("sy"),
+    TW("tw"),
+    TJ("tj"),
+    TZ("tz"),
+    TH("th"),
+    TL("tl"),
+    TG("tg"),
+    TK("tk"),
+    TO("to"),
+    TT("tt"),
+    TN("tn"),
+    TR("tr"),
+    TM("tm"),
+    TC("tc"),
+    TV("tv"),
+    UG("ug"),
+    UA("ua"),
+    AE("ae"),
+    GB("gb"),
+    UM("um"),
+    US("us"),
+    UY("uy"),
+    UZ("uz"),
+    VU("vu"),
+    VE("ve"),
+    VN("vn"),
+    VG("vg"),
+    VI("vi"),
+    WF("wf"),
+    EH("eh"),
+    YE("ye"),
+    ZM("zm"),
+    ZW("zw");
 
-    private static final int ISO_ALPHA2_LENGTH = 2;
+    private static final Map<String, CountryCode> BY_WIRE = Stream.of(values())
+            .collect(Collectors.toUnmodifiableMap(CountryCode::wireValue, Function.identity()));
 
-    public CountryCode {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("CountryCode must not be null or blank");
-        }
-        value = value.trim().toLowerCase(Locale.ROOT);
-        if (value.length() != ISO_ALPHA2_LENGTH) {
-            throw new IllegalArgumentException(
-                    "CountryCode must be an ISO 3166-1 alpha-2 code, got: " + value);
-        }
+    private final String wireValue;
+
+    CountryCode(String wireValue) {
+        this.wireValue = wireValue;
     }
 
-    public static CountryCode of(String value) {
-        return new CountryCode(value);
+    /** The exact string this country is sent as on the wire (lower case, e.g. {@code pl}). */
+    public String wireValue() {
+        return wireValue;
     }
 
-    @Override
-    public String toString() {
-        return value;
+    /**
+     * Resolve a wire string to a country.
+     *
+     * <p>On the live path this is only ever called with the wire value of an already-decoded Layer-1
+     * {@code CountryEnum}, so it always resolves — a value the API added but the vendored spec lacks
+     * fails earlier, at JSON decode (fail-loud, see {@code KNOWN-SERVER-BEHAVIORS.md}). This guard
+     * therefore fires only if this domain enum drifts out of sync with the generated one.
+     *
+     * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
+     */
+    public static CountryCode fromWire(String wireValue) {
+        CountryCode country = BY_WIRE.get(wireValue);
+        if (country == null) {
+            throw new ErliTransportException(
+                    "No CountryCode constant maps wire value '" + wireValue
+                            + "'; this domain enum is out of sync with the generated model");
+        }
+        return country;
     }
 }

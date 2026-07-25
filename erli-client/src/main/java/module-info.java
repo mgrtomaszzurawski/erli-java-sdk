@@ -13,6 +13,8 @@ module io.github.mgrtomaszzurawski.erli {
     requires java.net.http;
     // Internal-only dependencies (never re-exported): transport JSON and the generated Layer-1 models.
     requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.datatype.jsr310;
+    requires org.openapitools.jackson.nullable;
     requires io.github.mgrtomaszzurawski.erli.rest.models;
 
     // Entry point.
@@ -29,8 +31,11 @@ module io.github.mgrtomaszzurawski.erli {
     // --- APPEND BLOCK: bucket A Products ---------------------------------------------------------
     // --- APPEND BLOCK: bucket B Orders ----------------------------------------------------------
     // --- APPEND BLOCK: bucket C Shipping & Delivery ---------------------------------------------
+    exports io.github.mgrtomaszzurawski.erli.domain.shipping;
     // --- APPEND BLOCK: bucket D Dictionaries ----------------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.dictionaries;
     // --- APPEND BLOCK: bucket E Finance ---------------------------------------------------------
     // --- APPEND BLOCK: bucket F Comms & Automation ----------------------------------------------
+    exports io.github.mgrtomaszzurawski.erli.domain.hooks;
+    exports io.github.mgrtomaszzurawski.erli.domain.inbox;
 }

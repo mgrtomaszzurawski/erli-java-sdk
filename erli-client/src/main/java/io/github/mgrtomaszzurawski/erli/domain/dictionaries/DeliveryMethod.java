@@ -2,22 +2,18 @@ package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
 
-import java.util.Objects;
-
 /**
- * A delivery method offered by the marketplace — one of the values that may appear as
- * {@code Order.delivery}. Reference data, identical for every shop.
+ * A delivery method from the Erli dictionary — one of the methods that may appear in
+ * {@code Order.delivery}. Reference data, shared across shops.
  *
- * @param id the delivery-method identifier, e.g. {@code erliPaczkomat}
- * @param name the human-readable Polish label shown to buyers
- * @param cashOnDelivery whether this method supports cash on delivery (COD)
- * @param vendor the carrier operating the method
+ * @param id             the method identifier (core-owned typed id)
+ * @param name           the human-readable method name
+ * @param cashOnDelivery whether the method supports cash on delivery (COD)
+ * @param vendor         the carrier the method belongs to
  */
-public record DeliveryMethod(DeliveryMethodId id, String name, boolean cashOnDelivery, DeliveryVendor vendor) {
-
-    public DeliveryMethod {
-        Objects.requireNonNull(id, "id");
-        Objects.requireNonNull(name, "name");
-        Objects.requireNonNull(vendor, "vendor");
-    }
+public record DeliveryMethod(
+        DeliveryMethodId id,
+        String name,
+        boolean cashOnDelivery,
+        DeliveryVendor vendor) {
 }

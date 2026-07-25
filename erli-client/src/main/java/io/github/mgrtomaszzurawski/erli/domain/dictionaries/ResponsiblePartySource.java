@@ -1,32 +1,53 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 /**
- * Where a {@link ResponsibleParty} entry came from — the API itself, the shop panel, or an
- * integration such as Allegro or BaseLinker.
- *
- * <p>A value type rather than a Java enum: the list names third-party integrations and grows as
- * ERLI adds them.
- *
- * @param value the non-blank source identifier exactly as the API spells it
+ * Where a {@link ResponsibleParty} entry came from — the API itself, the shop panel, or one of the
+ * integrations ERLI supports. Mapped by wire string via {@link #fromWire}, per the fleet enum
+ * guideline: the list names third-party integrations and grows as ERLI adds them.
  */
-public record ResponsiblePartySource(String value) {
+public enum ResponsiblePartySource {
 
-    public static final ResponsiblePartySource API = new ResponsiblePartySource("api");
-    public static final ResponsiblePartySource MANUAL = new ResponsiblePartySource("manual");
+    API("api"),
+    MANUAL("manual"),
+    ALLEGRO("allegro"),
+    IDOSELL("idosell"),
+    PRESTA_SHOP("prestaShop"),
+    SHOPER("shoper"),
+    BASELINKER("baselinker");
 
-    public ResponsiblePartySource {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("ResponsiblePartySource must not be null or blank");
+    private static final Map<String, ResponsiblePartySource> BY_WIRE = Stream.of(values())
+            .collect(Collectors.toUnmodifiableMap(ResponsiblePartySource::wireValue, Function.identity()));
+
+    private final String wireValue;
+
+    ResponsiblePartySource(String wireValue) {
+        this.wireValue = wireValue;
+    }
+
+    /** The exact string this source is sent as on the wire. */
+    public String wireValue() {
+        return wireValue;
+    }
+
+    /**
+     * Resolve a wire string to a source.
+     *
+     * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
+     */
+    public static ResponsiblePartySource fromWire(String wireValue) {
+        ResponsiblePartySource source = BY_WIRE.get(wireValue);
+        if (source == null) {
+            throw new ErliTransportException(
+                    "No ResponsiblePartySource constant maps wire value '" + wireValue
+                            + "'; this domain enum is out of sync with the generated model");
         }
-        value = value.trim();
-    }
-
-    public static ResponsiblePartySource of(String value) {
-        return new ResponsiblePartySource(value);
-    }
-
-    @Override
-    public String toString() {
-        return value;
+        return source;
     }
 }

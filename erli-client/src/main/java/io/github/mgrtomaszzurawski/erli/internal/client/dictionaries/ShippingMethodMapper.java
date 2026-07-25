@@ -40,7 +40,7 @@ final class ShippingMethodMapper {
                 requireName(rawMethod),
                 Optional.ofNullable(rawMethod.getGroupId()).map(groupId -> groupId.getValue()),
                 Optional.ofNullable(rawMethod.getOperator())
-                        .map(operator -> ShippingOperator.of(operator.getValue())),
+                        .map(operator -> ShippingOperator.fromWire(operator.getValue())),
                 requireCashOnDelivery(rawMethod),
                 Optional.ofNullable(rawMethod.getMaxUnitPrice()),
                 Optional.ofNullable(rawMethod.getMinDimensions()).map(ShippingMethodMapper::toBox),

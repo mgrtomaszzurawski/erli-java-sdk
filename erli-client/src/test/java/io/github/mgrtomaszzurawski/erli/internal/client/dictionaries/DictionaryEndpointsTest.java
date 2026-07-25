@@ -2,17 +2,26 @@ package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentKind;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentQuery;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentUpdate;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Category;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethodFilter;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethodQuery;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Market;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.PriceListName;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyFilter;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingMethodFilter;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyQuery;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyUpdate;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingMethodQuery;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingOperator;
 import io.github.mgrtomaszzurawski.erli.internal.ErrorMapper;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
@@ -20,34 +29,57 @@ import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.patch;
+import static com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Wire-level tests for the dictionary endpoints beyond the starter slice: every test asserts the
- * request the SDK produced (path, query string, body), not only the response it decoded.
+ * request the SDK produced (verb, path, query string, body), not only the response it decoded.
  */
 class DictionaryEndpointsTest {
 
     private static final String TEST_KEY = "test-key";
     private static final String USER_AGENT = "erli-java-sdk/test";
     private static final String MEDIA_TYPE_JSON = "application/json";
+    private static final String HEADER_CONTENT_TYPE = "Content-Type";
     private static final String CATEGORY_SEARCH_PATH = "/dictionaries/category/_search";
     private static final String RESPONSIBLE_PERSONS_PATH = "/dictionaries/responsiblePersons";
+    private static final String DELIVERY_METHODS_PATH = "/dictionaries/deliveryMethods";
+    private static final int CATEGORY_PAGE_SIZE = 200;
+
+    /**
+     * Verbatim from the live sandbox, 2026-07-25: {@code POST /dictionaries/attributes/_search} with an
+     * empty body. Richer than the spec — carries {@code payload.details} and {@code polishMessage}.
+     */
+    private static final String OBSERVED_400_BODY = """
+            {"name":"ValidationFailure",\
+            "message":"Wystąpił problem z walidacją danych, categoryId: categoryId must be a number",\
+            "failureType":"validation","polishMessage":"Problem z walidacją, sprawdź pola",\
+            "payload":{"details":{"categoryId":"\\"categoryId\\" must be a number"}},\
+            "spanId":"699t9FoRLPuu1","traceId":"699t9FoRLPuu1"}""";
 
     private WireMockServer server;
 
@@ -62,7 +94,7 @@ class DictionaryEndpointsTest {
         server.stop();
     }
 
-    private DictionaryAccessImpl dictionaries() {
+    private DictionariesAccessImpl dictionaries() {
         JsonCodec codec = new JsonCodec();
         HttpRuntime runtime = new HttpRuntime(
                 HttpClient.newHttpClient(),
@@ -73,40 +105,42 @@ class DictionaryEndpointsTest {
                 Duration.ofSeconds(5),
                 codec,
                 new ErrorMapper(codec));
-        return new DictionaryAccessImpl(runtime);
+        return new DictionariesAccessImpl(runtime);
     }
 
     @Test
     void sendsDeliveryMethodFiltersAsAQueryString() {
-        server.stubFor(get(urlEqualTo("/dictionaries/deliveryMethods?id=erliPaczkomat&cod=false&vendor=inpost"))
-                .willReturn(okJson("[]")));
+        String expectedUrl = DELIVERY_METHODS_PATH + "?id=erliPaczkomat&cod=false&vendor=inpost";
+        server.stubFor(get(urlEqualTo(expectedUrl)).willReturn(okJson("[]")));
 
-        dictionaries().deliveryMethods(DeliveryMethodFilter.builder()
+        dictionaries().deliveryMethods(DeliveryMethodQuery.builder()
                 .id(DeliveryMethodId.of("erliPaczkomat"))
                 .cashOnDelivery(false)
                 .vendor(DeliveryVendor.INPOST)
                 .build());
 
-        server.verify(getRequestedFor(
-                urlEqualTo("/dictionaries/deliveryMethods?id=erliPaczkomat&cod=false&vendor=inpost")));
+        server.verify(getRequestedFor(urlEqualTo(expectedUrl))
+                .withHeader("Authorization", equalTo("Bearer " + TEST_KEY))
+                .withHeader("User-Agent", equalTo(USER_AGENT)));
     }
 
     @Test
-    void omitsTheQueryStringEntirelyForAnEmptyFilter() {
-        server.stubFor(get(urlEqualTo("/dictionaries/deliveryMethods")).willReturn(okJson("[]")));
+    void omitsTheQueryStringEntirelyForAnEmptyQuery() {
+        server.stubFor(get(urlEqualTo(DELIVERY_METHODS_PATH)).willReturn(okJson("[]")));
 
-        dictionaries().deliveryMethods(DeliveryMethodFilter.all());
+        dictionaries().deliveryMethods(DeliveryMethodQuery.none());
 
-        server.verify(getRequestedFor(urlEqualTo("/dictionaries/deliveryMethods")));
+        server.verify(getRequestedFor(urlEqualTo(DELIVERY_METHODS_PATH)));
     }
 
     @Test
     void substitutesAndEncodesThePriceListPathSegment() {
-        server.stubFor(get(urlEqualTo("/dictionaries/deliveryMethods/cennik%20letni")).willReturn(okJson("[]")));
+        String expectedUrl = DELIVERY_METHODS_PATH + "/cennik%20letni";
+        server.stubFor(get(urlEqualTo(expectedUrl)).willReturn(okJson("[]")));
 
-        dictionaries().deliveryMethods(PriceListName.of("cennik letni"), DeliveryMethodFilter.all());
+        dictionaries().deliveryMethods(PriceListName.of("cennik letni"), DeliveryMethodQuery.none());
 
-        server.verify(getRequestedFor(urlEqualTo("/dictionaries/deliveryMethods/cennik%20letni")));
+        server.verify(getRequestedFor(urlEqualTo(expectedUrl)));
     }
 
     @Test
@@ -114,7 +148,7 @@ class DictionaryEndpointsTest {
         String expectedUrl = "/dictionaries/shippingMethods?groupId=erliPaczkomat&operator=INPOST&cod=true";
         server.stubFor(get(urlEqualTo(expectedUrl)).willReturn(okJson("[]")));
 
-        dictionaries().shippingMethods(ShippingMethodFilter.builder()
+        dictionaries().shippingMethods(ShippingMethodQuery.builder()
                 .groupId("erliPaczkomat")
                 .operator(ShippingOperator.INPOST)
                 .cashOnDelivery(true)
@@ -125,11 +159,26 @@ class DictionaryEndpointsTest {
 
     @Test
     void sendsResponsiblePartyFiltersAsAQueryString() {
-        server.stubFor(get(urlEqualTo("/dictionaries/responsibleProducers?name=Importer")).willReturn(okJson("[]")));
+        String expectedUrl = "/dictionaries/responsibleProducers?name=Importer";
+        server.stubFor(get(urlEqualTo(expectedUrl)).willReturn(okJson("[]")));
 
-        dictionaries().responsibleProducers(ResponsiblePartyFilter.byName("Importer"));
+        dictionaries().responsibleProducers(ResponsiblePartyQuery.byName("Importer"));
 
-        server.verify(getRequestedFor(urlEqualTo("/dictionaries/responsibleProducers?name=Importer")));
+        server.verify(getRequestedFor(urlEqualTo(expectedUrl)));
+    }
+
+    @Test
+    void sendsAttachmentFiltersAsAQueryString() {
+        String expectedUrl = "/dictionaries/attachments?id=7&kind=userManual&name=instrukcja";
+        server.stubFor(get(urlEqualTo(expectedUrl)).willReturn(okJson("[]")));
+
+        dictionaries().attachments(AttachmentQuery.builder()
+                .id(7L)
+                .kind(AttachmentKind.USER_MANUAL)
+                .name("instrukcja")
+                .build());
+
+        server.verify(getRequestedFor(urlEqualTo(expectedUrl)));
     }
 
     @Test
@@ -149,7 +198,7 @@ class DictionaryEndpointsTest {
         dictionaries().attributes(CategoryId.of("4"));
 
         server.verify(postRequestedFor(urlEqualTo("/dictionaries/attributes/_search"))
-                .withHeader("Content-Type", equalTo(MEDIA_TYPE_JSON))
+                .withHeader(HEADER_CONTENT_TYPE, equalTo(MEDIA_TYPE_JSON))
                 .withRequestBody(equalToJson("{\"categoryId\":4}")));
     }
 
@@ -165,44 +214,128 @@ class DictionaryEndpointsTest {
 
     @Test
     void sendsTheCreateResponsiblePersonBody() {
-        server.stubFor(post(urlEqualTo(RESPONSIBLE_PERSONS_PATH)).willReturn(okJson("[]")));
+        server.stubFor(post(urlEqualTo(RESPONSIBLE_PERSONS_PATH)).willReturn(okJson(responsiblePartyJson())));
 
         dictionaries().createResponsiblePerson(NewResponsibleParty.builder()
                 .name("Importer PL")
                 .idempotenceKey("imp-001")
                 .properName("Importer Sp. z o.o.")
-                .country(CountryCode.POLAND)
+                .country(CountryCode.PL)
                 .address("ul. Przykładowa 1")
                 .postalCode("00-001")
                 .city("Warszawa")
                 .email("kontakt@example.com")
                 .build());
 
+        // The optional phone/source are absent, not null: the API rejects an explicit null.
         server.verify(postRequestedFor(urlEqualTo(RESPONSIBLE_PERSONS_PATH))
-                .withHeader("Content-Type", equalTo(MEDIA_TYPE_JSON))
+                .withHeader(HEADER_CONTENT_TYPE, equalTo(MEDIA_TYPE_JSON))
                 .withRequestBody(equalToJson("""
                         {"name":"Importer PL","idempotenceKey":"imp-001",
                          "properName":"Importer Sp. z o.o.","country":"pl",
                          "address":"ul. Przykładowa 1","postalCode":"00-001","city":"Warszawa",
-                         "email":"kontakt@example.com","phone":null,"source":null}""")));
+                         "email":"kontakt@example.com"}""")));
+    }
+
+    @Test
+    void patchesOnlyTheResponsiblePartyFieldsThatWereSet() {
+        server.stubFor(patch(urlEqualTo("/dictionaries/responsiblePersons/7"))
+                .willReturn(okJson(responsiblePartyJson())));
+
+        dictionaries().updateResponsiblePerson(7L, ResponsiblePartyUpdate.builder(CountryCode.PL).city("Kraków").build());
+
+        // country travels on every patch even though only the city changed: the API demands it.
+        server.verify(patchRequestedFor(urlEqualTo("/dictionaries/responsiblePersons/7"))
+                .withRequestBody(equalToJson("{\"country\":\"pl\",\"city\":\"Kraków\"}")));
+    }
+
+    @Test
+    void deletesAResponsibleProducerById() {
+        server.stubFor(delete(urlEqualTo("/dictionaries/responsibleProducers/9"))
+                .willReturn(aResponse().withStatus(200)));
+
+        dictionaries().deleteResponsibleProducer(9L);
+
+        server.verify(deleteRequestedFor(urlEqualTo("/dictionaries/responsibleProducers/9")));
+    }
+
+    @Test
+    void sendsTheCreateAttachmentBody() {
+        server.stubFor(post(urlEqualTo("/dictionaries/attachment")).willReturn(okJson(attachmentJson())));
+
+        dictionaries().createAttachment(NewAttachment.builder()
+                .kind(AttachmentKind.USER_MANUAL)
+                .name("Instrukcja")
+                .originalName("instrukcja.pdf")
+                .filePath("shop/100007/instrukcja.pdf")
+                .markets(List.of(Market.POLAND, Market.GERMANY))
+                .build());
+
+        server.verify(postRequestedFor(urlEqualTo("/dictionaries/attachment"))
+                .withRequestBody(equalToJson("""
+                        {"kind":"userManual","name":"Instrukcja","originalName":"instrukcja.pdf",
+                         "filePath":"shop/100007/instrukcja.pdf","markets":["pl","de"]}""")));
+    }
+
+    @Test
+    void patchesOnlyTheAttachmentFieldsThatWereSet() {
+        server.stubFor(patch(urlEqualTo("/dictionaries/attachment")).willReturn(okJson(attachmentJson())));
+
+        dictionaries().updateAttachment(AttachmentUpdate.builder(7L).name("Nowa nazwa").build());
+
+        server.verify(patchRequestedFor(urlEqualTo("/dictionaries/attachment"))
+                .withRequestBody(equalToJson("{\"id\":7,\"name\":\"Nowa nazwa\"}")));
+    }
+
+    @Test
+    void sendsTheAttachAndDetachBodiesWithTheMatchingAction() {
+        server.stubFor(patch(urlEqualTo("/dictionaries/attachment/attach")).willReturn(aResponse().withStatus(200)));
+        server.stubFor(patch(urlEqualTo("/dictionaries/attachment/detach")).willReturn(aResponse().withStatus(200)));
+
+        dictionaries().attachProducts(7L, List.of(11L, 12L));
+        dictionaries().detachProducts(7L, List.of(11L));
+
+        server.verify(patchRequestedFor(urlEqualTo("/dictionaries/attachment/attach"))
+                .withRequestBody(equalToJson("{\"action\":\"attach\",\"attachmentId\":7,\"productIds\":[11,12]}")));
+        server.verify(patchRequestedFor(urlEqualTo("/dictionaries/attachment/detach"))
+                .withRequestBody(equalToJson("{\"action\":\"detach\",\"attachmentId\":7,\"productIds\":[11]}")));
+    }
+
+    @Test
+    void rejectsAnEmptyProductListBeforeCallingTheApi() {
+        assertThrows(IllegalArgumentException.class, () -> dictionaries().attachProducts(7L, List.of()));
+
+        assertTrue(server.getAllServeEvents().isEmpty(), "no request should have been sent");
     }
 
     @Test
     void walksTheCategoryCursorAcrossPagesAndStopsOnAShortPage() {
-        // Page 1 is full (the stub returns the configured page size), so the SDK asks for page 2 using
-        // the last id as the `after` cursor; page 2 is short, which ends the walk.
+        // Page 1 is full, so the SDK asks for page 2 using the last id as the `after` cursor;
+        // page 2 is short, which ends the walk.
         server.stubFor(post(urlEqualTo(CATEGORY_SEARCH_PATH))
-                .withRequestBody(equalToJson("{\"limit\":200,\"after\":null}", true, true))
+                .withRequestBody(equalToJson("{\"limit\":200}"))
                 .willReturn(okJson(fullCategoryPage())));
         server.stubFor(post(urlEqualTo(CATEGORY_SEARCH_PATH))
-                .withRequestBody(equalToJson("{\"limit\":200,\"after\":199}", true, true))
+                .withRequestBody(equalToJson("{\"limit\":200,\"after\":199}"))
                 .willReturn(okJson("[{\"id\":200,\"name\":\"Ostatnia\",\"leaf\":true,\"breadcrumb\":[]}]")));
 
         List<Category> categories = dictionaries().categories().toList();
 
-        assertEquals(201, categories.size());
-        assertEquals(CategoryId.of("200"), categories.get(200).id());
+        assertEquals(CATEGORY_PAGE_SIZE + 1, categories.size());
+        assertEquals(CategoryId.of("200"), categories.get(CATEGORY_PAGE_SIZE).id());
         server.verify(2, postRequestedFor(urlEqualTo(CATEGORY_SEARCH_PATH)));
+    }
+
+    @Test
+    void omitsTheAfterCursorOnTheFirstCategoryPage() {
+        // The API rejects an explicit "after": null with a 400 (observed live), so the first page must
+        // not carry the key at all.
+        server.stubFor(post(urlEqualTo(CATEGORY_SEARCH_PATH)).willReturn(okJson("[]")));
+
+        dictionaries().categories().toList();
+
+        server.verify(postRequestedFor(urlEqualTo(CATEGORY_SEARCH_PATH))
+                .withRequestBody(equalToJson("{\"limit\":200}")));
     }
 
     @Test
@@ -216,19 +349,75 @@ class DictionaryEndpointsTest {
         server.verify(1, postRequestedFor(urlEqualTo(CATEGORY_SEARCH_PATH)));
     }
 
+    /** The mandatory per-bucket error-path table (TESTING.md): HTTP status to remediation exception. */
+    @ParameterizedTest(name = "HTTP {0} maps to {1}")
+    @CsvSource({
+            "401, ErliAuthException",
+            "403, ErliAuthException",
+            "404, ErliNotFoundException",
+            "400, ErliValidationException",
+            "409, ErliValidationException",
+            "422, ErliValidationException",
+            "500, ErliServerException",
+            "503, ErliServerException",
+    })
+    void mapsErrorStatusesToTheirRemediationException(int status, String expectedExceptionName) {
+        server.stubFor(get(urlEqualTo(DELIVERY_METHODS_PATH))
+                .willReturn(aResponse().withStatus(status)
+                        .withHeader(HEADER_CONTENT_TYPE, MEDIA_TYPE_JSON)
+                        .withBody(OBSERVED_400_BODY)));
+
+        ErliException failure = assertThrows(ErliException.class, () -> dictionaries().deliveryMethods());
+
+        assertEquals(expectedExceptionName, failure.getClass().getSimpleName());
+    }
+
     @Test
-    void stopsTheCategoryWalkOnAnEmptyPage() {
-        server.stubFor(post(urlEqualTo(CATEGORY_SEARCH_PATH)).willReturn(okJson("[]")));
+    void preservesTheRicherThanSpecErrorPayloadObservedLive() {
+        server.stubFor(get(urlEqualTo(DELIVERY_METHODS_PATH))
+                .willReturn(aResponse().withStatus(400)
+                        .withHeader(HEADER_CONTENT_TYPE, MEDIA_TYPE_JSON)
+                        .withBody(OBSERVED_400_BODY)));
 
-        assertTrue(dictionaries().categories().toList().isEmpty());
+        ErliValidationException failure =
+                assertThrows(ErliValidationException.class, () -> dictionaries().deliveryMethods());
 
-        server.verify(1, postRequestedFor(urlEqualTo(CATEGORY_SEARCH_PATH)));
+        assertEquals("699t9FoRLPuu1", failure.details().traceId());
+        assertEquals("validation", failure.details().failureType());
+        assertEquals("Problem z walidacją, sprawdź pola", failure.details().polishMessage());
+        assertTrue(failure.details().rawBody().contains("categoryId"), failure.details().rawBody());
+    }
+
+    @Test
+    void mapsANonJsonErrorBodyAndKeepsItRaw() {
+        server.stubFor(get(urlEqualTo(DELIVERY_METHODS_PATH))
+                .willReturn(aResponse().withStatus(500).withBody("<html>gateway blew up</html>")));
+
+        ErliException failure = assertThrows(ErliException.class, () -> dictionaries().deliveryMethods());
+
+        assertInstanceOf(ErliServerException.class, failure);
+    }
+
+    /** The single object the create/update endpoints really return — the spec declares an array. */
+    private static String responsiblePartyJson() {
+        return """
+                {"id":7,"idempotenceKey":"imp-001","name":"Importer PL","properName":"Importer Sp. z o.o.",
+                 "address":"ul. Przykładowa 1","city":"Kraków","postalCode":"00-001","country":"pl",
+                 "email":"kontakt@example.com","source":"api"}""";
+    }
+
+    private static String attachmentJson() {
+        return """
+                {"id":7,"shopId":100007,"version":1,"name":"Instrukcja",
+                 "originalName":"instrukcja.pdf","filePath":"shop/100007/instrukcja.pdf",
+                 "kind":"userManual","attachedProductIds":[],
+                 "created":{"time":"2026-07-25T10:00:00+02:00","user":{"userId":"u-1"}}}""";
     }
 
     /** A page of exactly the SDK's category page size, so the cursor advances. */
     private static String fullCategoryPage() {
         StringBuilder page = new StringBuilder("[");
-        for (int id = 0; id < 200; id++) {
+        for (int id = 0; id < CATEGORY_PAGE_SIZE; id++) {
             page.append(id == 0 ? "" : ",")
                     .append("{\"id\":").append(id)
                     .append(",\"name\":\"Kategoria ").append(id)

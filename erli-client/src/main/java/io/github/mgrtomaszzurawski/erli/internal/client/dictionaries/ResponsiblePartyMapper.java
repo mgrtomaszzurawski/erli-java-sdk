@@ -4,8 +4,10 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartySource;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyUpdate;
 import io.github.mgrtomaszzurawski.erli.rest.model.CreateResponsibleSchema;
 import io.github.mgrtomaszzurawski.erli.rest.model.ResponsibleSchema;
+import io.github.mgrtomaszzurawski.erli.rest.model.UpdateResponsibleSchema;
 
 import java.util.Arrays;
 import java.util.List;
@@ -42,7 +44,7 @@ final class ResponsiblePartyMapper {
                 require(rawParty.getEmail(), "email"),
                 Optional.ofNullable(rawParty.getPhone()),
                 Optional.ofNullable(rawParty.getSource())
-                        .map(source -> ResponsiblePartySource.of(source.getValue())));
+                        .map(source -> ResponsiblePartySource.fromWire(source.getValue())));
     }
 
     /** Builds the Layer-1 create request from the domain record. */
@@ -83,25 +85,82 @@ final class ResponsiblePartyMapper {
         if (country == null) {
             throw new IllegalStateException("ResponsibleParty is missing the required 'country' field");
         }
-        return CountryCode.of(country.getValue());
+        return CountryCode.fromWire(country.getValue());
+    }
+
+    /** Builds the Layer-1 patch request; only the fields the caller set are carried over. */
+    static UpdateResponsibleSchema toUpdateRequest(ResponsiblePartyUpdate update) {
+        Objects.requireNonNull(update, "update");
+        UpdateResponsibleSchema request = new UpdateResponsibleSchema();
+        if (update.name() != null) {
+            request.name(update.name());
+        }
+        if (update.idempotenceKey() != null) {
+            request.idempotenceKey(update.idempotenceKey());
+        }
+        if (update.properName() != null) {
+            request.properName(update.properName());
+        }
+        if (update.country() != null) {
+            request.country(toUpdateCountryEnum(update.country()));
+        }
+        if (update.address() != null) {
+            request.address(update.address());
+        }
+        if (update.postalCode() != null) {
+            request.postalCode(update.postalCode());
+        }
+        if (update.city() != null) {
+            request.city(update.city());
+        }
+        if (update.email() != null) {
+            request.email(update.email());
+        }
+        if (update.phone() != null) {
+            request.phone(update.phone());
+        }
+        if (update.source() != null) {
+            request.source(toUpdateSourceEnum(update.source()));
+        }
+        return request;
     }
 
     private static CreateResponsibleSchema.CountryEnum toCountryEnum(CountryCode country) {
         CreateResponsibleSchema.CountryEnum resolved =
-                CreateResponsibleSchema.CountryEnum.fromValue(country.value());
+                CreateResponsibleSchema.CountryEnum.fromValue(country.wireValue());
         if (resolved == null) {
             throw new IllegalArgumentException(
-                    "The API does not accept country code: " + country.value());
+                    "The API does not accept country code: " + country.wireValue());
         }
         return resolved;
     }
 
     private static CreateResponsibleSchema.SourceEnum toSourceEnum(ResponsiblePartySource source) {
         CreateResponsibleSchema.SourceEnum resolved =
-                CreateResponsibleSchema.SourceEnum.fromValue(source.value());
+                CreateResponsibleSchema.SourceEnum.fromValue(source.wireValue());
         if (resolved == null) {
             throw new IllegalArgumentException(
-                    "The API does not accept responsible-party source: " + source.value());
+                    "The API does not accept responsible-party source: " + source.wireValue());
+        }
+        return resolved;
+    }
+
+    private static UpdateResponsibleSchema.CountryEnum toUpdateCountryEnum(CountryCode country) {
+        UpdateResponsibleSchema.CountryEnum resolved =
+                UpdateResponsibleSchema.CountryEnum.fromValue(country.wireValue());
+        if (resolved == null) {
+            throw new IllegalArgumentException(
+                    "The API does not accept country code: " + country.wireValue());
+        }
+        return resolved;
+    }
+
+    private static UpdateResponsibleSchema.SourceEnum toUpdateSourceEnum(ResponsiblePartySource source) {
+        UpdateResponsibleSchema.SourceEnum resolved =
+                UpdateResponsibleSchema.SourceEnum.fromValue(source.wireValue());
+        if (resolved == null) {
+            throw new IllegalArgumentException(
+                    "The API does not accept responsible-party source: " + source.wireValue());
         }
         return resolved;
     }

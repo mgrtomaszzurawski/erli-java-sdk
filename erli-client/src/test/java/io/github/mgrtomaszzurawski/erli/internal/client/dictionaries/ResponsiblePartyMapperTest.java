@@ -39,7 +39,7 @@ class ResponsiblePartyMapperTest {
                 .name("Importer PL")
                 .idempotenceKey("imp-001")
                 .properName("Importer Sp. z o.o.")
-                .country(CountryCode.POLAND)
+                .country(CountryCode.PL)
                 .address(ADDRESS)
                 .postalCode("00-001")
                 .city("Warszawa")
@@ -54,7 +54,7 @@ class ResponsiblePartyMapperTest {
         assertEquals("Importer PL", party.name());
         assertEquals("imp-001", party.idempotenceKey());
         assertEquals("Importer Sp. z o.o.", party.properName());
-        assertEquals(CountryCode.POLAND, party.country());
+        assertEquals(CountryCode.PL, party.country());
         assertEquals(ADDRESS, party.address());
         assertEquals("00-001", party.postalCode());
         assertEquals("Warszawa", party.city());
@@ -119,7 +119,7 @@ class ResponsiblePartyMapperTest {
                 .name("Importer PL")
                 .idempotenceKey("imp-001")
                 .properName("Importer Sp. z o.o.")
-                .country(CountryCode.POLAND)
+                .country(CountryCode.PL)
                 .address(ADDRESS)
                 .postalCode("00-001")
                 .city("Warszawa");
@@ -129,11 +129,32 @@ class ResponsiblePartyMapperTest {
         assertTrue(failure.getMessage().contains("email"), failure.getMessage());
     }
 
+    /**
+     * The real invariant behind the mapper's country guard: every domain {@link CountryCode} must
+     * resolve to a generated one. Both are derived from the same vendored spec, so this fails only if
+     * the hand-written enum drifts — which is exactly what the guard exists to catch.
+     */
     @Test
-    void rejectsACountryTheApiDoesNotAccept() {
-        NewResponsibleParty party = validParty().country(CountryCode.of("zz")).build();
+    void everyDomainCountryIsAcceptedByTheGeneratedRequestModel() {
+        for (CountryCode country : CountryCode.values()) {
+            NewResponsibleParty party = validParty().country(country).build();
 
-        assertThrows(IllegalArgumentException.class, () -> ResponsiblePartyMapper.toCreateRequest(party));
+            CreateResponsibleSchema request = ResponsiblePartyMapper.toCreateRequest(party);
+
+            assertEquals(country.wireValue(), request.getCountry().getValue());
+        }
+    }
+
+    /** Same invariant for the integration-source enum. */
+    @Test
+    void everyDomainSourceIsAcceptedByTheGeneratedRequestModel() {
+        for (ResponsiblePartySource source : ResponsiblePartySource.values()) {
+            NewResponsibleParty party = validParty().source(source).build();
+
+            CreateResponsibleSchema request = ResponsiblePartyMapper.toCreateRequest(party);
+
+            assertEquals(source.wireValue(), request.getSource().getValue());
+        }
     }
 
     @Test

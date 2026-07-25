@@ -21,11 +21,19 @@ application {
     mainClass = "io.github.mgrtomaszzurawski.erli.demo.ErliMeDemo"
 }
 
+// Per-bucket live proofs get their own task so `run` stays the Core M1 slice. Append yours below.
+val runComms by tasks.registering(JavaExec::class) {
+    group = "application"
+    description = "Live proof of bucket F Comms & Automation: GET /hooks + GET /inbox + POST /inbox/_search."
+    mainClass = "io.github.mgrtomaszzurawski.erli.demo.ErliCommsDemo"
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
 // Bucket D (Dictionaries) live proof. Dictionaries are marketplace-wide reference data, so this
 // returns real payloads even against the empty sandbox shop.
-tasks.register<JavaExec>("runDictionaries") {
+val runDictionaries by tasks.registering(JavaExec::class) {
     group = "application"
-    description = "Live proof of the Dictionaries bucket against the Erli sandbox."
+    description = "Live proof of bucket D Dictionaries against the Erli sandbox."
     mainClass = "io.github.mgrtomaszzurawski.erli.demo.ErliDictionariesDemo"
     classpath = sourceSets["main"].runtimeClasspath
 }

@@ -31,7 +31,7 @@ public final class JpmsConsumer {
             List<DeliveryMethod> deliveryMethods = client.dictionaries().deliveryMethods();
             String firstCarrier = deliveryMethods.isEmpty()
                     ? "none"
-                    : deliveryMethods.get(0).vendor().value();
+                    : deliveryMethods.get(0).vendor().wireValue();
             return shop.name() + " / " + orderId.value() + " / " + firstCarrier;
         } catch (ErliException failure) {
             return failure.getMessage();

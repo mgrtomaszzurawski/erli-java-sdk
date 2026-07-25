@@ -1,48 +1,79 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
-import java.util.Objects;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * A carrier (shipping company) a delivery method is operated by, e.g. {@code inpost} or {@code dhl}.
- *
- * <p>Deliberately a value type rather than a Java {@code enum}: the carrier list is server-provided
- * reference data — {@code GET /dictionaries/deliveryVendors} exists precisely because it can grow —
- * so a marketplace adding a carrier must not break a compiled consumer. Compare against the constants
- * below, or against {@link #value()} for a carrier this SDK version does not yet name.
- *
- * @param value the non-blank carrier identifier exactly as the API spells it
+ * A carrier (vendor) a delivery method belongs to. Values mirror the Erli dictionary; the SDK maps by
+ * the wire string (via {@link #fromWire}), not by enum name, so the domain constant names stay
+ * decoupled from the generated Layer-1 ones.
  */
-public record DeliveryVendor(String value) implements Comparable<DeliveryVendor> {
+public enum DeliveryVendor {
 
-    public static final DeliveryVendor INPOST = new DeliveryVendor("inpost");
-    public static final DeliveryVendor POCZTA_POLSKA = new DeliveryVendor("pocztaPolska");
-    public static final DeliveryVendor DHL = new DeliveryVendor("dhl");
-    public static final DeliveryVendor DPD = new DeliveryVendor("dpd");
-    public static final DeliveryVendor GLS = new DeliveryVendor("gls");
-    public static final DeliveryVendor UPS = new DeliveryVendor("ups");
-    public static final DeliveryVendor ORLEN = new DeliveryVendor("orlen");
-    public static final DeliveryVendor OWN_TRANSPORT = new DeliveryVendor("ownTransport");
-    public static final DeliveryVendor SELF_PICKUP = new DeliveryVendor("selfPickup");
-    public static final DeliveryVendor OTHER = new DeliveryVendor("other");
+    INPOST("inpost"),
+    POCZTA_POLSKA("pocztaPolska"),
+    DHL("dhl"),
+    DPD("dpd"),
+    DTS("dts"),
+    FEDEX("fedex"),
+    POCZTEX24("pocztex24"),
+    RHENUS("rhenus"),
+    RABEN("raben"),
+    GLS("gls"),
+    UPS("ups"),
+    RUCH("ruch"),
+    ORLEN("orlen"),
+    GEIS("geis"),
+    PATRON_SERVICE("patronService"),
+    PEKAES("pekaes"),
+    TNT_EXPRESS("tntExpress"),
+    SCHENKER("schenker"),
+    AMBRO_EXPRESS("ambroExpress"),
+    DSV("dsv"),
+    JAS_FBG("jasFBG"),
+    ROHLIG_SUUS("rohligSuus"),
+    HELLMANN("hellmann"),
+    OWN_TRANSPORT("ownTransport"),
+    SELF_PICKUP("selfPickup"),
+    OTHER("other");
 
-    public DeliveryVendor {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("DeliveryVendor must not be null or blank");
+    private static final Map<String, DeliveryVendor> BY_WIRE = Stream.of(values())
+            .collect(Collectors.toUnmodifiableMap(DeliveryVendor::wireValue, Function.identity()));
+
+    private final String wireValue;
+
+    DeliveryVendor(String wireValue) {
+        this.wireValue = wireValue;
+    }
+
+    /** The exact string this vendor is sent as on the wire. */
+    public String wireValue() {
+        return wireValue;
+    }
+
+    /**
+     * Resolve a wire string to a vendor.
+     *
+     * <p>On the live path this is only ever called with the wire value of an already-decoded Layer-1
+     * {@code VendorEnum}, so it always resolves — a wire value the API added but the vendored spec
+     * lacks fails earlier, at JSON decode (the generated enum's {@code @JsonCreator} throws, surfaced
+     * as an {@link ErliTransportException}; fail-loud is intentional, see
+     * {@code KNOWN-SERVER-BEHAVIORS.md}). This guard therefore fires only if this domain enum drifts
+     * out of sync with the generated one.
+     *
+     * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
+     */
+    public static DeliveryVendor fromWire(String wireValue) {
+        DeliveryVendor vendor = BY_WIRE.get(wireValue);
+        if (vendor == null) {
+            throw new ErliTransportException(
+                    "No DeliveryVendor constant maps wire value '" + wireValue
+                            + "'; this domain enum is out of sync with the generated model");
         }
-        value = value.trim();
-    }
-
-    public static DeliveryVendor of(String value) {
-        return new DeliveryVendor(value);
-    }
-
-    @Override
-    public int compareTo(DeliveryVendor other) {
-        return value.compareTo(Objects.requireNonNull(other, "other").value);
-    }
-
-    @Override
-    public String toString() {
-        return value;
+        return vendor;
     }
 }
