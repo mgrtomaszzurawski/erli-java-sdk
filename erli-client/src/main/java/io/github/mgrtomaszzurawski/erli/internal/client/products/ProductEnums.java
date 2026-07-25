@@ -1,7 +1,8 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
+import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.core.model.TaxRate;
-import io.github.mgrtomaszzurawski.erli.domain.products.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.products.BaseMarket;
 import io.github.mgrtomaszzurawski.erli.domain.products.DescriptionItemType;
 import io.github.mgrtomaszzurawski.erli.domain.products.DispatchTimeUnit;
@@ -11,7 +12,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ExternalReferenceSource;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalSource;
 import io.github.mgrtomaszzurawski.erli.domain.products.ImageTransformation;
 import io.github.mgrtomaszzurawski.erli.domain.products.InvoiceType;
-import io.github.mgrtomaszzurawski.erli.domain.products.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductStatus;
 import io.github.mgrtomaszzurawski.erli.domain.products.ReferencePriceType;
@@ -53,7 +53,7 @@ final class ProductEnums {
 
     private static final Map<String, ProductStatus> PRODUCT_STATUSES = index(ProductStatus.values(), ProductStatus::wireName);
     private static final Map<String, BaseMarket> BASE_MARKETS = index(BaseMarket.values(), BaseMarket::wireName);
-    private static final Map<String, Market> MARKETS = index(Market.values(), Market::wireName);
+    private static final Map<String, Market> MARKETS = index(Market.values(), Market::wireValue);
     private static final Map<String, InvoiceType> INVOICE_TYPES = index(InvoiceType.values(), InvoiceType::wireName);
     private static final Map<String, TaxRate> TAX_RATES = index(TaxRate.values(), TaxRate::wireName);
     private static final Map<String, ReferencePriceType> REFERENCE_PRICE_TYPES =
@@ -77,7 +77,7 @@ final class ProductEnums {
     private static final Map<String, ImageTransformation> IMAGE_TRANSFORMATIONS =
             index(ImageTransformation.values(), ImageTransformation::wireName);
     private static final Map<String, AttachmentKind> ATTACHMENT_KINDS =
-            index(AttachmentKind.values(), AttachmentKind::wireName);
+            index(AttachmentKind.values(), AttachmentKind::wireValue);
     private static final Map<String, ProductField> PRODUCT_FIELDS = index(ProductField.values(), ProductField::wireName);
 
     private ProductEnums() {

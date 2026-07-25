@@ -1,12 +1,13 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attachment;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentQuery;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentRemoval;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentUpdate;
@@ -16,7 +17,6 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.BillingEntryType;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Category;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethodQuery;
-import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DictionariesAccess;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
@@ -46,7 +46,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.CategoryResponse;
 import io.github.mgrtomaszzurawski.erli.rest.model.DeleteAttachmentsResponse;
 import io.github.mgrtomaszzurawski.erli.rest.model.GetAttachmentsResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ResponsibleSchema;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

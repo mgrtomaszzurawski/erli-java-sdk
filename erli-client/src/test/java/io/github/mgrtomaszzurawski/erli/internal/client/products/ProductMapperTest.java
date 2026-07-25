@@ -1,7 +1,8 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
+import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.core.model.TaxRate;
-import io.github.mgrtomaszzurawski.erli.domain.products.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.products.AttributeValues;
 import io.github.mgrtomaszzurawski.erli.domain.products.BaseMarket;
 import io.github.mgrtomaszzurawski.erli.domain.products.DescriptionItemType;
@@ -12,7 +13,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ExternalReferenceSource;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalSource;
 import io.github.mgrtomaszzurawski.erli.domain.products.ImageTransformation;
 import io.github.mgrtomaszzurawski.erli.domain.products.InvoiceType;
-import io.github.mgrtomaszzurawski.erli.domain.products.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductStatus;
@@ -189,7 +189,7 @@ class ProductMapperTest {
         var attachment = product.productAttachments().get(0);
         assertEquals(77, attachment.id().orElseThrow());
         assertEquals(AttachmentKind.ENERGY_LABEL, attachment.kind().orElseThrow());
-        assertEquals(java.util.List.of(Market.PL, Market.DE), attachment.markets());
+        assertEquals(java.util.List.of(Market.POLAND, Market.GERMANY), attachment.markets());
     }
 
     @Test
@@ -226,7 +226,7 @@ class ProductMapperTest {
     @Test
     void mapsCatalogMarketAndFulfilmentReferences() {
         assertEquals(BaseMarket.PL, product.baseMarket().orElseThrow());
-        assertEquals(Market.PL, product.markets().orElseThrow());
+        assertEquals(Market.POLAND, product.markets().orElseThrow());
         assertEquals("5901234123457", product.ean().orElseThrow());
         assertEquals("SKU123", product.sku().orElseThrow());
         assertEquals(java.util.List.of("wodoodporna", "ocieplana"), product.importantFeatures());

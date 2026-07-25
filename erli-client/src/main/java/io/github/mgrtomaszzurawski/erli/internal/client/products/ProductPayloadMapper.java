@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.AttributeValues;
 import io.github.mgrtomaszzurawski.erli.domain.products.DescriptionItem;
 import io.github.mgrtomaszzurawski.erli.domain.products.DescriptionSection;
@@ -12,7 +13,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ExternalReference;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalResponsibleEntity;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalVariantGroup;
 import io.github.mgrtomaszzurawski.erli.domain.products.FrozenFields;
-import io.github.mgrtomaszzurawski.erli.domain.products.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.Packaging;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductDescription;
@@ -27,12 +27,12 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDescriptionAnyOf
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDispatchTime;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDispatchTimePeriod;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInner;
-import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf1Values;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf2;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf2ValuesInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf3;
+import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOfId;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalCategoriesInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalProductSets;
@@ -49,7 +49,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreatePackaging;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateProductAttachmentsInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateProductSets;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateProductSetsItemsInner;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -320,11 +319,11 @@ final class ProductPayloadMapper {
             attachment.id().ifPresent(rawPayload::setId);
             attachment.url().ifPresent(rawPayload::setUrl);
             attachment.kind().ifPresent(kind -> rawPayload.setKind(
-                    ProductCreateProductAttachmentsInner.KindEnum.fromValue(kind.wireName())));
+                    ProductCreateProductAttachmentsInner.KindEnum.fromValue(kind.wireValue())));
             // Known markets plus the raw values we could not name: the scope goes back exactly as it
             // arrived, rather than being narrowed by what this SDK version happens to understand.
             List<String> markets = new ArrayList<>(attachment.marketCount());
-            attachment.markets().forEach(market -> markets.add(market.wireName()));
+            attachment.markets().forEach(market -> markets.add(market.wireValue()));
             markets.addAll(attachment.unrecognisedMarkets());
             rawPayload.setMarkets(markets);
             return rawPayload;

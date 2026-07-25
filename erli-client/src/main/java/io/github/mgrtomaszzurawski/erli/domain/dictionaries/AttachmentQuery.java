@@ -1,5 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
+import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
+
 /**
  * Optional server-side filters for {@link DictionariesAccess#attachments(AttachmentQuery)}.
  * A {@code null} component means "do not filter on this"; use {@link #none()} for every attachment.

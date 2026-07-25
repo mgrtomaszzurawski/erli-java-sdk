@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.domain.products.AttributeValues;
 import io.github.mgrtomaszzurawski.erli.domain.products.DescriptionItem;
@@ -15,7 +16,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ExternalReference;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalResponsibleEntity;
 import io.github.mgrtomaszzurawski.erli.domain.products.ExternalVariantGroup;
 import io.github.mgrtomaszzurawski.erli.domain.products.FrozenFields;
-import io.github.mgrtomaszzurawski.erli.domain.products.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.Packaging;
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAttachment;
@@ -35,10 +35,10 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDescriptionAnyOf
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDescriptionAnyOfSectionsInnerItemsInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDispatchTime;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInner;
-import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf2;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf3;
+import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalCategoriesInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalProductSets;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalReferencesInner;
@@ -56,7 +56,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ProductResponseFrozen;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductResponseImagesInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductResponseTranslations;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductResponseTranslationsPl;
-
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;

@@ -1,11 +1,11 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attachment;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentRemoval;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentUpdate;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Market;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ProductAttachmentResult;
 import io.github.mgrtomaszzurawski.erli.rest.model.AddAttachmentRequest;
@@ -16,7 +16,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.GetAttachmentsResponseInnerCr
 import io.github.mgrtomaszzurawski.erli.rest.model.GetAttachmentsResponseInnerCreatedUser;
 import io.github.mgrtomaszzurawski.erli.rest.model.ManageAttachedProducts;
 import io.github.mgrtomaszzurawski.erli.rest.model.PatchAttachmentRequest;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

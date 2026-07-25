@@ -1,5 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.products;
 
+import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import java.util.List;
 import java.util.Optional;
 
