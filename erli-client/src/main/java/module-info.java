@@ -29,6 +29,7 @@ module io.github.mgrtomaszzurawski.erli {
     exports io.github.mgrtomaszzurawski.erli.domain.shop;
     // --- APPEND BLOCK: bucket A Products ---------------------------------------------------------
     // --- APPEND BLOCK: bucket B Orders ----------------------------------------------------------
+    exports io.github.mgrtomaszzurawski.erli.domain.orders;
     // --- APPEND BLOCK: bucket C Shipping & Delivery ---------------------------------------------
     // --- APPEND BLOCK: bucket D Dictionaries ----------------------------------------------------
     // --- APPEND BLOCK: bucket E Finance ---------------------------------------------------------

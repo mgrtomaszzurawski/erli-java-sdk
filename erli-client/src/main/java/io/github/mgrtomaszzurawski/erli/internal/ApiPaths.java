@@ -20,6 +20,14 @@ public final class ApiPaths {
     // --- APPEND BLOCK: bucket A Products ----------------------------------------------------------
 
     // --- APPEND BLOCK: bucket B Orders ------------------------------------------------------------
+    /** {@code GET /orders/{id}} — one order; also {@code PATCH} for a partial update. */
+    public static final String ORDER_BY_ID = "/orders/{id}";
+
+    /** {@code PATCH /orders/{id}/status} — move the order's seller-side status. */
+    public static final String ORDER_STATUS = "/orders/{id}/status";
+
+    /** {@code POST /orders/_search} — the paged order search. */
+    public static final String ORDERS_SEARCH = "/orders/_search";
 
     // --- APPEND BLOCK: bucket C Shipping & Delivery -----------------------------------------------
 
