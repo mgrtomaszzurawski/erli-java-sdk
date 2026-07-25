@@ -28,5 +28,23 @@ dependencies {
 }
 
 tasks.test {
-    useJUnitPlatform()
+    // Unit tests only. Live @Tag("e2e") tests hit the sandbox and run via the e2eTest task below.
+    useJUnitPlatform {
+        excludeTags("e2e")
+    }
+}
+
+// Live end-to-end tests against the Erli sandbox. Reads ERLI_BASE_URL / ERLI_API_KEY from the
+// environment (sourced from /workspace/shared/secrets/erli-sandbox.env); each e2e test assumes those
+// are present and self-skips otherwise. Run: `./gradlew :erli-client:e2eTest`.
+tasks.register<Test>("e2eTest") {
+    description = "Runs @Tag(\"e2e\") live-sandbox tests (requires ERLI_BASE_URL + ERLI_API_KEY)."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform {
+        includeTags("e2e")
+    }
+    // Always re-run: results depend on live server state, not just inputs.
+    outputs.upToDateWhen { false }
 }
