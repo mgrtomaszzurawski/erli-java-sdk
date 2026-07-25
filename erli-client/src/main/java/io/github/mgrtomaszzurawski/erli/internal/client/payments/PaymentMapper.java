@@ -32,7 +32,6 @@ final class PaymentMapper {
     private static final String FIELD_CREATED_AT = "createdAt";
     private static final String FIELD_COMPLETED_AT = "completedAt";
     private static final String FIELD_OPERATOR = "operator";
-    private static final String FIELD_METHOD_CODE = "methodCode";
     private static final String FIELD_ORDER_IDS = "orderIds";
     private static final String RAW_PAYMENT_NAME = "raw Payment";
     private static final String RAW_PAYOUT_NAME = "raw Payout";
@@ -52,7 +51,10 @@ final class PaymentMapper {
                 require(rawPayment.getCreatedAt(), FIELD_CREATED_AT),
                 Optional.ofNullable(rawPayment.getCompletedAt()),
                 toOperator(require(rawPayment.getOperator(), FIELD_OPERATOR).getValue()),
-                require(rawPayment.getMethodCode(), FIELD_METHOD_CODE).getValue(),
+                // CORE-12: an unrecognised operator method decodes to null rather than throwing, and
+                // this enum grows without a spec release — so absence here is expected, not an error.
+                Optional.ofNullable(rawPayment.getMethodCode())
+                        .map(io.github.mgrtomaszzurawski.erli.rest.model.Payment.MethodCodeEnum::getValue),
                 Optional.ofNullable(rawPayment.getMethodName())
                         .map(io.github.mgrtomaszzurawski.erli.rest.model.Payment.MethodNameEnum::getValue),
                 Optional.ofNullable(rawPayment.getExternalPaymentId()));

@@ -20,7 +20,7 @@ class PaymentOperationTest {
 
     private static Payment payment() {
         return new Payment(77L, List.of(OrderId.of("1234")), Money.ofPln("149.99"), PaymentStatus.COMPLETED,
-                WHEN, Optional.of(WHEN), PaymentOperator.PAYU, "PAYU.blik", Optional.empty(), Optional.empty());
+                WHEN, Optional.of(WHEN), PaymentOperator.PAYU, Optional.of("PAYU.blik"), Optional.empty(), Optional.empty());
     }
 
     private static Payout payout() {

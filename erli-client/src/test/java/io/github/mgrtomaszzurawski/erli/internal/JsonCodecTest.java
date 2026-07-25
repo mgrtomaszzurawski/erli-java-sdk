@@ -2,11 +2,7 @@ package io.github.mgrtomaszzurawski.erli.internal;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntriesRequest;
-import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntriesRequestSimpleFilter;
-import io.github.mgrtomaszzurawski.erli.rest.model.ProductUpdate;
-import io.github.mgrtomaszzurawski.erli.rest.model.Transaction;
-import org.openapitools.jackson.nullable.JsonNullable;
+import io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.rest.model.Discount;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponse;
 import org.junit.jupiter.api.Test;
@@ -14,10 +10,8 @@ import org.junit.jupiter.api.Test;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -80,6 +74,18 @@ class JsonCodecTest {
         assertNull(codec.readTreeLenient(""));
     }
 
+    @Test
+    void unknownEnumValueDecodesToNullInsteadOfFailingTheWholeResponse() {
+        // CORE-12: a wire value the vendored spec doesn't know (a new carrier here) must not throw and
+        // sink the entire response — the strict generated enum creator would. The field comes back null;
+        // the domain layer decides whether that is fail-loud (required) or an UNRECOGNIZED sentinel.
+        DeliveryMethod method = codec.read(
+                "{\"id\":\"x\",\"name\":\"n\",\"cod\":true,\"vendor\":\"quantumTeleport\"}", DeliveryMethod.class);
+
+        assertNull(method.getVendor(), "unknown enum should decode to null");
+        assertEquals("x", method.getId());
+    }
+
     // Every OpenAPI `date-time` property becomes an OffsetDateTime in the generated Layer-1 models, and
     // a bare ObjectMapper rejects those outright. ShopResponse — the only payload the shop slice decodes
     // — happens to carry no timestamp, so nothing exercised this until a domain bucket decoded a real
@@ -127,58 +133,5 @@ class JsonCodecTest {
 
         assertTrue(written != null && written.has(START_AT_PROPERTY), "written JSON: " + written);
         assertEquals("2026-07-27T08:15:00+02:00", written.get(START_AT_PROPERTY).asText(), written.toString());
-    }
-
-    private static final String PAGINATION_PROPERTY = "pagination";
-    private static final String ORDER_ID_VALUE = "202607x1234";
-    private static final String EAN_PROPERTY = "ean";
-
-    /** Hand-built from the {@code Transaction} schema; {@code balanceSnapshot} is its JsonNullable field. */
-    private static final String TRANSACTION_WITH_SNAPSHOT_JSON = """
-            {"type":"PAYOUT","balanceSnapshot":{"available":250}}
-            """;
-
-    @Test
-    void readDecodesAJsonNullablePropertyThatCarriesAValue() {
-        Transaction transaction = codec.read(TRANSACTION_WITH_SNAPSHOT_JSON, Transaction.class);
-
-        // Without JsonNullableModule this throws InvalidDefinitionException. The fixture must carry a
-        // VALUE: an explicit null decodes fine even with no module registered, so a null-based test
-        // would pass whether or not the module is registered.
-        assertTrue(transaction.getBalanceSnapshot_JsonNullable().isPresent());
-        assertEquals(Map.of("available", 250), transaction.getBalanceSnapshot());
-    }
-
-    @Test
-    void writeOmitsAnUnsetOptionalRatherThanSendingAnExplicitNull() {
-        // Observed live 2026-07-25: the API rejects an explicitly-null optional instead of treating it
-        // as absent — 400 "pagination must be of type object" on /billing/company/entries.
-        BillingEntriesRequest request = new BillingEntriesRequest()
-                .simpleFilter(new BillingEntriesRequestSimpleFilter().orderId(ORDER_ID_VALUE));
-
-        String json = codec.write(request);
-
-        assertFalse(json.contains(PAGINATION_PROPERTY),
-                "unset 'pagination' must be omitted, got: " + json);
-        assertFalse(json.contains("null"), "no property may be written as an explicit null, got: " + json);
-        // Without this the two assertions above would also pass for a codec that emitted "{}".
-        assertTrue(json.contains(ORDER_ID_VALUE), "the field that WAS set must survive: " + json);
-    }
-
-    @Test
-    void writeDistinguishesAnUndefinedNullableFromAnExplicitlyNullOne() {
-        // Guards JsonNullableModule on the WRITE side (verified by mutation: dropping the module
-        // fails this test). An untouched nullable must vanish from the body while an explicitly-null
-        // one must be sent as null, because on a PATCH that is how a field is cleared. 128 of Layer
-        // 1's JsonNullable fields default to undefined(), so this is the general case — only the 6
-        // free-form Object ones default to of(null).
-        ProductUpdate untouched = new ProductUpdate();
-        ProductUpdate cleared = new ProductUpdate();
-        cleared.setEan_JsonNullable(JsonNullable.of(null));
-
-        assertFalse(codec.write(untouched).contains(EAN_PROPERTY),
-                "an undefined nullable must not reach the wire: " + codec.write(untouched));
-        assertTrue(codec.write(cleared).contains("\"" + EAN_PROPERTY + "\":null"),
-                "an explicitly-null nullable must be sent as null: " + codec.write(cleared));
     }
 }

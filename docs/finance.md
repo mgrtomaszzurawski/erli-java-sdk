@@ -71,7 +71,8 @@ client.payments().searchPayments(PaymentSearch.builder()
                 .matchingOrder(OrderId.of("202607x1234"))
                 .build())
         .filter(payment -> payment.status() == PaymentStatus.COMPLETED)
-        .forEach(payment -> System.out.println(payment.amount() + " via " + payment.methodCode()));
+        .forEach(payment -> System.out.println(
+                payment.amount() + " via " + payment.methodCode().orElse("unknown method")));
 
 // Largest payouts first.
 client.payments().searchPayouts(PayoutSearch.builder()

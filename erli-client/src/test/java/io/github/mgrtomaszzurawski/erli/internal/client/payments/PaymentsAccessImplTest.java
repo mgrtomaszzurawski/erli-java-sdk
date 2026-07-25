@@ -118,7 +118,7 @@ class PaymentsAccessImplTest {
         // Payment.amount is in złoty, unlike every other Finance amount.
         assertEquals(Money.ofPln("149.99"), payment.amount());
         assertEquals(PaymentStatus.COMPLETED, payment.status());
-        assertEquals("PAYU.blik", payment.methodCode());
+        assertEquals("PAYU.blik", payment.methodCode().orElseThrow());
         assertEquals("BLIK", payment.methodName().orElseThrow());
         assertEquals("PAYU-XYZ", payment.externalPaymentId().orElseThrow());
         assertTrue(payment.completedAt().isPresent());
@@ -315,6 +315,41 @@ class PaymentsAccessImplTest {
                 .findFirst().orElseThrow();
 
         assertEquals("PLN", transaction.amount().orElseThrow().currency().getCurrencyCode());
+    }
+
+    @Test
+    void keepsAPaymentWhoseMethodCodeThisSdkDoesNotRecognise() {
+        // CORE-12: a PayU method added after this SDK's spec snapshot must not fail the whole read.
+        // Everything else about the payment must still map.
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(aResponse().withStatus(200).withBody("""
+                        [{"id":81,"orderIds":[1237],"amount":25.00,"status":"COMPLETED",
+                          "createdAt":"2026-07-24T12:00:00.000+02:00",
+                          "completedAt":"2026-07-24T12:01:00.000+02:00",
+                          "operator":"PAYU","methodCode":"PAYU.somethingNewPayUAdded"}]""")));
+
+        Payment payment = client.payments().searchPayments(PaymentSearch.all()).findFirst().orElseThrow();
+
+        assertTrue(payment.methodCode().isEmpty(), "an unrecognised method decodes as absent");
+        assertEquals(81L, payment.id());
+        assertEquals(Money.ofPln("25.00"), payment.amount());
+        assertEquals(PaymentStatus.COMPLETED, payment.status());
+    }
+
+    @Test
+    void stillFailsLoudOnAnUnrecognisedPaymentStatus() {
+        // The other half of CORE-12: a CLOSED enum stays fail-loud, so a status the SDK cannot model
+        // is not silently swallowed into a wrong value.
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(aResponse().withStatus(200).withBody("""
+                        [{"id":82,"orderIds":[1238],"amount":25.00,"status":"TELEPORTED",
+                          "createdAt":"2026-07-24T12:00:00.000+02:00","operator":"PAYU",
+                          "methodCode":"PAYU.blik"}]""")));
+
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+                () -> client.payments().searchPayments(PaymentSearch.all()).toList());
+
+        assertTrue(failure.getMessage().contains("status"), failure.getMessage());
     }
 
     @Test

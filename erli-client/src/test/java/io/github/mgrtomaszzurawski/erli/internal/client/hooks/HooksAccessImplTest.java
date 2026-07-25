@@ -21,6 +21,8 @@ import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -179,6 +181,23 @@ class HooksAccessImplTest {
         assertThrows(IllegalArgumentException.class, () -> hooks().save(insecure));
 
         server.verify(0, putRequestedFor(urlEqualTo("/hooks/orderCreated")));
+    }
+
+    /**
+     * The path is built by {@code PathTemplate.expand}, which percent-encodes each segment. Every hook
+     * name is plain ASCII, so encoding is a no-op and the path is exactly {@code /hooks/<wireValue>} —
+     * this pins that for all five kinds, so a future template or encoding change cannot silently
+     * re-point these two operations at a different resource.
+     */
+    @ParameterizedTest
+    @EnumSource(HookKind.class)
+    void addressesEveryHookKindByItsUnencodedWireValue(HookKind kind) {
+        String expectedPath = "/hooks/" + kind.wireValue();
+        server.stubFor(delete(urlEqualTo(expectedPath)).willReturn(aResponse().withStatus(HTTP_ACCEPTED)));
+
+        hooks().delete(kind);
+
+        server.verify(deleteRequestedFor(urlEqualTo(expectedPath)));
     }
 
     @Test
