@@ -2,26 +2,27 @@ package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import io.github.mgrtomaszzurawski.erli.core.model.BankAccount;
+import io.github.mgrtomaszzurawski.erli.core.model.Buyer;
 import io.github.mgrtomaszzurawski.erli.core.model.Country;
+import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryAddress;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryTracking;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.InvoiceAddress;
 import io.github.mgrtomaszzurawski.erli.core.model.InvoiceAddressType;
+import io.github.mgrtomaszzurawski.erli.core.model.OrderReturn;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderStatus;
 import io.github.mgrtomaszzurawski.erli.core.model.PaymentStatus;
+import io.github.mgrtomaszzurawski.erli.core.model.PickupPlace;
+import io.github.mgrtomaszzurawski.erli.core.model.PickupProvider;
+import io.github.mgrtomaszzurawski.erli.core.model.Rebate;
 import io.github.mgrtomaszzurawski.erli.core.model.ReturnReason;
 import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
 import io.github.mgrtomaszzurawski.erli.core.model.TaxRate;
 import io.github.mgrtomaszzurawski.erli.core.model.TrackingStatus;
-import io.github.mgrtomaszzurawski.erli.domain.orders.Buyer;
-import io.github.mgrtomaszzurawski.erli.domain.orders.Delivery;
-import io.github.mgrtomaszzurawski.erli.domain.orders.DeliveryAddress;
-import io.github.mgrtomaszzurawski.erli.domain.orders.DeliveryTracking;
-import io.github.mgrtomaszzurawski.erli.domain.orders.InvoiceAddress;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Order;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderItem;
-import io.github.mgrtomaszzurawski.erli.domain.orders.OrderReturn;
-import io.github.mgrtomaszzurawski.erli.domain.orders.PickupPlace;
-import io.github.mgrtomaszzurawski.erli.domain.orders.PickupProvider;
-import io.github.mgrtomaszzurawski.erli.domain.orders.Rebate;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryTracking;
 import java.math.BigDecimal;
@@ -133,7 +134,7 @@ class OrderMapperTest {
         assertEquals("Kwiatowa", delivery.street());
         assertEquals("12", delivery.buildingNumber());
         assertEquals("3", delivery.flatNumber().orElseThrow());
-        assertEquals("00-950", delivery.postalCode());
+        assertEquals("00-950", delivery.zip());
         assertEquals("Warszawa", delivery.city());
         assertEquals(Country.PL, delivery.country());
         assertEquals("600100200", delivery.phone());
@@ -144,13 +145,13 @@ class OrderMapperTest {
         assertEquals("Fabryczna", invoice.street());
         assertEquals("7", invoice.buildingNumber());
         assertEquals("2", invoice.flatNumber().orElseThrow());
-        assertEquals("31-553", invoice.postalCode());
+        assertEquals("31-553", invoice.zip());
         assertEquals("Krakow", invoice.city());
         assertEquals(Country.PL, invoice.country());
         assertEquals("Anna", invoice.firstName().orElseThrow());
         assertEquals("Kowalska", invoice.lastName().orElseThrow());
         assertEquals("Kowalska Sp. z o.o.", invoice.companyName().orElseThrow());
-        assertEquals("1234563218", invoice.taxIdentificationNumber().orElseThrow());
+        assertEquals("1234563218", invoice.nip().orElseThrow());
     }
 
     @Test
@@ -158,11 +159,21 @@ class OrderMapperTest {
         Order order = mapFixture(FULL_FIXTURE);
         Buyer buyer = order.buyer().orElseThrow();
 
-        assertEquals("Buyer[REDACTED]", buyer.toString());
-        assertEquals("DeliveryAddress[REDACTED]", buyer.deliveryAddress().toString());
-        assertEquals("InvoiceAddress[REDACTED]", buyer.invoiceAddress().orElseThrow().toString());
-        assertEquals("BankAccount[REDACTED]",
+        // Redaction is now per field: identity/street/phone/e-mail are masked, while the
+        // non-identifying locators (city, zip, country) stay visible for debugging.
+        assertEquals("BankAccount[number=<redacted>, name=<redacted>]",
                 order.returns().get(0).bankAccount().orElseThrow().toString());
+
+        String buyerRendering = buyer.toString();
+        assertTrue(buyerRendering.contains("email=<redacted>"), buyerRendering);
+        assertFalse(buyerRendering.contains("proxy.erli.pl"), buyerRendering);
+
+        String deliveryAddressRendering = buyer.deliveryAddress().toString();
+        assertTrue(deliveryAddressRendering.contains("<redacted>"), deliveryAddressRendering);
+        assertFalse(deliveryAddressRendering.contains("Kowalska"), deliveryAddressRendering);
+
+        String invoiceAddressRendering = buyer.invoiceAddress().orElseThrow().toString();
+        assertTrue(invoiceAddressRendering.contains("<redacted>"), invoiceAddressRendering);
 
         // The whole order is the realistic leak path: someone logs it, and the buyer's name, address,
         // phone and bank account go with it.
@@ -180,7 +191,7 @@ class OrderMapperTest {
 
         assertEquals("InPost Paczkomat", delivery.name());
         assertEquals("inpost-locker", delivery.typeId().value());
-        assertEquals(0, delivery.cancelled().orElseThrow());
+        assertEquals(new BigDecimal("0.00"), delivery.cancelledPrice().orElseThrow().amount());
         assertTrue(delivery.cashOnDelivery());
         assertEquals("pl", delivery.sourceMarket().orElseThrow());
         assertEquals("pl", delivery.targetMarket().orElseThrow());
@@ -197,7 +208,7 @@ class OrderMapperTest {
         assertEquals("Krakow", place.city().orElseThrow());
         assertEquals("pl", place.country().orElseThrow());
         assertEquals(Boolean.TRUE, place.open24h().orElseThrow());
-        assertEquals("31-553", place.postalCode().orElseThrow());
+        assertEquals("31-553", place.zip().orElseThrow());
     }
 
     @Test
@@ -246,9 +257,9 @@ class OrderMapperTest {
         assertEquals(OffsetDateTime.of(2026, 7, 22, 14, 5, 0, 0, ZoneOffset.UTC), orderReturn.created());
         assertEquals("12345678901234567890123456", orderReturn.bankAccount().orElseThrow().number());
         assertEquals("Anna Kowalska", orderReturn.bankAccount().orElseThrow().name());
-        assertEquals(0, orderReturn.items().get(0).index());
+        assertEquals(0, orderReturn.lines().get(0).lineIndex());
         // Erli spells the wire property "quentity"; the domain record fixes the spelling.
-        assertEquals(1, orderReturn.items().get(0).quantity());
+        assertEquals(1, orderReturn.lines().get(0).quantity());
     }
 
     @Test
@@ -270,7 +281,7 @@ class OrderMapperTest {
         assertTrue(order.cursor().isEmpty());
         assertTrue(order.calculatedParcelsCount().isEmpty());
         assertTrue(order.delivery().pickupPlace().isEmpty());
-        assertTrue(order.delivery().cancelled().isEmpty());
+        assertTrue(order.delivery().cancelledPrice().isEmpty());
         assertTrue(order.returns().isEmpty());
     }
 

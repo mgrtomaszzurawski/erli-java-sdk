@@ -1,34 +1,34 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import io.github.mgrtomaszzurawski.erli.core.model.BankAccount;
+import io.github.mgrtomaszzurawski.erli.core.model.Buyer;
 import io.github.mgrtomaszzurawski.erli.core.model.Country;
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
+import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryAddress;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryTracking;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.InvoiceAddress;
 import io.github.mgrtomaszzurawski.erli.core.model.InvoiceAddressType;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
+import io.github.mgrtomaszzurawski.erli.core.model.OrderReturn;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderStatus;
 import io.github.mgrtomaszzurawski.erli.core.model.PaymentStatus;
+import io.github.mgrtomaszzurawski.erli.core.model.PickupPlace;
+import io.github.mgrtomaszzurawski.erli.core.model.PickupProvider;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
+import io.github.mgrtomaszzurawski.erli.core.model.Rebate;
 import io.github.mgrtomaszzurawski.erli.core.model.ReturnReason;
+import io.github.mgrtomaszzurawski.erli.core.model.ReturnedLine;
 import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
 import io.github.mgrtomaszzurawski.erli.core.model.TaxRate;
 import io.github.mgrtomaszzurawski.erli.core.model.TrackingStatus;
-import io.github.mgrtomaszzurawski.erli.domain.orders.BankAccount;
-import io.github.mgrtomaszzurawski.erli.domain.orders.Buyer;
-import io.github.mgrtomaszzurawski.erli.domain.orders.Delivery;
-import io.github.mgrtomaszzurawski.erli.domain.orders.DeliveryAddress;
-import io.github.mgrtomaszzurawski.erli.domain.orders.DeliveryTracking;
-import io.github.mgrtomaszzurawski.erli.domain.orders.InvoiceAddress;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Order;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderItem;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderPayment;
-import io.github.mgrtomaszzurawski.erli.domain.orders.OrderReturn;
-import io.github.mgrtomaszzurawski.erli.domain.orders.PickupPlace;
-import io.github.mgrtomaszzurawski.erli.domain.orders.PickupProvider;
-import io.github.mgrtomaszzurawski.erli.domain.orders.Rebate;
-import io.github.mgrtomaszzurawski.erli.domain.orders.ReturnedItem;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDelivery;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryPickupPlace;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDeliveryTracking;
@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.OptionalLong;
 
 /**
  * Maps the generated Layer-1 {@code Order} and its nested types to the public {@code domain.orders}
@@ -178,7 +177,7 @@ final class OrderMapper {
                 required(rawDelivery.getName(), "delivery.name"),
                 DeliveryMethodId.of(required(rawDelivery.getTypeId(), "delivery.typeId")),
                 money(required(rawDelivery.getPrice(), "delivery.price"), currency),
-                optionalInt(rawDelivery.getCancelled()),
+                Optional.ofNullable(rawDelivery.getCancelled()).map(minorUnits -> money(minorUnits, currency)),
                 required(rawDelivery.getCod(), "delivery.cod"),
                 Optional.ofNullable(rawDelivery.getSourceMarket()),
                 Optional.ofNullable(rawDelivery.getTargetMarket()),
@@ -187,7 +186,7 @@ final class OrderMapper {
 
     private static PickupPlace toPickupPlace(OrderDeliveryPickupPlace rawPlace) {
         return new PickupPlace(
-                rawPlace.getId() == null ? OptionalLong.empty() : OptionalLong.of(rawPlace.getId().longValue()),
+                Optional.ofNullable(rawPlace.getId()).map(Integer::longValue),
                 Optional.ofNullable(rawPlace.getExternalId()),
                 Optional.ofNullable(rawPlace.getHeading()),
                 Optional.ofNullable(rawPlace.getType()),
@@ -224,9 +223,9 @@ final class OrderMapper {
     private static DeliveryTracking toDeliveryTracking(OrderDeliveryTracking rawTracking) {
         return new DeliveryTracking(
                 toTrackingStatus(rawTracking.getStatus()),
+                Optional.ofNullable(rawTracking.getTrackingUrl()),
                 Optional.ofNullable(rawTracking.getVendor()).map(OrderMapper::toDeliveryVendor),
-                Optional.ofNullable(rawTracking.getTrackingNumber()),
-                Optional.ofNullable(rawTracking.getTrackingUrl()));
+                Optional.ofNullable(rawTracking.getTrackingNumber()));
     }
 
     // --- payment and returns ----------------------------------------------------------------------
@@ -246,7 +245,7 @@ final class OrderMapper {
     private static OrderReturn toReturn(OrderReturnsInner rawReturn) {
         List<OrderReturnsInnerItemsInner> rawItems = required(rawReturn.getItems(), "returns.items");
         return new OrderReturn(
-                rawItems.stream().map(OrderMapper::toReturnedItem).toList(),
+                rawItems.stream().map(OrderMapper::toReturnedLine).toList(),
                 Optional.ofNullable(rawReturn.getBankAccount()).map(OrderMapper::toBankAccount),
                 toReturnReason(rawReturn.getReason()),
                 Optional.ofNullable(rawReturn.getComment()),
@@ -257,8 +256,8 @@ final class OrderMapper {
      * Erli's schema spells the quantity property {@code quentity}. The typo is upstream's and is
      * preserved on the wire; the domain record uses the correct spelling.
      */
-    private static ReturnedItem toReturnedItem(OrderReturnsInnerItemsInner rawItem) {
-        return new ReturnedItem(
+    private static ReturnedLine toReturnedLine(OrderReturnsInnerItemsInner rawItem) {
+        return new ReturnedLine(
                 required(rawItem.getIndex(), "returns.items.index"),
                 required(rawItem.getQuentity(), "returns.items.quentity"));
     }
@@ -336,7 +335,7 @@ final class OrderMapper {
 
     private static PickupProvider toPickupProvider(OrderDeliveryPickupPlace.ProviderEnum rawProvider) {
         return switch (rawProvider) {
-            case PP -> PickupProvider.PP;
+            case PP -> PickupProvider.ERLI_PICKUP_POINT;
             case INPOST -> PickupProvider.INPOST;
             case RUCH -> PickupProvider.RUCH;
             case DPD -> PickupProvider.DPD;

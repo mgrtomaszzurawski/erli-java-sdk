@@ -1,8 +1,8 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
+import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
-
 import java.util.List;
 import java.util.stream.Stream;
 

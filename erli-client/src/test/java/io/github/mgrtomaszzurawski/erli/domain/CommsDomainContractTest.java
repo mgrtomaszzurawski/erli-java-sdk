@@ -1,16 +1,16 @@
 package io.github.mgrtomaszzurawski.erli.domain;
 
+import io.github.mgrtomaszzurawski.erli.core.model.BankAccount;
+import io.github.mgrtomaszzurawski.erli.core.model.Buyer;
 import io.github.mgrtomaszzurawski.erli.core.model.Country;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryAddress;
+import io.github.mgrtomaszzurawski.erli.core.model.InvoiceAddress;
 import io.github.mgrtomaszzurawski.erli.core.model.InvoiceAddressType;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.BuyabilityQuery;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.Hook;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.HookKind;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.ProductSyncNotification;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.BankAccount;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.Buyer;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryAddress;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.MessageQuery;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.MessageType;
 import java.net.URI;

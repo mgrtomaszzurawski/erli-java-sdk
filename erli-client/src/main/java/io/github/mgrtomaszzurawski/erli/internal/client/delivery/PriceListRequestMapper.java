@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.delivery;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.domain.delivery.DeliveryMethodRef;
 import io.github.mgrtomaszzurawski.erli.domain.delivery.DeliveryPrice;
@@ -13,7 +14,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.CreatePriceListSchemaPricesIn
 import io.github.mgrtomaszzurawski.erli.rest.model.CreatePriceListSchemaPricesInnerDeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.rest.model.CreatePriceListSchemaPricesInnerDeliveryMethodDeliveryTime;
 import io.github.mgrtomaszzurawski.erli.rest.model.UpdatePriceListSchema;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;

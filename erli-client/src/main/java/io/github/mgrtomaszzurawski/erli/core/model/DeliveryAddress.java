@@ -1,6 +1,5 @@
-package io.github.mgrtomaszzurawski.erli.domain.inbox;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
-import io.github.mgrtomaszzurawski.erli.core.model.Country;
 import java.util.Objects;
 import java.util.Optional;
 

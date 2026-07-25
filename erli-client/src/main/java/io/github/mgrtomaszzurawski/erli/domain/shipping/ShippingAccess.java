@@ -1,7 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
 import io.github.mgrtomaszzurawski.erli.core.model.ParcelId;
-
 import java.util.List;
 
 /**

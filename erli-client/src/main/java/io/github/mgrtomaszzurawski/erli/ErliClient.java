@@ -2,6 +2,7 @@ package io.github.mgrtomaszzurawski.erli;
 
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliConfigurationException;
+import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.billing.BillingAccess;
 import io.github.mgrtomaszzurawski.erli.domain.campaigns.CampaignsAccess;
@@ -30,7 +31,6 @@ import io.github.mgrtomaszzurawski.erli.internal.client.payments.PaymentsAccessI
 import io.github.mgrtomaszzurawski.erli.internal.client.products.ProductAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shipping.ShippingAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shop.ShopAccessImpl;
-
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Objects;

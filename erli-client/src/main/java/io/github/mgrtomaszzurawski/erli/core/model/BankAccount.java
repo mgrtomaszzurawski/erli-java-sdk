@@ -1,4 +1,4 @@
-package io.github.mgrtomaszzurawski.erli.domain.inbox;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 import java.util.Objects;
 

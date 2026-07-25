@@ -1,9 +1,11 @@
 package io.github.mgrtomaszzurawski.erli.demo;
 
 import io.github.mgrtomaszzurawski.erli.ErliClient;
+import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attachment;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentQuery;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentRemoval;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attribute;
@@ -13,9 +15,7 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Category;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethodQuery;
-import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DictionariesAccess;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Market;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ProductAttachmentResult;
@@ -24,7 +24,6 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyQuer
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyUpdate;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingMethod;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingMethodQuery;
-
 import java.util.List;
 
 /**
