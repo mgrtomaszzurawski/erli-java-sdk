@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ParcelDimensions;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingMethod;
@@ -10,14 +9,12 @@ import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -42,12 +39,11 @@ class ShippingMethodMapperTest {
                "maxPointDimensions":{"height":20,"width":30,"length":40,"weight":5000}}
             ]""";
 
-    private static io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod[] decode(String json) {
-        return new JsonCodec().read(json, io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod[].class);
-    }
+    private static final JsonCodec CODEC = new JsonCodec();
 
     private static List<ShippingMethod> mapAll(String json) {
-        return Arrays.stream(decode(json)).map(ShippingMethodMapper::toDomain).toList();
+        JsonNode[] rawMethods = CODEC.read(json, JsonNode[].class);
+        return Arrays.stream(rawMethods).map(rawMethod -> ShippingMethodMapper.toDomain(rawMethod, CODEC)).toList();
     }
 
     @Test
@@ -70,65 +66,23 @@ class ShippingMethodMapperTest {
         assertTrue(box.withVolumetricScales().isEmpty());
     }
 
-    /**
-     * Pins the CORE-3 defect rather than the behaviour we want: the girth form is reported as an
-     * absent bound because Layer 1 has already discarded {@code longestSide} / {@code dimensionsSum}
-     * by the time the mapper runs. <strong>When core fixes the discriminator, this test must be
-     * changed to assert a {@link ParcelDimensions.Girth}</strong> — the fixture below is real live
-     * data, so it will start binding correctly on its own.
-     */
     @Test
-    void reportsTheGirthFormAsAbsentUntilTheCoreDiscriminatorIsFixed() {
+    void mapsTheGirthFormOfTheDimensionsAnyOf() {
         ShippingMethod method = mapAll(OBSERVED_SHIPPING_METHODS_JSON).get(1);
 
         assertEquals(ShippingOperator.DPD, method.operator().orElseThrow());
         assertTrue(method.cashOnDelivery());
         assertTrue(method.maxUnitPrice().isEmpty());
-        assertTrue(method.maxDimensions().isEmpty(),
-                "Expected the mis-bound girth payload to be reported as absent rather than as an "
-                        + "all-null box; got: " + method.maxDimensions());
+
+        ParcelDimensions bound = method.maxDimensions().orElseThrow();
+        ParcelDimensions.Girth girth = assertInstanceOf(ParcelDimensions.Girth.class, bound);
+        assertEquals(new BigDecimal("300"), girth.longestSide().orElseThrow());
+        assertEquals(new BigDecimal("600"), girth.dimensionsSum().orElseThrow());
+        assertEquals(500000, girth.weight().orElseThrow());
+        assertTrue(girth.withVolumetricScales().orElseThrow());
     }
 
-    /**
-     * Pins the reason CORE-3's {@code normalizeSpec} composite-merge leaves this schema alone: the two
-     * branches declare {@code weight} with different bounds, which trips the merge rule's
-     * conflicting-definition guard. If the upstream spec ever aligns them, this test fails and the
-     * composite becomes mergeable — at which point the workaround in
-     * {@link ShippingMethodMapper} can go and this class's girth test should assert a real
-     * {@link ParcelDimensions.Girth}.
-     */
-    @Test
-    void theTwoDimensionBranchesDisagreeOnWeightWhichIsWhyTheCompositeIsNotMerged() throws Exception {
-        JsonNode maxDimensions = new ObjectMapper()
-                .readTree(Path.of("..", "openapi", "swagger.json").toFile())
-                .path("components").path("schemas").path("ShippingMethod")
-                .path("properties").path("maxDimensions").path("anyOf");
 
-        JsonNode boxWeight = maxDimensions.get(0).path("properties").path("weight");
-        JsonNode girthWeight = maxDimensions.get(1).path("properties").path("weight");
-
-        assertEquals(2, maxDimensions.size());
-        assertNotEquals(boxWeight, girthWeight,
-                "The branches now agree on `weight`, so normalizeSpec would merge this composite — "
-                        + "drop the ShippingMethodMapper workaround and assert a real Girth instead");
-    }
-
-    /**
-     * Demonstrates the root cause directly, so the defect is proven rather than asserted: the box
-     * branch of the anyOf happily binds a girth payload, keeping none of its fields, because unknown
-     * properties are ignored. This is what makes the second branch unreachable.
-     */
-    @Test
-    void theBoxBranchSwallowsAGirthPayloadWhichIsWhyDiscriminationFails() {
-        io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensionsAnyOf boxBranch =
-                new JsonCodec().read(
-                        "{\"longestSide\":300,\"dimensionsSum\":600,\"weight\":500000}",
-                        io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensionsAnyOf.class);
-
-        assertNull(boxBranch.getHeight());
-        assertNull(boxBranch.getWidth());
-        assertNull(boxBranch.getLength());
-    }
 
     @Test
     void mapsTheMinimumAndPickupPointBoundsAndOmitsAbsentOnes() {
@@ -143,6 +97,28 @@ class ShippingMethodMapperTest {
         ParcelDimensions.Box point =
                 assertInstanceOf(ParcelDimensions.Box.class, method.maxPointDimensions().orElseThrow());
         assertEquals(5000, point.weight().orElseThrow());
+    }
+
+    /**
+     * The reason the mapper discriminates on the raw tree: bound straight to the box branch, a girth
+     * payload parses happily and keeps none of its fields. This is what {@code toBound} avoids.
+     */
+    @Test
+    void theBoxBranchStillSwallowsAGirthPayloadIfBoundDirectly() {
+        io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensionsAnyOf boxBranch =
+                CODEC.read("{\"longestSide\":300,\"dimensionsSum\":600,\"weight\":500000}",
+                        io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensionsAnyOf.class);
+
+        assertNull(boxBranch.getHeight());
+        assertNull(boxBranch.getWidth());
+        assertNull(boxBranch.getLength());
+    }
+
+    @Test
+    void reportsAnAbsentBoundAsEmpty() {
+        ShippingMethod method = mapAll(OBSERVED_SHIPPING_METHODS_JSON).get(2);
+
+        assertTrue(method.maxDimensions().isEmpty());
     }
 
     @Test
