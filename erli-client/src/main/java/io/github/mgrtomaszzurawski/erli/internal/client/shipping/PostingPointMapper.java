@@ -1,6 +1,8 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.shipping;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
+import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.CarrierPoint;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.GeoLocation;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.PointAddress;
@@ -26,38 +28,45 @@ import java.util.Optional;
  * generator emits one class per shape with no common supertype, so this mapper dispatches on the branch
  * the payload bound to and fills the branch-specific fields from it.
  *
- * <p><strong>Known limitation until CORE-3 lands.</strong> The generated {@code anyOf} deserializer
- * accepts the first branch that parses, and with unknown properties ignored the base branch always
- * parses — so a {@code point}/{@code points} payload can bind to the base shape and arrive without its
- * point detail. Bucket B's {@code normalizeSpec} composite-merge makes Layer 1 lossless and this
- * dispatch collapses to a single bind; see CORE-3 in {@code BACKLOG.md}.
+ * <p><strong>Why the discriminator is read off the raw tree.</strong> The generated {@code anyOf}
+ * deserializer takes the first branch that parses, and the shared codec both ignores unknown properties
+ * and decodes unknown enum values as {@code null} — so the base {@code address} branch parses a
+ * {@code point} payload too, silently dropping the point detail that is the whole reason the branch
+ * exists. Erli does discriminate, on {@code type}, so that is what this reads; the node is then bound
+ * to the matching generated class by the shared codec, keeping every field coming from Layer 1.
  */
 final class PostingPointMapper {
 
     private PostingPointMapper() {
     }
 
-    static PostingPoint toDomain(io.github.mgrtomaszzurawski.erli.rest.model.PostingPoint rawPoint) {
+    /** The property Erli discriminates the three posting-point shapes on. */
+    private static final String TYPE_FIELD = "type";
+
+    static PostingPoint toDomain(JsonNode rawPoint, JsonCodec codec) {
         Objects.requireNonNull(rawPoint, "raw PostingPoint");
-        Object branch = rawPoint.getActualInstance();
-        if (branch instanceof PostingPointAnyOf1 singlePoint) {
-            return fromSinglePoint(singlePoint);
+        Objects.requireNonNull(codec, "codec");
+        JsonNode type = rawPoint.get(TYPE_FIELD);
+        if (type == null || type.isNull()) {
+            throw new IllegalStateException("Posting point is missing the required 'type' field");
         }
-        if (branch instanceof PostingPointAnyOf2 severalPoints) {
-            return fromSeveralPoints(severalPoints);
+        PostingPointType postingPointType = PostingPointType.fromWire(type.asText());
+        switch (postingPointType) {
+            case POINT:
+                return fromSinglePoint(codec.convert(rawPoint, PostingPointAnyOf1.class));
+            case POINTS:
+                return fromSeveralPoints(codec.convert(rawPoint, PostingPointAnyOf2.class));
+            case ADDRESS:
+            default:
+                return fromAddress(codec.convert(rawPoint, PostingPointAnyOf.class));
         }
-        if (branch instanceof PostingPointAnyOf address) {
-            return fromAddress(address);
-        }
-        throw new IllegalStateException("Posting point decoded to an unexpected branch: "
-                + (branch == null ? "null" : branch.getClass().getName()));
     }
 
     private static PostingPoint fromAddress(PostingPointAnyOf raw) {
         return new PostingPoint(
                 requireField(raw.getId(), "id").longValue(),
                 requireField(raw.getName(), "name"),
-                PostingPointType.fromWire(requireField(raw.getType(), "type").getValue()),
+                postingPointTypeOf(raw.getType()),
                 Boolean.TRUE.equals(raw.getIsDefault()),
                 Optional.ofNullable(raw.getCompanyName()),
                 Optional.ofNullable(raw.getPhone()),
@@ -80,7 +89,7 @@ final class PostingPointMapper {
         return new PostingPoint(
                 requireField(raw.getId(), "id").longValue(),
                 requireField(raw.getName(), "name"),
-                PostingPointType.fromWire(requireField(raw.getType(), "type").getValue()),
+                postingPointTypeOf(raw.getType()),
                 Boolean.TRUE.equals(raw.getIsDefault()),
                 Optional.ofNullable(raw.getCompanyName()),
                 Optional.ofNullable(raw.getPhone()),
@@ -98,7 +107,7 @@ final class PostingPointMapper {
         return new PostingPoint(
                 requireField(raw.getId(), "id").longValue(),
                 requireField(raw.getName(), "name"),
-                PostingPointType.fromWire(requireField(raw.getType(), "type").getValue()),
+                postingPointTypeOf(raw.getType()),
                 Boolean.TRUE.equals(raw.getIsDefault()),
                 Optional.ofNullable(raw.getCompanyName()),
                 Optional.ofNullable(raw.getPhone()),
@@ -145,6 +154,11 @@ final class PostingPointMapper {
         return new GeoLocation(
                 requireField(raw.getLatitude(), "location.latitude"),
                 requireField(raw.getLongitude(), "location.longitude"));
+    }
+
+    /** The branch enums are single-valued, so the wire value is the branch's own constant. */
+    private static PostingPointType postingPointTypeOf(Object branchType) {
+        return PostingPointType.fromWire(String.valueOf(branchType));
     }
 
     private static <T> T requireField(T value, String fieldName) {

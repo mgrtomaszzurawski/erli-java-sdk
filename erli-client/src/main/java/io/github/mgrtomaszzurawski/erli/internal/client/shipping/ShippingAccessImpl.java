@@ -134,10 +134,9 @@ public final class ShippingAccessImpl implements ShippingAccess {
                 .add(PARAM_GROUP_ID, query.groupId().orElse(null))
                 .add(PARAM_IS_DEFAULT, query.onlyDefault() ? FILTER_DEFAULT_ONLY : null)
                 .build();
-        return runtime.getList(ApiPaths.SHIPPING_POSTING_POINTS, parameters,
-                        io.github.mgrtomaszzurawski.erli.rest.model.PostingPoint.class)
+        return runtime.getList(ApiPaths.SHIPPING_POSTING_POINTS, parameters, JsonNode.class)
                 .stream()
-                .map(PostingPointMapper::toDomain)
+                .map(rawPoint -> PostingPointMapper.toDomain(rawPoint, codec))
                 .toList();
     }
 
