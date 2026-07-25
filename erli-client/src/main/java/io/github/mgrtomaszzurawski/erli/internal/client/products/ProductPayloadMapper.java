@@ -51,6 +51,7 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateProductSets;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateProductSetsItemsInner;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -320,7 +321,12 @@ final class ProductPayloadMapper {
             attachment.url().ifPresent(rawPayload::setUrl);
             attachment.kind().ifPresent(kind -> rawPayload.setKind(
                     ProductCreateProductAttachmentsInner.KindEnum.fromValue(kind.wireName())));
-            rawPayload.setMarkets(attachment.markets().stream().map(Market::wireName).toList());
+            // Known markets plus the raw values we could not name: the scope goes back exactly as it
+            // arrived, rather than being narrowed by what this SDK version happens to understand.
+            List<String> markets = new ArrayList<>(attachment.marketCount());
+            attachment.markets().forEach(market -> markets.add(market.wireName()));
+            markets.addAll(attachment.unrecognisedMarkets());
+            rawPayload.setMarkets(markets);
             return rawPayload;
         }).toList();
     }

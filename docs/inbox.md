@@ -84,6 +84,62 @@ themselves in `toString()` — printing an `OrderEvent` will not leak an e-mail,
 account number. The values are available through the record components; handling them is your
 responsibility.
 
+## Values this SDK version does not recognise
+
+Erli's enum lists (carriers, tax rates, statuses) grow, and the SDK vendors the API spec — so a value
+added after your SDK version was built decodes to **absent** rather than failing: you lose that one
+value's identity, not the whole payload.
+
+That means an empty `Optional` has two causes, and for the carrier `trackingNumber` tells them apart
+(the API declares carrier and tracking number as required together):
+
+| `vendor` | `trackingNumber` | meaning |
+|---|---|---|
+| empty | empty | URL-only tracking — read `trackingUrl` |
+| empty | present | a carrier newer than your SDK version — upgrade to name it |
+
+```java
+DeliveryTracking tracking = order.deliveryTracking().orElseThrow();
+if (tracking.vendor().isEmpty() && tracking.trackingNumber().isPresent()) {
+    System.out.println("carrier newer than this SDK, parcel " + tracking.trackingNumber().get());
+}
+```
+
+So do not read an empty `vendor` as "shipped without a carrier".
+
+The affected components are `DeliveryTracking.vendor()`, `OrderLine.taxRate()`,
+`PickupPlace.provider()` and `OrderPaymentSummary.status()` here, plus
+`ProductBuyability.status()` in [`hooks.md`](hooks.md). Only the carrier has a sibling that
+disambiguates it; for the other four an empty value is genuinely indistinguishable, so **do not
+substitute a default** — an empty `taxRate()` does not mean 0% VAT, and an empty `provider()` does not
+mean the point has no operator.
+
+### When the SDK cannot map a message at all
+
+A **required** enum-typed property is different: the SDK cannot build the record without it. That
+message fails to map, and the exception says the property is absent *or* unrecognised rather than
+claiming it was missing, because at that point the SDK genuinely cannot tell. (Required properties
+that are not enums — text, numbers, timestamps — still report plainly as missing.)
+
+Be aware of the blast radius: the batch is mapped eagerly, so **one unmappable message fails the whole
+`unread()` or `search()` call** and you receive none of that batch. The messages are not lost — nothing
+was acknowledged, so they come back on the next call — but the loop cannot advance until the offending
+message is acknowledged. The failure is an `ErliTransportException` whose message names the offending
+message id:
+
+```java
+try {
+    batch = client.inbox().unread();
+} catch (ErliTransportException unmappable) {
+    // The message text names the id; acknowledge that one to let the loop advance.
+    log.error("inbox stalled: {}", unmappable.getMessage(), unmappable);
+    throw unmappable;
+}
+```
+
+The id is currently only available as text inside the exception message, which is awkward to act on
+programmatically; treat this path as an upgrade signal rather than something to automate.
+
 ## Filtering
 
 ```java
@@ -100,6 +156,13 @@ answer with a validation error; fetch every type and filter client-side if you n
 
 ## Errors
 
-As elsewhere in the SDK: `ErliAuthException` (401/403), `ErliNotFoundException` (404),
-`ErliValidationException` (400/409/422), `ErliServerException` (5xx), each carrying `traceId`/`spanId`
-and the API's `polishMessage`.
+| HTTP | Exception |
+|---|---|
+| 401 / 403 | `ErliAuthException` |
+| 404 | `ErliNotFoundException` |
+| 400 / 409 / 422 | `ErliValidationException` |
+| 5xx | `ErliServerException` |
+
+All extend `ErliException` and carry `details()` with `traceId`/`spanId` and the API's Polish message
+where it supplied one. A response the SDK cannot map — a required property absent or unrecognised — is
+reported as `ErliTransportException`, so catching `ErliException` covers every failure of a call.

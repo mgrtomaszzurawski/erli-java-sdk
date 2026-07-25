@@ -1,6 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
@@ -14,20 +15,21 @@ import io.github.mgrtomaszzurawski.erli.domain.products.BatchUpdateOutcome;
 import io.github.mgrtomaszzurawski.erli.domain.products.Discount;
 import io.github.mgrtomaszzurawski.erli.domain.products.DiscountRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.DispatchTime;
+import io.github.mgrtomaszzurawski.erli.domain.products.Market;
+import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductAccess;
+import io.github.mgrtomaszzurawski.erli.domain.products.ProductAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductContent;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductDraft;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilter;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilterField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductImage;
-import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductPatch;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSortField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductUpdateResult;
 import io.github.mgrtomaszzurawski.erli.domain.products.SortOrder;
-import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,6 +128,13 @@ class ProductAccessTest {
                 // `updated` is present so a walk sorted by it can derive a cursor and therefore reach
                 // the paging guard; without it the stream would simply end after page one.
                 + "\"updated\":\"2026-07-25T09:00:00.000+02:00\"}";
+    }
+
+    /** A product whose single attachment is scoped to one known market and one this SDK cannot name. */
+    private static String bodyWithNewMarket() {
+        return productBody("sku-1").replaceFirst("\\}$",
+                ",\"productAttachments\":[{\"id\":7,\"kind\":\"energyLabel\","
+                        + "\"markets\":[\"pl\",\"cz\"]}]}");
     }
 
     private ProductAccess products() {
@@ -570,6 +579,79 @@ class ProductAccessTest {
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
                 () -> ProductFilter.in(ProductFilterField.STATUS, List.of("active")));
         assertTrue(failure.getMessage().contains("STATUS"), failure.getMessage());
+    }
+
+    @Test
+    void keepsAMarketCodeThisSdkVersionDoesNotKnowInsteadOfFailing() {
+        // One new market on one attachment must not fail the product read — and on a search, the page.
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(bodyWithNewMarket())));
+
+        ProductAttachment attachment = products().get(SKU_1).orElseThrow().productAttachments().get(0);
+
+        assertEquals(List.of(Market.PL), attachment.markets());
+        // The raw value survives, so the true scope is still two markets, not one.
+        assertEquals(List.of("cz"), attachment.unrecognisedMarkets());
+        assertEquals(2, attachment.marketCount());
+    }
+
+    @Test
+    void skipsANullMarketEntryRatherThanFailingTheWholeRead() {
+        // A lookup on a null key throws rather than missing, so one malformed entry could otherwise
+        // fail the whole product read — the failure this split exists to prevent.
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(productBody("sku-1")
+                .replaceFirst("\\}$", ",\"productAttachments\":[{\"id\":7,"
+                        + "\"markets\":[\"pl\",null]}]}"))));
+
+        ProductAttachment attachment = products().get(SKU_1).orElseThrow().productAttachments().get(0);
+
+        assertEquals(List.of(Market.PL), attachment.markets());
+        assertTrue(attachment.unrecognisedMarkets().isEmpty());
+    }
+
+    @Test
+    void writesBackAnUnknownMarketExactlyAsItArrived() {
+        // The round trip is the point: reading a product, changing something else and writing it back
+        // must not narrow an attachment's scope to the markets this SDK version happens to understand.
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(okJson(bodyWithNewMarket())));
+        server.stubFor(patch(urlEqualTo(PRODUCT_PATH)).willReturn(okJson("{\"updatedFields\":[\"stock\"]}")));
+
+        ProductAttachment readBack = products().get(SKU_1).orElseThrow().productAttachments().get(0);
+        products().update(SKU_1, ProductPatch.builder()
+                .content(ProductContent.builder()
+                        .stock(3)
+                        .productAttachments(List.of(readBack))
+                        .build())
+                .build());
+
+        server.verify(patchRequestedFor(urlEqualTo(PRODUCT_PATH))
+                .withRequestBody(matchingJsonPath("$[?(@.productAttachments[0].markets.size() == 2)]"))
+                .withRequestBody(matchingJsonPath("$.productAttachments[0].markets[?(@ == 'pl')]"))
+                .withRequestBody(matchingJsonPath("$.productAttachments[0].markets[?(@ == 'cz')]")));
+    }
+
+    @Test
+    void anUnrecognisedRequiredEnumFailsLoudlyAndSaysWhy() {
+        // CORE-12: the codec nulls an unknown enum, so a required field cannot tell "absent" from
+        // "unrecognised" — it must name both.
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(
+                okJson(productBody("sku-1").replace("\"status\":\"active\"", "\"status\":\"embargoed\""))));
+
+        IllegalStateException failure =
+                assertThrows(IllegalStateException.class, () -> products().get(SKU_1));
+
+        assertTrue(failure.getMessage().contains("status"), failure.getMessage());
+        assertTrue(failure.getMessage().contains("does not recognise"), failure.getMessage());
+    }
+
+    @Test
+    void anUnrecognisedOptionalEnumReadsAsAbsentRatherThanFailing() {
+        server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(
+                okJson(productBody("sku-1").replaceFirst("\\}$", ",\"taxRate\":\"TAX_11\"}"))));
+
+        Product product = products().get(SKU_1).orElseThrow();
+
+        assertTrue(product.taxRate().isEmpty(),
+                "an optional enum the SDK cannot read degrades to absent, not to an exception");
     }
 
     // --- The mandatory error-path table (TESTING.md) ------------------------------------------------

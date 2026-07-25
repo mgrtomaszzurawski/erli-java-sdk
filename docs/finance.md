@@ -125,6 +125,31 @@ summary.dailyCosts();     // one row per campaign per day
 Costs are net (excluding VAT). A row without a `campaignId()` is spend the API did not attribute to
 a single campaign.
 
+## Values this SDK does not recognise
+
+Erli grows some of these lists without a spec release, so the SDK draws a line between the ones it
+can tolerate and the ones it must not:
+
+| Field | If Erli sends something new | Why |
+|---|---|---|
+| `Payment.methodCode` / `methodName` | empty `Optional` | ~44 operator method codes that change often; the rest of the payment still maps |
+| `Payment.operator` / `Payout.operator` | `PaymentOperator.UNRECOGNIZED` | the provider list is Erli's to grow; a new one must not break every payment read |
+| `TransactionOrder.subjectType` | empty `Optional` | same reasoning |
+| `Payment.status` | **throws** `IllegalStateException` | a closed lifecycle you branch on to decide whether money arrived — a state the SDK cannot model is refused rather than mapped to something that reads as "not settled" |
+
+```java
+// Safe against a method PayU adds tomorrow.
+String method = payment.methodCode().orElse("unknown");
+
+if (payment.operator() == PaymentOperator.UNRECOGNIZED) {
+    // Settled by a provider this SDK version does not know. Amounts and dates are still correct.
+}
+```
+
+One caveat worth knowing: the raw wire value is gone by the time the SDK maps it, so an unrecognised
+value and an absent one are indistinguishable. If you need the literal string Erli sent, you need a
+newer SDK release with the updated spec.
+
 ## Errors
 
 Every operation maps failures to the remediation exceptions from `sdk.core`:
@@ -137,6 +162,11 @@ Every operation maps failures to the remediation exceptions from `sdk.core`:
 | 5xx | `ErliServerException` | upstream failure; retried first |
 
 All carry `traceId`/`spanId` and Erli's `polishMessage` for support tickets.
+
+> **Rate limiting reads as a validation error today.** Erli rate-limits, and a 429 currently surfaces
+> as `ErliValidationException` because the SDK maps every non-auth, non-not-found 4xx that way. The
+> remediation is the opposite of what that name suggests — back off and retry, do not change the
+> request. Check `details().httpStatus() == 429` to tell them apart. Tracked as CORE-14.
 
 Bad input is rejected before the wire: a non-PLN or sub-grosz amount, a page size above the API cap,
 or an inverted date range all raise `IllegalArgumentException`.
