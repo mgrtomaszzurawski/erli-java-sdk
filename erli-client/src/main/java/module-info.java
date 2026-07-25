@@ -13,6 +13,7 @@ module io.github.mgrtomaszzurawski.erli {
     requires java.net.http;
     // Internal-only dependencies (never re-exported): transport JSON and the generated Layer-1 models.
     requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.datatype.jsr310;
     requires io.github.mgrtomaszzurawski.erli.rest.models;
 
     // Entry point.

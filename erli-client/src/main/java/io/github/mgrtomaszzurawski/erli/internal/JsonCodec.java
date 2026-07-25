@@ -4,15 +4,26 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 
 import java.util.List;
 
 /**
- * Thin Jackson wrapper for the SDK's JSON boundary. Configured to <strong>ignore unknown
- * properties</strong> so the SDK stays forward-compatible with the API's richer-than-spec payloads
- * (see {@code KNOWN-SERVER-BEHAVIORS.md}). Internal: never exported to consumers.
+ * Thin Jackson wrapper for the SDK's JSON boundary. Internal: never exported to consumers.
+ *
+ * <p>The configuration is the contract every layer above depends on:
+ * <ul>
+ *   <li><strong>Unknown properties are ignored</strong>, so the SDK stays forward-compatible with the
+ *       API's richer-than-spec payloads (see {@code KNOWN-SERVER-BEHAVIORS.md}).</li>
+ *   <li><strong>{@code java.time} types are supported</strong> — every OpenAPI {@code date-time}
+ *       property becomes an {@link java.time.OffsetDateTime} in the generated Layer-1 models.</li>
+ *   <li><strong>Dates travel as ISO-8601 strings</strong>, never as epoch numbers; the spec types every
+ *       timestamp as {@code string/date-time}, in requests as well as responses.</li>
+ *   <li><strong>The offset the API sent is preserved</strong> rather than normalized to UTC.</li>
+ * </ul>
  */
 public final class JsonCodec {
 
@@ -20,7 +31,16 @@ public final class JsonCodec {
 
     public JsonCodec() {
         this.mapper = new ObjectMapper()
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                // Layer 1 maps every OpenAPI `date-time` property to java.time.OffsetDateTime, which a
+                // bare ObjectMapper refuses to handle. Erli states timestamps as ISO-8601 strings, so
+                // dates must also serialize as strings rather than epoch numbers.
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                // Keep the offset the API actually sent. Jackson otherwise rewrites every timestamp to
+                // UTC, which silently changes what OffsetDateTime.getOffset() reports; the instant is
+                // the same, but the SDK would be handing back a value the server never stated.
+                .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
     }
 
     /** Deserialize a response body into {@code type}, wrapping any failure as a transport error. */
