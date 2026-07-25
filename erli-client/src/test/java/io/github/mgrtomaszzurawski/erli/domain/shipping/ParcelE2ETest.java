@@ -48,12 +48,6 @@ class ParcelE2ETest {
         }
     }
 
-    /**
-     * The one operation the empty sandbox cannot exercise is a successful fetch. Recorded here so the
-     * gap is visible rather than implied: the Phase 3 live write→read sweep seeds an order, creates a
-     * parcel, and this class gains a happy-path test asserting mapped fields against a real payload.
-     */
-
     private static boolean isSet(String variable) {
         String value = System.getenv(variable);
         return value != null && !value.isBlank();

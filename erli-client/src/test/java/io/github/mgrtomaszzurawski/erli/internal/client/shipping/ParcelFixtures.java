@@ -19,7 +19,7 @@ final class ParcelFixtures {
               "type": "internal",
               "orderId": "100007x1234",
               "erliPro": true,
-              "dimensions": { "width": 20.5, "height": 10, "length": 30.25, "weight": 1500 },
+              "dimensions": { "width": 205.5, "height": 100, "length": 302.25, "weight": 1500 },
               "errors": [ { "errorCode": 1201, "errorMessage": "Blad walidacji przesylki" } ],
               "status": "onTheWay",
               "statusHistory": [
@@ -83,7 +83,7 @@ final class ParcelFixtures {
     static final String MINIMAL_PARCEL_JSON = """
             {
               "type": "internal",
-              "dimensions": { "width": 10, "height": 10, "length": 10, "weight": 500 },
+              "dimensions": { "width": 100, "height": 100, "length": 100, "weight": 500 },
               "status": "preparing",
               "shipping": { "typeId": "erliPaczkomat" },
               "createdAt": "2026-07-20T08:14:00Z",
@@ -95,9 +95,22 @@ final class ParcelFixtures {
     static final String PARCEL_WITH_UNTIMED_HISTORY_JSON = """
             {
               "type": "internal",
-              "dimensions": { "width": 10, "height": 10, "length": 10, "weight": 500 },
+              "dimensions": { "width": 100, "height": 100, "length": 100, "weight": 500 },
               "status": "sent",
               "statusHistory": [ { "status": "preparing" } ],
+              "shipping": { "typeId": "erliPaczkomat" },
+              "createdAt": "2026-07-20T08:14:00Z",
+              "updatedAt": "2026-07-20T08:14:00Z"
+            }
+            """;
+
+    /** A fractional error code — the spec types the code as a number, but Erli codes are whole. */
+    static final String PARCEL_WITH_FRACTIONAL_ERROR_CODE_JSON = """
+            {
+              "type": "internal",
+              "dimensions": { "width": 100, "height": 100, "length": 100, "weight": 500 },
+              "status": "error",
+              "errors": [ { "errorCode": 1201.5, "errorMessage": "Blad walidacji przesylki" } ],
               "shipping": { "typeId": "erliPaczkomat" },
               "createdAt": "2026-07-20T08:14:00Z",
               "updatedAt": "2026-07-20T08:14:00Z"
@@ -108,7 +121,7 @@ final class ParcelFixtures {
     static final String PARCEL_WITH_NULL_WAYBILL_JSON = """
             {
               "type": "internal",
-              "dimensions": { "width": 10, "height": 10, "length": 10, "weight": 500 },
+              "dimensions": { "width": 100, "height": 100, "length": 100, "weight": 500 },
               "status": "sent",
               "shipping": { "typeId": "erliPaczkomat", "waybills": [ "https://erli.pl/a.pdf", null ] },
               "createdAt": "2026-07-20T08:14:00Z",

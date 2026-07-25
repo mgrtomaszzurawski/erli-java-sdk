@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -32,5 +33,13 @@ final class Redaction {
     /** Render a non-personal optional plainly, using the same absent marker as {@link #hide}. */
     static String show(Optional<?> value) {
         return value == null || value.isEmpty() ? ABSENT : String.valueOf(value.get());
+    }
+
+    /**
+     * Render a collection of personal-data values as a count only — enough to tell "none" from "three"
+     * without disclosing any element.
+     */
+    static String hideCount(Collection<?> values) {
+        return values == null ? ABSENT : "[" + values.size() + " " + PRESENT_BUT_REDACTED + "]";
     }
 }

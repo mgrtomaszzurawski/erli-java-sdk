@@ -64,10 +64,19 @@ class ParcelMapperTest {
     void mapsDimensionsPreservingTheScaleTheApiSent() {
         Parcel parcel = mapFrom(ParcelFixtures.FULL_PARCEL_JSON);
 
-        assertEquals(new BigDecimal("20.5"), parcel.dimensions().width());
-        assertEquals(new BigDecimal("10"), parcel.dimensions().height());
-        assertEquals(new BigDecimal("30.25"), parcel.dimensions().length());
+        // Millimetres, as the spec states them — not centimetres.
+        assertEquals(new BigDecimal("205.5"), parcel.dimensions().width());
+        assertEquals(new BigDecimal("100"), parcel.dimensions().height());
+        assertEquals(new BigDecimal("302.25"), parcel.dimensions().length());
         assertEquals(EXPECTED_WEIGHT_GRAMS, parcel.dimensions().weight());
+    }
+
+    @Test
+    void rejectsAFractionalErrorCodeAsAContractBreakRatherThanAnArithmeticException() {
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+                () -> mapFrom(ParcelFixtures.PARCEL_WITH_FRACTIONAL_ERROR_CODE_JSON));
+
+        assertTrue(failure.getMessage().contains("errors[].errorCode"), failure.getMessage());
     }
 
     @Test
@@ -184,8 +193,14 @@ class ParcelMapperTest {
         // Free-text courier instructions routinely restate the address, so they are personal data too.
         assertFalse(rendered.contains("Leave at reception"), rendered);
         // Presence must stay visible, and non-identifying routing detail stays readable.
+        // Waybill and protocol links retrieve documents carrying the buyer's name and address.
+        assertFalse(rendered.contains("erli.pl/waybill"), rendered);
+        assertFalse(rendered.contains("erli.pl/protocol"), rendered);
+        // Presence must stay visible, and non-identifying routing detail stays readable.
         assertTrue(rendered.contains("email=***"), rendered);
         assertTrue(rendered.contains("additionalInformation=***"), rendered);
+        assertTrue(rendered.contains("pickupProtocol=***"), rendered);
+        assertTrue(rendered.contains("waybills=[1 ***]"), rendered);
         assertTrue(rendered.contains("pointCode=WAW01A"), rendered);
     }
 }

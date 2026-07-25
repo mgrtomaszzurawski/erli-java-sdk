@@ -12,9 +12,11 @@ import java.util.Optional;
  * and receives it, and the documents the carrier issued.
  *
  * <p>{@code deliveryMethod} is modelled as the core {@link ShippingMethodId} value rather than an SDK
- * enum. Erli's delivery-method vocabulary is long and grows with every carrier deal; a closed enum
- * would reject a parcel shipped with a method added after this release, and the Dictionaries bucket
- * already exposes the authoritative list keyed by the same id.
+ * enum: the vocabulary is long, it grows with every carrier deal, and the Dictionaries bucket already
+ * exposes the authoritative list keyed by the same id — so a second copy here would only drift. Note
+ * this does <em>not</em> make the read tolerant of a method Erli adds later: the generated Layer-1 type
+ * is still a closed enum, so an unknown value fails at JSON decode before this record is built. That
+ * codec-wide policy is tracked as CORE-12 in {@code BACKLOG.md}.
  *
  * @param deliveryMethod       the Erli delivery method carrying the parcel ({@code typeId} on the wire)
  * @param postingPointId       the seller's posting point, when one is assigned
@@ -53,9 +55,14 @@ public record ParcelShipment(
 
     /**
      * Renders the shipment with its personal data withheld. Beyond the two parties — which redact
-     * themselves — {@code additionalInformation} is free text the seller passes to the courier
-     * ("leave with the neighbour at flat 3, gate code 1234"), so it routinely restates the delivery
-     * address and is treated as personal data here.
+     * themselves — two things count as personal data here:
+     * <ul>
+     *   <li>{@code additionalInformation} is free text the seller passes to the courier ("leave with
+     *       the neighbour at flat 3, gate code 1234"), so it routinely restates the delivery address.</li>
+     *   <li>{@code waybills} and {@code pickupProtocol} are links to the shipping label and pickup
+     *       protocol — documents carrying the buyer's name and full address. A link is not the
+     *       document, but logging one hands out a retrievable copy, so only the count is disclosed.</li>
+     * </ul>
      */
     @Override
     public String toString() {
@@ -67,8 +74,8 @@ public record ParcelShipment(
                 + ", nonStandard=" + nonStandard
                 + ", registeredAt=" + Redaction.show(registeredAt)
                 + ", waybillExpiration=" + Redaction.show(waybillExpiration)
-                + ", waybills=" + waybills
-                + ", pickupProtocol=" + Redaction.show(pickupProtocol)
+                + ", waybills=" + Redaction.hideCount(waybills)
+                + ", pickupProtocol=" + Redaction.hide(pickupProtocol)
                 + ']';
     }
 }
