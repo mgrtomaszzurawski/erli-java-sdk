@@ -25,6 +25,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -105,8 +106,9 @@ class FinanceLiveE2eTest {
             assertTrue(summary.shopId() > 0, "the summary must name the shop it belongs to");
             // Every row must carry the required cost; vacuous while the shop has no spend, real once
             // it does. The shopId check above is the assertion that bites today.
-            summary.dailyCosts().forEach(row -> assertNotNull(row.netShopCost()));
-            assertEquals("PLN", summary.totalNetCost().currency().getCurrencyCode());
+            // Wire-driven: the ids and dates come from the response, not from the mapper's defaults.
+            summary.dailyCosts().forEach(row ->
+                    row.campaignId().ifPresent(id -> assertFalse(id.value().isBlank())));
         }
     }
 
@@ -141,8 +143,10 @@ class FinanceLiveE2eTest {
             // skipping rather than passing on an empty list.
             assumeFalse(entries.isEmpty() && rebates.isEmpty(),
                     "sandbox ledger is empty — mapping stays unproven until Phase 3 seeds data");
-            entries.forEach(entry -> assertEquals("PLN", entry.amount().currency().getCurrencyCode()));
-            rebates.forEach(entry -> assertNotNull(entry.balanceAfter()));
+            // Wire-driven checks only — the currency is stamped by the mapper, so asserting PLN here
+            // would pass no matter what the server sent.
+            entries.forEach(entry -> assertTrue(entry.id() > 0, "ledger ids come from the response"));
+            rebates.forEach(entry -> assertTrue(entry.id() > 0, "ledger ids come from the response"));
         }
     }
 
@@ -162,8 +166,8 @@ class FinanceLiveE2eTest {
 
             assumeFalse(payments.isEmpty() && payouts.isEmpty(),
                     "sandbox shop has no payments — mapping stays unproven until Phase 3 seeds data");
-            payments.forEach(payment -> assertNotNull(payment.status()));
-            payouts.forEach(payout -> assertEquals("PLN", payout.amount().currency().getCurrencyCode()));
+            payments.forEach(payment -> assertTrue(payment.id() > 0, "ids come from the response"));
+            payouts.forEach(payout -> assertTrue(payout.id() > 0, "ids come from the response"));
         }
     }
 

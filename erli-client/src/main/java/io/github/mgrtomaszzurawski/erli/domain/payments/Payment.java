@@ -20,6 +20,12 @@ import java.util.Optional;
  * snapshot, the value decodes as absent rather than throwing. Everything else about the payment is
  * still there — only the method label is unknown.
  *
+ * <p>Empty <em>is</em> the sentinel here. Since these are already plain text, an
+ * {@code "UNRECOGNIZED"} marker string would be indistinguishable from a real method code, whereas
+ * an empty {@code Optional} cannot be mistaken for one. The trade-off is that "the server sent no
+ * method" and "the server sent a method we do not know" both read as empty — the raw value is gone
+ * before the mapper runs.
+ *
  * @param id                the payment's identifier
  * @param orderIds          the orders this payment covers; never empty
  * @param amount            the amount paid
