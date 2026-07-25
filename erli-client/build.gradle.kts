@@ -20,6 +20,11 @@ dependencies {
     // Layer 1 raw models + Jackson stay internal to this module (never re-exported to consumers).
     implementation(project(":erli-rest-models"))
     implementation(libs.jackson.databind)
+    // Declared directly because JsonCodec imports JavaTimeModule and module-info `requires` it. It also
+    // arrives transitively through erli-rest-models' `api`, but relying on that would break this module
+    // the day Layer 1 narrows that dependency — and the JPMS gate would not catch it, because the
+    // consumer's compile classpath never resolves erli-client's transitive requires.
+    implementation(libs.jackson.datatype.jsr310)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)

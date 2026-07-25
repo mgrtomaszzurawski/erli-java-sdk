@@ -12,9 +12,18 @@ import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import java.util.List;
 
 /**
- * Thin Jackson wrapper for the SDK's JSON boundary. Configured to <strong>ignore unknown
- * properties</strong> so the SDK stays forward-compatible with the API's richer-than-spec payloads
- * (see {@code KNOWN-SERVER-BEHAVIORS.md}). Internal: never exported to consumers.
+ * Thin Jackson wrapper for the SDK's JSON boundary. Internal: never exported to consumers.
+ *
+ * <p>The configuration is the contract every layer above depends on:
+ * <ul>
+ *   <li><strong>Unknown properties are ignored</strong>, so the SDK stays forward-compatible with the
+ *       API's richer-than-spec payloads (see {@code KNOWN-SERVER-BEHAVIORS.md}).</li>
+ *   <li><strong>{@code java.time} types are supported</strong> — every OpenAPI {@code date-time}
+ *       property becomes an {@link java.time.OffsetDateTime} in the generated Layer-1 models.</li>
+ *   <li><strong>Dates travel as ISO-8601 strings</strong>, never as epoch numbers; the spec types every
+ *       timestamp as {@code string/date-time}, in requests as well as responses.</li>
+ *   <li><strong>The offset the API sent is preserved</strong> rather than normalized to UTC.</li>
+ * </ul>
  */
 public final class JsonCodec {
 
