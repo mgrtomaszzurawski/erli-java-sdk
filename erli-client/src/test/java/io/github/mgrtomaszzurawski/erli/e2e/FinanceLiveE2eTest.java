@@ -3,6 +3,7 @@ package io.github.mgrtomaszzurawski.erli.e2e;
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliApiException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
 import io.github.mgrtomaszzurawski.erli.domain.billing.BillingEntry;
 import io.github.mgrtomaszzurawski.erli.domain.billing.BillingEntryFilter;
@@ -24,7 +25,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -51,10 +51,31 @@ class FinanceLiveE2eTest {
     private static final String LEAF_CATEGORY_ID = "4";
     private static final String UNIT_PRICE_PLN = "100.00";
 
+    /** Erli rate-limits the shared sandbox; a 429 is an environment condition, not a contract failure. */
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
+
     /** The API refuses an endDate past its own clock, so stay a day behind to avoid a timezone race. */
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
     private static final LocalDate END_DATE = LocalDate.now(WARSAW).minusDays(2);
     private static final LocalDate START_DATE = END_DATE.minusMonths(1);
+
+    /**
+     * Run a live call, reporting a rate-limited sandbox as skipped rather than failed. Only 429 is
+     * treated this way — every other failure still fails the test.
+     *
+     * <p>Note the 429 currently arrives as {@link ErliValidationException}: core maps every non-auth,
+     * non-not-found 4xx to validation, which is why this has to check the status rather than the
+     * exception type. Raised as CORE-13.
+     */
+    private static <T> T liveCall(java.util.function.Supplier<T> call, String what) {
+        try {
+            return call.get();
+        } catch (ErliApiException failure) {
+            assumeFalse(failure.details().httpStatus() == HTTP_TOO_MANY_REQUESTS,
+                    "sandbox rate-limited while " + what + " — not a contract failure");
+            throw failure;
+        }
+    }
 
     @Test
     void estimatesACommissionLive() {
@@ -109,12 +130,12 @@ class FinanceLiveE2eTest {
             // The assertion IS that the server accepts our request shape. Both endpoints are strict:
             // a missing simpleFilter, an explicit null, or a sort other than id/DESC all draw a 400,
             // so reaching a decoded result proves the body the SDK builds is the one Erli wants.
-            List<BillingEntry> entries = assertDoesNotThrow(
+            List<BillingEntry> entries = liveCall(
                     () -> client.billing().entries(BillingEntryFilter.all()).limit(5).toList(),
-                    "the ledger request shape must be accepted by the live API");
-            List<BillingEntry> rebates = assertDoesNotThrow(
+                    "reading the ledger");
+            List<BillingEntry> rebates = liveCall(
                     () -> client.billing().rebates(BillingEntryFilter.all()).limit(5).toList(),
-                    "the rebates request shape must be accepted by the live API");
+                    "reading rebates");
 
             // Content invariants only bite once the ledger has rows; until then say so honestly by
             // skipping rather than passing on an empty list.
@@ -132,12 +153,12 @@ class FinanceLiveE2eTest {
             // the strictest in the bucket — the type discriminator must be in the BODY, and the spec's
             // query-parameter form draws 400 "type is required" (KNOWN-SERVER-BEHAVIORS.md). So a
             // successful call is exactly what distinguishes the right wire shape from the spec's.
-            List<Payment> payments = assertDoesNotThrow(
+            List<Payment> payments = liveCall(
                     () -> client.payments().searchPayments(PaymentSearch.all()).limit(5).toList(),
-                    "the payment search must send 'type' where the live API reads it");
-            List<Payout> payouts = assertDoesNotThrow(
+                    "searching payments");
+            List<Payout> payouts = liveCall(
                     () -> client.payments().searchPayouts(PayoutSearch.all()).limit(5).toList(),
-                    "the payout search must send 'type' where the live API reads it");
+                    "searching payouts");
 
             assumeFalse(payments.isEmpty() && payouts.isEmpty(),
                     "sandbox shop has no payments — mapping stays unproven until Phase 3 seeds data");
