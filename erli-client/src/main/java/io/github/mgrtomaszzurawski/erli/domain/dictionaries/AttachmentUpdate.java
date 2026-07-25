@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A partial update of an attachment ({@code PATCH /dictionaries/attachment}). Only the fields set on
@@ -21,7 +20,15 @@ public record AttachmentUpdate(
         List<Market> markets) {
 
     public AttachmentUpdate {
-        markets = markets == null ? null : List.copyOf(markets);
+        if (markets != null) {
+            markets = List.copyOf(markets);
+            if (markets.isEmpty()) {
+                // null means "leave the markets alone"; an empty array would ask the API to clear
+                // them, which it rejects (minItems: 1). Fail here rather than on the wire.
+                throw new IllegalArgumentException(
+                        "markets must name at least one storefront; leave it unset to keep the current ones");
+            }
+        }
     }
 
     public static Builder builder(long id) {

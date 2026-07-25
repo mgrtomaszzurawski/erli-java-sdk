@@ -281,10 +281,9 @@ public enum CountryCode {
     /**
      * Resolve a wire string to a country.
      *
-     * <p>On the live path this is only ever called with the wire value of an already-decoded Layer-1
-     * {@code CountryEnum}, so it always resolves — a value the API added but the vendored spec lacks
-     * fails earlier, at JSON decode (fail-loud, see {@code KNOWN-SERVER-BEHAVIORS.md}). This guard
-     * therefore fires only if this domain enum drifts out of sync with the generated one.
+     * <p>Since CORE-12 the codec decodes an unrecognised wire value to {@code null} rather than
+     * throwing, so this method never sees one: the caller maps the {@code null} itself. It therefore
+     * fires only if this domain enum drifts out of sync with the generated one.
      *
      * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
      */

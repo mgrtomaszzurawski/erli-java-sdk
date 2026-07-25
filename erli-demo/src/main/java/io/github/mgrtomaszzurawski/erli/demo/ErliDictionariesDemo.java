@@ -2,7 +2,10 @@ package io.github.mgrtomaszzurawski.erli.demo;
 
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attachment;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentQuery;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentRemoval;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attribute;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttributeValues;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.BillingEntryType;
@@ -10,9 +13,12 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Category;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethodQuery;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DictionariesAccess;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Market;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ProductAttachmentResult;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyQuery;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyUpdate;
@@ -40,6 +46,8 @@ public final class ErliDictionariesDemo {
     /** A category known to be a leaf on the sandbox ("Elementy dekarskie"). */
     private static final CategoryId SAMPLE_LEAF_CATEGORY = CategoryId.of("4");
     private static final String SEED_KEY_PREFIX = "erli-sdk-demo-";
+    /** A product id the sandbox shop does not have, to show how a partial attach is reported. */
+    private static final long UNKNOWN_PRODUCT_ID = 999999999L;
 
     private ErliDictionariesDemo() {
     }
@@ -51,6 +59,7 @@ public final class ErliDictionariesDemo {
             readTheSharedDictionaries(dictionaries);
             readTheCategoryTree(dictionaries);
             writeReadDeleteAResponsiblePerson(dictionaries);
+            writeReadDeleteAnAttachment(dictionaries);
         }
     }
 
@@ -127,5 +136,31 @@ public final class ErliDictionariesDemo {
                 .stream()
                 .anyMatch(party -> party.id() == created.id());
         System.out.printf("deleteResponsiblePerson    -> removed: %b (sandbox left clean)%n", !stillThere);
+    }
+
+    /**
+     * Creates an attachment, attaches a product that does not exist to show that the API reports a
+     * per-product failure with HTTP 200, then deletes the attachment again.
+     */
+    private static void writeReadDeleteAnAttachment(DictionariesAccess dictionaries) {
+        Attachment created = dictionaries.createAttachment(NewAttachment.builder()
+                .kind(AttachmentKind.USER_MANUAL)
+                .name("SDK demo instrukcja")
+                .originalName("sdk-demo.pdf")
+                .filePath("sdk-demo/instrukcja.pdf")
+                .market(Market.POLAND)
+                .build());
+        System.out.printf("createAttachment           -> id=%d, kind=%s%n",
+                created.id(), created.kind().map(Object::toString).orElse("-"));
+
+        ProductAttachmentResult attached = dictionaries.attachProducts(created.id(), List.of(UNKNOWN_PRODUCT_ID));
+        System.out.printf("attachProducts             -> complete=%b, errors=%d (HTTP 200 with ok=false)%n",
+                attached.isComplete(), attached.errors().size());
+        attached.errors().forEach(error ->
+                System.out.printf("    product %d refused: %s%n", error.productId(), error.error()));
+
+        AttachmentRemoval removal = dictionaries.deleteAttachments(List.of(created.id()));
+        System.out.printf("deleteAttachments          -> removed=%s, complete=%b (sandbox left clean)%n",
+                removal.removedAttachmentIds(), removal.isComplete());
     }
 }

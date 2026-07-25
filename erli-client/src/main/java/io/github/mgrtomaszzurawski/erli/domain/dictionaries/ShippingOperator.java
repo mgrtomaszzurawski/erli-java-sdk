@@ -37,9 +37,9 @@ public enum ShippingOperator {
     /**
      * Resolve a wire string to an operator.
      *
-     * <p>Only ever called with the wire value of an already-decoded Layer-1 {@code OperatorEnum}, so
-     * an operator the API added but the vendored spec lacks fails earlier, at JSON decode (fail-loud,
-     * see {@code KNOWN-SERVER-BEHAVIORS.md}). This guard fires only on domain/generated enum drift.
+     * <p>Since CORE-12 the codec decodes an unrecognised wire value to {@code null} rather than
+     * throwing, so this method never sees one: the caller maps the {@code null} itself. It therefore
+     * fires only if this domain enum drifts out of sync with the generated one.
      *
      * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
      */

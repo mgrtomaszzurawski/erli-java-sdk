@@ -7,6 +7,7 @@ import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentQuery;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentRemoval;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentUpdate;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attribute;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttributeValues;
@@ -19,6 +20,7 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DictionariesAccess;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.PriceListName;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ProductAttachmentResult;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyQuery;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyUpdate;
@@ -39,6 +41,7 @@ import io.github.mgrtomaszzurawski.erli.rest.model.AttributeValuesResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntryTypesResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.CategoryFilter;
 import io.github.mgrtomaszzurawski.erli.rest.model.CategoryResponse;
+import io.github.mgrtomaszzurawski.erli.rest.model.DeleteAttachmentsResponse;
 import io.github.mgrtomaszzurawski.erli.rest.model.GetAttachmentsResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ResponsibleSchema;
 
@@ -62,8 +65,6 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     private static final String PARAM_NAME = "name";
     private static final String PARAM_KIND = "kind";
 
-    private static final String PATH_VAR_PRICE_LIST = "priceList";
-    private static final String PATH_VAR_ID = "id";
 
     /** The largest page the API accepts for the category cursor; a larger limit is rejected with 400. */
     private static final int CATEGORY_PAGE_SIZE = 200;
@@ -136,7 +137,7 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     public List<DeliveryMethod> deliveryMethods(PriceListName priceList, DeliveryMethodQuery query) {
         Objects.requireNonNull(priceList, "priceList");
         Objects.requireNonNull(query, "query");
-        Map<String, String> pathValues = Map.of(PATH_VAR_PRICE_LIST, priceList.value());
+        Map<String, String> pathValues = Map.of(ApiPaths.PRICE_LIST_PARAM, priceList.value());
         return runtime.getList(PathTemplate.expand(ApiPaths.DICTIONARIES_DELIVERY_METHODS_BY_PRICE_LIST, pathValues),
                         deliveryMethodParameters(query),
                         io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod.class)
@@ -200,14 +201,14 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     @Override
     public ResponsibleParty updateResponsiblePerson(long id, ResponsiblePartyUpdate update) {
         Objects.requireNonNull(update, "update");
-        Map<String, String> pathValues = Map.of(PATH_VAR_ID, String.valueOf(id));
+        Map<String, String> pathValues = Map.of(ApiPaths.RESPONSIBLE_ID_PARAM, String.valueOf(id));
         return ResponsiblePartyMapper.toDomain(runtime.patch(PathTemplate.expand(ApiPaths.DICTIONARIES_RESPONSIBLE_PERSON_BY_ID, pathValues),
                 ResponsiblePartyMapper.toUpdateRequest(update), ResponsibleSchema.class));
     }
 
     @Override
     public void deleteResponsiblePerson(long id) {
-        Map<String, String> pathValues = Map.of(PATH_VAR_ID, String.valueOf(id));
+        Map<String, String> pathValues = Map.of(ApiPaths.RESPONSIBLE_ID_PARAM, String.valueOf(id));
         runtime.delete(PathTemplate.expand(ApiPaths.DICTIONARIES_RESPONSIBLE_PERSON_BY_ID, pathValues),
                 QueryParameters.empty(), Void.class);
     }
@@ -231,14 +232,14 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     @Override
     public ResponsibleParty updateResponsibleProducer(long id, ResponsiblePartyUpdate update) {
         Objects.requireNonNull(update, "update");
-        Map<String, String> pathValues = Map.of(PATH_VAR_ID, String.valueOf(id));
+        Map<String, String> pathValues = Map.of(ApiPaths.RESPONSIBLE_ID_PARAM, String.valueOf(id));
         return ResponsiblePartyMapper.toDomain(runtime.patch(PathTemplate.expand(ApiPaths.DICTIONARIES_RESPONSIBLE_PRODUCER_BY_ID, pathValues),
                 ResponsiblePartyMapper.toUpdateRequest(update), ResponsibleSchema.class));
     }
 
     @Override
     public void deleteResponsibleProducer(long id) {
-        Map<String, String> pathValues = Map.of(PATH_VAR_ID, String.valueOf(id));
+        Map<String, String> pathValues = Map.of(ApiPaths.RESPONSIBLE_ID_PARAM, String.valueOf(id));
         runtime.delete(PathTemplate.expand(ApiPaths.DICTIONARIES_RESPONSIBLE_PRODUCER_BY_ID, pathValues),
                 QueryParameters.empty(), Void.class);
     }
@@ -274,15 +275,22 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     }
 
     @Override
-    public void attachProducts(long attachmentId, List<Long> productIds) {
-        runtime.patch(ApiPaths.DICTIONARIES_ATTACHMENT_ATTACH,
-                AttachmentMapper.toAttachRequest(attachmentId, productIds), Void.class);
+    public ProductAttachmentResult attachProducts(long attachmentId, List<Long> productIds) {
+        return AttachmentMapper.toProductAttachmentResult(runtime.patch(ApiPaths.DICTIONARIES_ATTACHMENT_ATTACH,
+                AttachmentMapper.toAttachRequest(attachmentId, productIds), ManageAttachedProductsResponse.class));
     }
 
     @Override
-    public void detachProducts(long attachmentId, List<Long> productIds) {
-        runtime.patch(ApiPaths.DICTIONARIES_ATTACHMENT_DETACH,
-                AttachmentMapper.toDetachRequest(attachmentId, productIds), Void.class);
+    public ProductAttachmentResult detachProducts(long attachmentId, List<Long> productIds) {
+        return AttachmentMapper.toProductAttachmentResult(runtime.patch(ApiPaths.DICTIONARIES_ATTACHMENT_DETACH,
+                AttachmentMapper.toDetachRequest(attachmentId, productIds), ManageAttachedProductsResponse.class));
+    }
+
+    @Override
+    public AttachmentRemoval deleteAttachments(List<Long> attachmentIds) {
+        return AttachmentMapper.toRemoval(runtime.delete(ApiPaths.DICTIONARIES_ATTACHMENTS,
+                AttachmentMapper.toDeleteRequest(attachmentIds), QueryParameters.empty(),
+                DeleteAttachmentsResponse.class));
     }
 
     private static QueryParameters deliveryMethodParameters(DeliveryMethodQuery query) {

@@ -2,11 +2,14 @@ package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentKind;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentRemoval;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentUpdate;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Market;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewAttachment;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ProductAttachmentResult;
 import io.github.mgrtomaszzurawski.erli.rest.model.AddAttachmentRequest;
 import io.github.mgrtomaszzurawski.erli.rest.model.AttachmentResponse;
+import io.github.mgrtomaszzurawski.erli.rest.model.DeleteAttachmentsResponse;
 import io.github.mgrtomaszzurawski.erli.rest.model.GetAttachmentsResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.GetAttachmentsResponseInnerCreated;
 import io.github.mgrtomaszzurawski.erli.rest.model.GetAttachmentsResponseInnerCreatedUser;
@@ -74,7 +77,7 @@ final class AttachmentMapper {
 
     static PatchAttachmentRequest toPatchRequest(AttachmentUpdate update) {
         Objects.requireNonNull(update, "update");
-        PatchAttachmentRequest request = new PatchAttachmentRequest().id((int) update.id());
+        PatchAttachmentRequest request = new PatchAttachmentRequest().id(toIntId(update.id(), "attachment id"));
         if (update.filePath() != null) {
             request.filePath(update.filePath());
         }
@@ -107,8 +110,21 @@ final class AttachmentMapper {
         }
         return new ManageAttachedProducts()
                 .action(action)
-                .attachmentId((int) attachmentId)
-                .productIds(productIds.stream().map(Long::intValue).toList());
+                .attachmentId(toIntId(attachmentId, "attachment id"))
+                .productIds(productIds.stream().map(productId -> toIntId(productId, "product id")).toList());
+    }
+
+    /**
+     * Narrow a domain {@code long} id to the {@code int} Layer 1 declares, refusing to wrap silently —
+     * a truncated id would address a different, existing attachment or product.
+     */
+    private static int toIntId(long id, String what) {
+        try {
+            return Math.toIntExact(id);
+        } catch (ArithmeticException tooLarge) {
+            throw new IllegalArgumentException(
+                    "The API cannot represent this " + what + ": " + id + " exceeds the 32-bit range", tooLarge);
+        }
     }
 
     private static AddAttachmentRequest.KindEnum toRequestKind(AttachmentKind kind) {
@@ -117,6 +133,47 @@ final class AttachmentMapper {
             throw new IllegalArgumentException("The API does not accept attachment kind: " + kind.wireValue());
         }
         return resolved;
+    }
+
+    static ProductAttachmentResult toProductAttachmentResult(ManageAttachedProductsResponse rawResult) {
+        if (rawResult == null) {
+            // Defensive: an empty body would mean the API stopped reporting per-product outcomes.
+            return new ProductAttachmentResult(true, List.of(), List.of());
+        }
+        List<Long> updated = rawResult.getUpdated() == null
+                ? List.of()
+                : rawResult.getUpdated().stream().map(Integer::longValue).toList();
+        List<ProductAttachmentResult.ProductError> errors = rawResult.getErrors() == null
+                ? List.of()
+                : rawResult.getErrors().stream()
+                        .map(error -> new ProductAttachmentResult.ProductError(
+                                error.getProductId() == null ? null : error.getProductId().longValue(),
+                                error.getError()))
+                        .toList();
+        return new ProductAttachmentResult(Boolean.TRUE.equals(rawResult.getOk()), updated, errors);
+    }
+
+    /**
+     * The delete request body is a bare JSON array of ids, so the generator emits no class for it and
+     * the body is the list itself.
+     */
+    static List<Integer> toDeleteRequest(List<Long> attachmentIds) {
+        Objects.requireNonNull(attachmentIds, "attachmentIds");
+        if (attachmentIds.isEmpty()) {
+            throw new IllegalArgumentException("attachmentIds must name at least one attachment");
+        }
+        return attachmentIds.stream().map(attachmentId -> toIntId(attachmentId, "attachment id")).toList();
+    }
+
+    static AttachmentRemoval toRemoval(DeleteAttachmentsResponse rawRemoval) {
+        Objects.requireNonNull(rawRemoval, "raw DeleteAttachmentsResponse");
+        List<Long> removed = rawRemoval.getRemovedAttachments() == null
+                ? List.of()
+                : rawRemoval.getRemovedAttachments().stream().map(Integer::longValue).toList();
+        List<String> errors = rawRemoval.getErrors() == null
+                ? List.of()
+                : rawRemoval.getErrors().stream().map(String::valueOf).toList();
+        return new AttachmentRemoval(removed, errors);
     }
 
     private static List<String> toMarketValues(List<Market> markets) {

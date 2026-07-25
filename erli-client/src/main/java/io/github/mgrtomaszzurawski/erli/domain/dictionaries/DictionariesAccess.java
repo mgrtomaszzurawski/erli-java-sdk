@@ -1,6 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -194,20 +195,35 @@ public interface DictionariesAccess {
     /**
      * Attach products to an attachment ({@code PATCH /dictionaries/attachment/attach}).
      *
+     * <p>Partial success is reported with HTTP 200, so check the result rather than relying on the
+     * absence of an exception — see {@link ProductAttachmentResult}.
+     *
      * @param attachmentId the attachment to attach products to
-     * @param productIds the products to attach
+     * @param productIds the products to attach; at least one
+     * @return which products were attached and which the API refused
      */
-    void attachProducts(long attachmentId, List<Long> productIds);
+    ProductAttachmentResult attachProducts(long attachmentId, List<Long> productIds);
 
     /**
      * Detach products from an attachment ({@code PATCH /dictionaries/attachment/detach}).
      *
+     * <p>Partial success is reported with HTTP 200, so check the result rather than relying on the
+     * absence of an exception — see {@link ProductAttachmentResult}.
+     *
      * @param attachmentId the attachment to detach products from
-     * @param productIds the products to detach
+     * @param productIds the products to detach; at least one
+     * @return which products were detached and which the API refused
      */
-    void detachProducts(long attachmentId, List<Long> productIds);
+    ProductAttachmentResult detachProducts(long attachmentId, List<Long> productIds);
 
-    // DELETE /dictionaries/attachments is deliberately absent: it sends a request body
-    // (DeleteAttachmentsRequest, a bare array of ids) and core's delete() carries no body yet.
-    // Filed as a core-owned request rather than worked around here — see BACKLOG.
+    /**
+     * Delete attachments ({@code DELETE /dictionaries/attachments}).
+     *
+     * <p>The API reports removals and failures separately rather than failing the whole call, so a
+     * partial success is normal — check {@link AttachmentRemoval#isComplete()}.
+     *
+     * @param attachmentIds the attachments to delete; at least one
+     * @return what was removed and what failed
+     */
+    AttachmentRemoval deleteAttachments(List<Long> attachmentIds);
 }

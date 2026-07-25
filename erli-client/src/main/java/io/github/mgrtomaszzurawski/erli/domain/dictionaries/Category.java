@@ -7,7 +7,7 @@ import java.util.Objects;
 
 /**
  * A node in the marketplace category tree. Only a {@link #leaf()} category can hold products, and
- * attributes are defined per leaf category — see {@link DictionaryAccess#attributes(CategoryId)}.
+ * attributes are defined per leaf category — see {@link DictionariesAccess#attributes(CategoryId)}.
  *
  * @param id the category identifier
  * @param name the Polish category name

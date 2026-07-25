@@ -39,6 +39,10 @@ public enum ResponsiblePartySource {
     /**
      * Resolve a wire string to a source.
      *
+     * <p>Since CORE-12 the codec decodes an unrecognised wire value to {@code null} rather than
+     * throwing, so this method never sees one: the caller maps the {@code null} itself. It therefore
+     * fires only if this domain enum drifts out of sync with the generated one.
+     *
      * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
      */
     public static ResponsiblePartySource fromWire(String wireValue) {

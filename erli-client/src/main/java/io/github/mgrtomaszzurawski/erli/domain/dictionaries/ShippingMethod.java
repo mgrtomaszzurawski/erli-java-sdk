@@ -9,6 +9,16 @@ import java.util.Optional;
  * An ERLI shipping method — a concrete, priced way to ship a parcel, as opposed to the broader
  * {@link DeliveryMethod} a buyer sees on an order.
  *
+ * <p>{@code groupId} and {@code operator} are {@code Optional} although the spec marks them required:
+ * since CORE-12 an operator or group the marketplace adds but the vendored spec lacks decodes to
+ * {@code null}, and degrading one field is better than failing the whole dictionary.
+ *
+ * <p><strong>{@link #maxDimensions()} is currently under-reported.</strong> The API states this bound
+ * in two shapes and the generated discriminator cannot tell them apart (BACKLOG CORE-3), so for the
+ * longest-side/dimensions-sum form — about 20 of the sandbox's 49 methods — the bound is reported as
+ * absent rather than wrong. Treat an empty {@code maxDimensions} as "unknown", not as "unbounded",
+ * until that lands.
+ *
  * @param id the shipping-method identifier, e.g. {@code erliPaczkomat}
  * @param name the human-readable Polish label
  * @param groupId the delivery group this method belongs to, when stated

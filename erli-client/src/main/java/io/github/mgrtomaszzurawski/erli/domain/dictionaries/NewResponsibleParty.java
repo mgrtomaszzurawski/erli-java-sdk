@@ -27,6 +27,7 @@ public record NewResponsibleParty(
         Optional<ResponsiblePartySource> source) {
 
     private static final String REDACTED = "***";
+    private static final String ABSENT = "absent";
 
     public NewResponsibleParty {
         Objects.requireNonNull(name, "name");
@@ -55,7 +56,7 @@ public record NewResponsibleParty(
                 + ", postalCode=" + postalCode
                 + ", city=" + city
                 + ", email=" + REDACTED
-                + ", phone=" + (phone.isPresent() ? REDACTED : Optional.empty())
+                + ", phone=" + (phone.isPresent() ? REDACTED : ABSENT)
                 + ", source=" + source
                 + "]";
     }

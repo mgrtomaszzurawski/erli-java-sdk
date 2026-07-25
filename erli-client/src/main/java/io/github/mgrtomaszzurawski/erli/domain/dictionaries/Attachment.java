@@ -9,6 +9,12 @@ import java.util.Optional;
  * A document attached to products — a user manual, an energy label, a safety data sheet. Uploaded
  * once and then attached to any number of products.
  *
+ * <p><strong>{@code markets} is write-only.</strong> {@link NewAttachment} and {@link AttachmentUpdate}
+ * set which storefronts an attachment applies to, and the live API does echo {@code markets} back on
+ * every attachment response — but the published schema does not declare it, so Layer 1 has no getter
+ * and it cannot be surfaced here without hand-parsing the response. Recorded in
+ * {@code KNOWN-SERVER-BEHAVIORS.md}; it lands when the vendored spec catches up.
+ *
  * @param id the attachment identifier
  * @param shopId the shop that owns it
  * @param version the optimistic-concurrency version
@@ -58,6 +64,7 @@ public record Attachment(
     public record AttachmentAudit(OffsetDateTime time, String userId, Optional<String> email) {
 
         private static final String REDACTED = "***";
+        private static final String ABSENT = "absent";
 
         public AttachmentAudit {
             Objects.requireNonNull(time, "time");
@@ -65,12 +72,16 @@ public record Attachment(
             Objects.requireNonNull(email, "email");
         }
 
+        private static String redactIfPresent(Optional<String> value) {
+            return value.isPresent() ? REDACTED : ABSENT;
+        }
+
         /** Redacts the e-mail: this is an identifiable person, and audit rows end up in logs. */
         @Override
         public String toString() {
             return "AttachmentAudit[time=" + time
                     + ", userId=" + userId
-                    + ", email=" + (email.isPresent() ? REDACTED : Optional.empty())
+                    + ", email=" + redactIfPresent(email)
                     + "]";
         }
     }

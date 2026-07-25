@@ -10,15 +10,17 @@ import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentQuery;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentRemoval;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttachmentUpdate;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Category;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethodQuery;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Market;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.PriceListName;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ProductAttachmentResult;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyQuery;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyUpdate;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingMethodQuery;
@@ -51,7 +53,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -68,6 +70,10 @@ class DictionaryEndpointsTest {
     private static final String CATEGORY_SEARCH_PATH = "/dictionaries/category/_search";
     private static final String RESPONSIBLE_PERSONS_PATH = "/dictionaries/responsiblePersons";
     private static final String DELIVERY_METHODS_PATH = "/dictionaries/deliveryMethods";
+    private static final String RESPONSIBLE_PRODUCERS_PATH = "/dictionaries/responsibleProducers";
+    private static final String ATTACHMENTS_PATH = "/dictionaries/attachments";
+    private static final String ATTACH_PATH = "/dictionaries/attachment/attach";
+    private static final String DETACH_PATH = "/dictionaries/attachment/detach";
     private static final int CATEGORY_PAGE_SIZE = 200;
 
     /**
@@ -288,17 +294,101 @@ class DictionaryEndpointsTest {
     }
 
     @Test
-    void sendsTheAttachAndDetachBodiesWithTheMatchingAction() {
-        server.stubFor(patch(urlEqualTo("/dictionaries/attachment/attach")).willReturn(aResponse().withStatus(200)));
-        server.stubFor(patch(urlEqualTo("/dictionaries/attachment/detach")).willReturn(aResponse().withStatus(200)));
+    void sendsTheAttachBodyWithTheAttachAction() {
+        server.stubFor(patch(urlEqualTo(ATTACH_PATH))
+                .willReturn(okJson("{\"ok\":true,\"updated\":[11,12],\"errors\":[]}")));
 
-        dictionaries().attachProducts(7L, List.of(11L, 12L));
+        ProductAttachmentResult result = dictionaries().attachProducts(7L, List.of(11L, 12L));
+
+        server.verify(patchRequestedFor(urlEqualTo(ATTACH_PATH))
+                .withRequestBody(equalToJson("{\"action\":\"attach\",\"attachmentId\":7,\"productIds\":[11,12]}")));
+        assertTrue(result.isComplete());
+    }
+
+    @Test
+    void sendsTheDetachBodyWithTheDetachAction() {
+        server.stubFor(patch(urlEqualTo(DETACH_PATH))
+                .willReturn(okJson("{\"ok\":true,\"updated\":[11],\"errors\":[]}")));
+
         dictionaries().detachProducts(7L, List.of(11L));
 
-        server.verify(patchRequestedFor(urlEqualTo("/dictionaries/attachment/attach"))
-                .withRequestBody(equalToJson("{\"action\":\"attach\",\"attachmentId\":7,\"productIds\":[11,12]}")));
-        server.verify(patchRequestedFor(urlEqualTo("/dictionaries/attachment/detach"))
+        server.verify(patchRequestedFor(urlEqualTo(DETACH_PATH))
                 .withRequestBody(equalToJson("{\"action\":\"detach\",\"attachmentId\":7,\"productIds\":[11]}")));
+    }
+
+    @Test
+    void surfacesThePerProductFailuresTheApiReportsWithHttp200() {
+        // The API answers 200 with ok:false when a product could not be attached; a caller that only
+        // watched for an exception would believe an attach that changed nothing had succeeded.
+        server.stubFor(patch(urlEqualTo(ATTACH_PATH)).willReturn(okJson("""
+                {"ok":false,"updated":[],
+                 "errors":[{"productId":999999999,"error":"NotFoundFailure: product not found"}]}""")));
+
+        ProductAttachmentResult result = dictionaries().attachProducts(7L, List.of(999999999L));
+
+        assertFalse(result.isComplete());
+        assertEquals(999999999L, result.errors().get(0).productId());
+    }
+
+    @Test
+    void sendsTheAttachmentIdsAsABareArrayOnDelete() {
+        server.stubFor(delete(urlEqualTo(ATTACHMENTS_PATH))
+                .willReturn(okJson("{\"removedAttachments\":[73],\"errors\":[]}")));
+
+        AttachmentRemoval removal = dictionaries().deleteAttachments(List.of(73L));
+
+        server.verify(deleteRequestedFor(urlEqualTo(ATTACHMENTS_PATH))
+                .withHeader(HEADER_CONTENT_TYPE, equalTo(MEDIA_TYPE_JSON))
+                .withRequestBody(equalToJson("[73]")));
+        assertTrue(removal.isComplete());
+        assertEquals(List.of(73L), removal.removedAttachmentIds());
+    }
+
+    @Test
+    void reportsAPartialAttachmentRemoval() {
+        server.stubFor(delete(urlEqualTo(ATTACHMENTS_PATH))
+                .willReturn(okJson("{\"removedAttachments\":[73],\"errors\":[\"74 is in use\"]}")));
+
+        AttachmentRemoval removal = dictionaries().deleteAttachments(List.of(73L, 74L));
+
+        assertFalse(removal.isComplete());
+        assertEquals(1, removal.errors().size());
+    }
+
+    /**
+     * The person and producer operations differ only in their path constant — the classic copy-paste
+     * hazard — so every one of the eight is pinned to the resource it belongs to.
+     */
+    @Test
+    void routesEveryResponsiblePartyOperationToItsOwnResource() {
+        server.stubFor(get(urlEqualTo(RESPONSIBLE_PERSONS_PATH)).willReturn(okJson("[]")));
+        server.stubFor(get(urlEqualTo(RESPONSIBLE_PRODUCERS_PATH)).willReturn(okJson("[]")));
+        server.stubFor(post(urlEqualTo(RESPONSIBLE_PRODUCERS_PATH)).willReturn(okJson(responsiblePartyJson())));
+        server.stubFor(patch(urlEqualTo(RESPONSIBLE_PRODUCERS_PATH + "/7")).willReturn(okJson(responsiblePartyJson())));
+        server.stubFor(delete(urlEqualTo(RESPONSIBLE_PERSONS_PATH + "/7")).willReturn(aResponse().withStatus(200)));
+
+        DictionariesAccessImpl dictionaries = dictionaries();
+        dictionaries.responsiblePersons(ResponsiblePartyQuery.none());
+        dictionaries.responsibleProducers(ResponsiblePartyQuery.none());
+        dictionaries.createResponsibleProducer(newParty());
+        dictionaries.updateResponsibleProducer(7L, ResponsiblePartyUpdate.builder(CountryCode.PL).city("Gdańsk").build());
+        dictionaries.deleteResponsiblePerson(7L);
+
+        server.verify(getRequestedFor(urlEqualTo(RESPONSIBLE_PERSONS_PATH)));
+        server.verify(getRequestedFor(urlEqualTo(RESPONSIBLE_PRODUCERS_PATH)));
+        server.verify(postRequestedFor(urlEqualTo(RESPONSIBLE_PRODUCERS_PATH)));
+        server.verify(patchRequestedFor(urlEqualTo(RESPONSIBLE_PRODUCERS_PATH + "/7")));
+        server.verify(deleteRequestedFor(urlEqualTo(RESPONSIBLE_PERSONS_PATH + "/7")));
+    }
+
+    @Test
+    void requestsTheBillingEntryTypeDictionary() {
+        server.stubFor(get(urlEqualTo("/dictionaries/billingEntryTypes"))
+                .willReturn(okJson("[{\"type\":\"COMM\",\"description\":\"naliczenie prowizji\"}]")));
+
+        assertEquals("COMM", dictionaries().billingEntryTypes().get(0).type());
+
+        server.verify(getRequestedFor(urlEqualTo("/dictionaries/billingEntryTypes")));
     }
 
     @Test
@@ -393,9 +483,23 @@ class DictionaryEndpointsTest {
         server.stubFor(get(urlEqualTo(DELIVERY_METHODS_PATH))
                 .willReturn(aResponse().withStatus(500).withBody("<html>gateway blew up</html>")));
 
-        ErliException failure = assertThrows(ErliException.class, () -> dictionaries().deliveryMethods());
+        ErliServerException failure =
+                assertThrows(ErliServerException.class, () -> dictionaries().deliveryMethods());
 
-        assertInstanceOf(ErliServerException.class, failure);
+        assertTrue(failure.details().rawBody().contains("gateway blew up"), failure.details().rawBody());
+    }
+
+    private static NewResponsibleParty newParty() {
+        return NewResponsibleParty.builder()
+                .name("Importer PL")
+                .idempotenceKey("imp-001")
+                .properName("Importer Sp. z o.o.")
+                .country(CountryCode.PL)
+                .address("ul. Przykładowa 1")
+                .postalCode("00-001")
+                .city("Warszawa")
+                .email("kontakt@example.com")
+                .build();
     }
 
     /** The single object the create/update endpoints really return — the spec declares an array. */

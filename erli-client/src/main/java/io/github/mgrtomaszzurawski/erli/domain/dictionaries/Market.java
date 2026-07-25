@@ -2,10 +2,15 @@ package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 /**
- * A marketplace storefront an {@link Attachment} applies to. Small and closed — ERLI runs a Polish
- * and a German storefront — so this one is matched with an explicit {@code switch} rather than a
- * wire map, per the fleet enum guideline.
+ * A marketplace storefront an {@link Attachment} applies to — ERLI runs a Polish and a German one.
+ * Mapped by wire string via {@link #fromWire}, like every other dictionary enum, so each wire value
+ * is written exactly once.
  */
 public enum Market {
 
@@ -14,6 +19,9 @@ public enum Market {
 
     /** The German storefront, {@code de}. */
     GERMANY("de");
+
+    private static final Map<String, Market> BY_WIRE = Stream.of(values())
+            .collect(Collectors.toUnmodifiableMap(Market::wireValue, Function.identity()));
 
     private final String wireValue;
 
@@ -29,15 +37,19 @@ public enum Market {
     /**
      * Resolve a wire string to a market.
      *
-     * @throws ErliTransportException if the value is neither documented storefront (enum drift)
+     * <p>Since CORE-12 the codec decodes an unrecognised wire value to {@code null} rather than
+     * throwing, so this method never sees one: the caller maps the {@code null} itself. It therefore
+     * fires only if this domain enum drifts out of sync with the generated one.
+     *
+     * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
      */
     public static Market fromWire(String wireValue) {
-        return switch (wireValue) {
-            case "pl" -> POLAND;
-            case "de" -> GERMANY;
-            default -> throw new ErliTransportException(
+        Market market = BY_WIRE.get(wireValue);
+        if (market == null) {
+            throw new ErliTransportException(
                     "No Market constant maps wire value '" + wireValue
                             + "'; this domain enum is out of sync with the generated model");
-        };
+        }
+        return market;
     }
 }

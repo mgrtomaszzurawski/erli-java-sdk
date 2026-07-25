@@ -14,8 +14,11 @@ import java.util.Optional;
  *       oversized parcels.</li>
  * </ul>
  *
- * <p>Units follow the API: linear dimensions in centimetres, {@code weight} in grams (the sandbox
- * reports {@code 25000} for a 25 kg method). Switch over the two cases to read a bound:
+ * <p><strong>The two forms use different length units</strong>, as the spec defines them:
+ * {@link Box} edges are in <em>millimetres</em> (bounded 1–2000), while {@link Girth}'s
+ * {@code longestSide} and {@code dimensionsSum} are in <em>centimetres</em> (bounded 1–200). Reading
+ * a box edge as centimetres is out by a factor of ten. {@code weight} is in grams in both (the
+ * sandbox reports {@code 25000} for a 25 kg method). Switch over the two cases to read a bound:
  *
  * <pre>{@code
  * String describe(ParcelDimensions bound) {
@@ -37,9 +40,9 @@ public sealed interface ParcelDimensions permits ParcelDimensions.Box, ParcelDim
     /**
      * A bound given as explicit box dimensions.
      *
-     * @param height the height bound in centimetres, when stated
-     * @param width the width bound in centimetres, when stated
-     * @param length the length bound in centimetres, when stated
+     * @param height the height bound in millimetres, when stated
+     * @param width the width bound in millimetres, when stated
+     * @param length the length bound in millimetres, when stated
      * @param weight the weight bound in grams, when stated
      * @param withVolumetricScales whether the bound applies with volumetric scaling, when stated
      */

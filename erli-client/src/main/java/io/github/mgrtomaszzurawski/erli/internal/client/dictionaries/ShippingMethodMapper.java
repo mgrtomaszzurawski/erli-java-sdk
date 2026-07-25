@@ -66,11 +66,11 @@ final class ShippingMethodMapper {
 
     private static boolean requireCashOnDelivery(
             io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod rawMethod) {
-        Boolean cod = rawMethod.getCod();
-        if (cod == null) {
+        Boolean cashOnDelivery = rawMethod.getCod();
+        if (cashOnDelivery == null) {
             throw new IllegalStateException("ShippingMethod is missing the required 'cod' field");
         }
-        return cod;
+        return cashOnDelivery;
     }
 
     /**

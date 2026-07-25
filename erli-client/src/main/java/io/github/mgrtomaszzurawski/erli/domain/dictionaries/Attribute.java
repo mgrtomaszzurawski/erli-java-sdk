@@ -8,7 +8,7 @@ import java.util.Optional;
 
 /**
  * A product attribute defined for a category. For a {@link AttributeType#DICTIONARY} attribute the
- * allowed values come from {@link DictionaryAccess#attributeValues}.
+ * allowed values come from {@link DictionariesAccess#attributeValues}.
  *
  * @param id the attribute identifier
  * @param name the Polish attribute label

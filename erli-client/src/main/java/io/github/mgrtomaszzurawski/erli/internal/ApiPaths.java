@@ -34,10 +34,10 @@ public final class ApiPaths {
     public static final String SHIPPING_PARCEL_BY_ID = "/shipping/parcels/{id}";
 
     // --- APPEND BLOCK: bucket D Dictionaries ------------------------------------------------------
-    /** Placeholder substituted with the price-list name in {@link #DICTIONARIES_DELIVERY_METHODS_BY_PRICE_LIST}. */
-    public static final String PRICE_LIST_PLACEHOLDER = "{priceList}";
-    /** Placeholder substituted with the entry id in the responsible-party paths. */
-    public static final String RESPONSIBLE_ID_PLACEHOLDER = "{id}";
+    /** Name of the {@link #DICTIONARIES_DELIVERY_METHODS_BY_PRICE_LIST} placeholder, for {@link PathTemplate#expand}. */
+    public static final String PRICE_LIST_PARAM = "priceList";
+    /** Name of the responsible-party path placeholder, for {@link PathTemplate#expand}. */
+    public static final String RESPONSIBLE_ID_PARAM = "id";
 
     /** {@code POST}/{@code PATCH /dictionaries/attachment} — create or update one attachment. */
     public static final String DICTIONARIES_ATTACHMENT = "/dictionaries/attachment";
