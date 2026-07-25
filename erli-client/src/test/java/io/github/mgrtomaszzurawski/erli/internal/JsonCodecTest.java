@@ -11,6 +11,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,6 +27,8 @@ class JsonCodecTest {
      * offset ({@code 2026-07-24T13:50:23.961+02:00}) — so a non-{@code Z} offset is what the API really
      * exchanges, in requests as well as responses.
      */
+    private static final String START_AT_PROPERTY = "startAt";
+
     private static final String MODEL_WITH_TIMESTAMPS_JSON = """
             {
               "externalId": "SKU-1",
@@ -73,7 +76,7 @@ class JsonCodecTest {
     // Every OpenAPI `date-time` property becomes an OffsetDateTime in the generated Layer-1 models, and
     // a bare ObjectMapper rejects those outright. ShopResponse — the only payload the shop slice decodes
     // — happens to carry no timestamp, so nothing exercised this until a domain bucket decoded a real
-    // one. The four tests below pin the configuration on both the read and the write side.
+    // one. The tests below pin the configuration on both the read and the write side.
 
     @Test
     void readDecodesGeneratedModelsThatCarryDateTimeProperties() {
@@ -83,11 +86,12 @@ class JsonCodecTest {
     }
 
     @Test
-    void readPreservesTheUtcOffsetTheApiSentInsteadOfRewritingItToUtc() {
+    void readPreservesTheOffsetTheApiSentInsteadOfRewritingItToUtc() {
         Discount discount = codec.read(MODEL_WITH_TIMESTAMPS_JSON, Discount.class);
 
         // The offset is the assertion that matters: normalizing to UTC would keep the same instant but
         // report an offset the server never stated.
+        assertNotNull(discount.getRestoreAt(), "restoreAt did not decode at all");
         assertEquals(ZoneOffset.ofHours(2), discount.getRestoreAt().getOffset());
         assertTrue(discount.getRestoreAt().isEqual(OffsetDateTime.parse("2026-07-27T06:15:00Z")));
     }
@@ -100,9 +104,11 @@ class JsonCodecTest {
         JsonNode written = codec.readTreeLenient(codec.write(discount));
 
         // Asserting on the parsed node, not a substring: the regression guarded here is a date leaving
-        // as a number, which a `contains` check on formatted text would not distinguish reliably.
-        assertTrue(written.get("startAt").isTextual(), written.toString());
-        assertEquals("2026-07-20T08:15:00Z", written.get("startAt").asText());
+        // as a number, which a `contains` check on formatted text would not distinguish reliably. The
+        // presence check first, so a vanished property names itself instead of surfacing as an NPE.
+        assertTrue(written != null && written.has(START_AT_PROPERTY), "written JSON: " + written);
+        assertTrue(written.get(START_AT_PROPERTY).isTextual(), written.toString());
+        assertEquals("2026-07-20T08:15:00Z", written.get(START_AT_PROPERTY).asText());
     }
 
     @Test
@@ -112,6 +118,7 @@ class JsonCodecTest {
 
         JsonNode written = codec.readTreeLenient(codec.write(discount));
 
-        assertEquals("2026-07-27T08:15:00+02:00", written.get("startAt").asText());
+        assertTrue(written != null && written.has(START_AT_PROPERTY), "written JSON: " + written);
+        assertEquals("2026-07-27T08:15:00+02:00", written.get(START_AT_PROPERTY).asText(), written.toString());
     }
 }
