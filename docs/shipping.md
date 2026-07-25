@@ -102,9 +102,13 @@ for (ExternalParcelResult result : client.shipping().registerExternalParcels(dra
 }
 ```
 
-`status` is only accepted for carriers Erli cannot track itself (own transport, self pickup, the pallet
-forwarders); for the tracked ones Erli derives it. Passing a status the endpoint cannot set is rejected
-locally, before the request is made, naming the status.
+`status` is **required**, not optional, for the sixteen carriers Erli cannot track itself — own
+transport, self pickup, and the pallet forwarders (`ambroExpress`, `pekaes`, `tntExpress`, `schenker`,
+`dsv`, `dts`, `geis`, `fedex`, `jasFBG`, `patronService`, `raben`, `rhenus`, `rohligSuus`, `hellmann`).
+For the tracked carriers Erli derives it from the carrier feed, so you leave it unset.
+
+The SDK does not enforce that pairing — omitting a required status is refused server-side. It does
+reject a status the endpoint cannot express at all, locally and before the request, naming it.
 
 ## Parcel status is tolerant on purpose
 
@@ -140,7 +144,8 @@ output still tells you whether a field arrived.
 
 Redaction also covers two things that are not obviously personal: `additionalInformation`, the free-text
 courier note, which routinely restates the address; and the `waybills` / `pickupProtocol` links, which
-retrieve documents containing the buyer's name and address — only the waybill count is disclosed.
+retrieve documents containing the buyer's name and address. `waybills` shows a count and nothing else,
+`pickupProtocol` shows presence only.
 
 Call the accessors to obtain the real values. `ParcelDraft` redacts the same way, so the outbound draft
 does not leak what the inbound record protects.
@@ -180,6 +185,15 @@ to the collection endpoint and, on a delete, act on far more than you meant).
 
 ## Optionality
 
-Fields the API marks required are non-`Optional` and throw with the field name if a response omits
-them. Everything else is `Optional`. `Parcel.id()` is `Optional` because a parcel only has an id once
-Erli has accepted it — one that came back from a read always has one.
+Most fields the API marks required are non-`Optional` and throw with the field name if a response omits
+them. Three deliberate exceptions, so a trimmed-but-valid payload does not cost you the whole read:
+
+- **`ParcelShipment`'s `deliveryMethod`, `sender`, `receiver` and `registeredAt`** are `Optional`
+  despite being spec-required. A parcel that has only just been created genuinely has no
+  `registeredAt` yet.
+- **`status`** degrades to `UNRECOGNIZED` rather than throwing (see above).
+- **`ParcelStatusChange.changed()`** is `Optional` because the spec requires only `status` on a history
+  entry, and carrier-sourced entries do arrive without a timestamp.
+
+`Parcel.id()` is `Optional` for a different reason: a parcel only has an id once Erli has accepted it,
+so one that came back from a read always has one.

@@ -14,7 +14,7 @@ import java.util.Optional;
  * cannot be edited; the API answers those with a validation error.
  *
  * @param vendor         the carrier, restated on every update
- * @param status         the status to set, for vendors Erli cannot track
+ * @param status         the status to set; required for the vendors Erli cannot track itself
  * @param trackingNumber the carrier tracking number, when there is one
  * @param deliveryMethod the vendor's specific service, when it has more than one
  */

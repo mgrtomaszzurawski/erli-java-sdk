@@ -9,7 +9,8 @@ import java.util.Optional;
  * A delivery price list: the set of methods a shop offers and what each costs.
  *
  * <p>A shop can keep several lists and attach different ones to different products; the list named
- * {@code "*"} is the default. Prices are never empty — the API requires at least one entry.
+ * {@code "*"} is the default. The API requires at least one price entry, but this record reflects what
+ * the server sent rather than re-asserting that, so an empty list means a server contract break.
  *
  * @param id                     the list's numeric id
  * @param name                   its unique name; {@code "*"} for the default list
