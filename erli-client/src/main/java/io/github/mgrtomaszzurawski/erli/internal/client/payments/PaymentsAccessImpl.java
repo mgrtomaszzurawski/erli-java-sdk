@@ -14,7 +14,8 @@ import io.github.mgrtomaszzurawski.erli.internal.CursorPagination;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.Page;
 import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
-import io.github.mgrtomaszzurawski.erli.internal.client.finance.QueryString;
+import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
+import io.github.mgrtomaszzurawski.erli.internal.client.finance.PathParameters;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -69,7 +70,7 @@ public final class PaymentsAccessImpl implements PaymentsAccess {
     @Override
     public Optional<Payment> findPayment(long paymentId) {
         try {
-            var rawPayment = runtime.get(operationPath(ApiPaths.PAYMENT_OPERATION_BY_ID, paymentId, PaymentSearchMapper.TYPE_PAYMENT),
+            var rawPayment = runtime.get(operationPath(ApiPaths.PAYMENT_OPERATION_BY_ID, paymentId), typeQuery(PaymentSearchMapper.TYPE_PAYMENT),
                     io.github.mgrtomaszzurawski.erli.rest.model.Payment.class);
             return Optional.of(PaymentMapper.toPayment(rawPayment));
         } catch (ErliNotFoundException absent) {
@@ -80,7 +81,7 @@ public final class PaymentsAccessImpl implements PaymentsAccess {
     @Override
     public Optional<Payout> findPayout(long payoutId) {
         try {
-            var rawPayout = runtime.get(operationPath(ApiPaths.PAYMENT_OPERATION_BY_ID, payoutId, PaymentSearchMapper.TYPE_PAYOUT),
+            var rawPayout = runtime.get(operationPath(ApiPaths.PAYMENT_OPERATION_BY_ID, payoutId), typeQuery(PaymentSearchMapper.TYPE_PAYOUT),
                     io.github.mgrtomaszzurawski.erli.rest.model.Payout.class);
             return Optional.of(PaymentMapper.toPayout(rawPayout));
         } catch (ErliNotFoundException absent) {
@@ -88,13 +89,16 @@ public final class PaymentsAccessImpl implements PaymentsAccess {
         }
     }
 
+    private static String operationPath(String pathTemplate, long operationId) {
+        return PathParameters.fill(pathTemplate, ID_PLACEHOLDER, Long.toString(operationId));
+    }
+
     /**
-     * Fills {@code /payments/operations/{id}} and appends {@code ?type=…}. Unlike the search, this
-     * operation really does take {@code type} as a query parameter.
+     * Unlike the search — where the server reads the discriminator from the body — this operation
+     * really does take {@code type} as a query parameter.
      */
-    private static String operationPath(String pathTemplate, long operationId, String type) {
-        String path = QueryString.pathParameter(pathTemplate, ID_PLACEHOLDER, Long.toString(operationId));
-        return path + new QueryString().add(TYPE_PARAMETER, type).render();
+    private static QueryParameters typeQuery(String type) {
+        return QueryParameters.builder().add(TYPE_PARAMETER, type).build();
     }
 
     private Page<Payment> fetchPaymentsPage(PaymentSearch search, Cursor after) {

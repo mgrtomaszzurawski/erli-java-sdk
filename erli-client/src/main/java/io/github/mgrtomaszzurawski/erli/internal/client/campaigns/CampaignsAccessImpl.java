@@ -4,7 +4,7 @@ import io.github.mgrtomaszzurawski.erli.domain.campaigns.CampaignCostSummary;
 import io.github.mgrtomaszzurawski.erli.domain.campaigns.CampaignsAccess;
 import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
-import io.github.mgrtomaszzurawski.erli.internal.client.finance.QueryString;
+import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopCampaignsCostSummaryResponse;
 
 import java.time.LocalDate;
@@ -36,11 +36,11 @@ public final class CampaignsAccessImpl implements CampaignsAccess {
             throw new IllegalArgumentException(
                     "endDate " + endDate + " must not be before startDate " + startDate);
         }
-        String query = new QueryString()
+        QueryParameters query = QueryParameters.builder()
                 .add(START_DATE_PARAMETER, DATE_FORMAT.format(startDate))
                 .add(END_DATE_PARAMETER, DATE_FORMAT.format(endDate))
-                .render();
-        ShopCampaignsCostSummaryResponse rawResponse = runtime.get(ApiPaths.CAMPAIGNS_SUMMARY + query, ShopCampaignsCostSummaryResponse.class);
+                .build();
+        ShopCampaignsCostSummaryResponse rawResponse = runtime.get(ApiPaths.CAMPAIGNS_SUMMARY, query, ShopCampaignsCostSummaryResponse.class);
         return CampaignMapper.toDomain(rawResponse);
     }
 }
