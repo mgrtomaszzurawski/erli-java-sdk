@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
+
 /**
  * Request path constants, relative to the configured base URL (e.g. {@code /svc/shop-api}).
  *

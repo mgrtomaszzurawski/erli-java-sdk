@@ -1,6 +1,5 @@
-package io.github.mgrtomaszzurawski.erli.domain.inbox;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
-import io.github.mgrtomaszzurawski.erli.core.model.ReturnReason;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -30,5 +29,18 @@ public record OrderReturn(
         Objects.requireNonNull(comment, "comment");
         Objects.requireNonNull(created, "created");
         lines = List.copyOf(lines);
+    }
+
+    /**
+     * A log-safe rendering. The generated {@code toString} would print {@link #comment()} — buyer-authored
+     * free text, exactly where a buyer writes a phone number — so it is omitted here by name; read the
+     * accessor when you need it. {@link #bankAccount()} is omitted for the same reason.
+     */
+    @Override
+    public String toString() {
+        return "OrderReturn[reason=" + reason
+                + ", lines=" + lines.size()
+                + ", created=" + created
+                + "]";
     }
 }

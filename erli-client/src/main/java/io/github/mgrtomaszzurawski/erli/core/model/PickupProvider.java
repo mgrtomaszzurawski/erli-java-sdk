@@ -1,4 +1,4 @@
-package io.github.mgrtomaszzurawski.erli.domain.inbox;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 /** Operator of a pickup point. Mirrors the API enum. */
 public enum PickupProvider {

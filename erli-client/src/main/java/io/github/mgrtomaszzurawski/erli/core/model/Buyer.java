@@ -1,15 +1,15 @@
-package io.github.mgrtomaszzurawski.erli.domain.inbox;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The person who placed the order, as far as an order event reveals them.
+ * The person who placed the order.
  *
  * <p><strong>Buyer personal data.</strong> {@link #toString()} redacts the e-mail address and defers
  * to the addresses' own redacting {@code toString()}.
  *
- * @param email          the buyer's e-mail address
+ * @param email           the buyer's e-mail address
  * @param deliveryAddress where the order goes
  * @param invoiceAddress  where the invoice goes, when it differs from the delivery address
  */

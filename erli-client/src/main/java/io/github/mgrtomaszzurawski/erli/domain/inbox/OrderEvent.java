@@ -1,9 +1,14 @@
 package io.github.mgrtomaszzurawski.erli.domain.inbox;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Buyer;
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
+import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryTracking;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
+import io.github.mgrtomaszzurawski.erli.core.model.OrderReturn;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderStatus;
+import io.github.mgrtomaszzurawski.erli.core.model.Rebate;
 import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
 import java.time.OffsetDateTime;
 import java.util.Currency;

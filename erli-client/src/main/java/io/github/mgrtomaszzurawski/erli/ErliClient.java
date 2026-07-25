@@ -30,7 +30,6 @@ import io.github.mgrtomaszzurawski.erli.internal.client.payments.PaymentsAccessI
 import io.github.mgrtomaszzurawski.erli.internal.client.products.ProductAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shipping.ShippingAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shop.ShopAccessImpl;
-
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Objects;

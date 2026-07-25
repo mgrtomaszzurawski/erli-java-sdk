@@ -13,7 +13,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.CreatePriceListSchemaPricesIn
 import io.github.mgrtomaszzurawski.erli.rest.model.CreatePriceListSchemaPricesInnerDeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.rest.model.CreatePriceListSchemaPricesInnerDeliveryMethodDeliveryTime;
 import io.github.mgrtomaszzurawski.erli.rest.model.UpdatePriceListSchema;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;

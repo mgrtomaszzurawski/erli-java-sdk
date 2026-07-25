@@ -1,7 +1,5 @@
-package io.github.mgrtomaszzurawski.erli.domain.inbox;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
-import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
-import io.github.mgrtomaszzurawski.erli.core.model.TrackingStatus;
 import java.util.Objects;
 import java.util.Optional;
 
