@@ -68,6 +68,16 @@ Per-domain guides are added as each domain ships:
 | [`docs/hooks.md`](docs/hooks.md) | `client.hooks()` | registering webhook subscriptions and firing them on demand |
 
 ```java
+// Incremental order sync: a lazy stream that fetches pages only as they are consumed.
+try (ErliClient client = ErliClient.fromEnvironment()) {
+    client.orders()
+            .search(OrderSearchRequest.builder()
+                    .filter(OrderFilter.updatedAfter(lastSync))
+                    .build())
+            .limit(100)
+            .forEach(order -> System.out.println(order.id() + " " + order.sellerStatus()));
+}
+
 // Drain the event inbox, then acknowledge the batch.
 try (ErliClient client = ErliClient.fromEnvironment()) {
     List<Message> batch = client.inbox().unread();

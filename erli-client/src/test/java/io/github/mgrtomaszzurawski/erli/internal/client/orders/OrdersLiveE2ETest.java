@@ -15,7 +15,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -41,6 +42,9 @@ class OrdersLiveE2ETest {
     private static final int RATE_LIMIT_ATTEMPTS = 4;
     private static final Duration RATE_LIMIT_BACKOFF = Duration.ofSeconds(2);
 
+    /** Generous enough for the retry budget above, short enough that a cursor loop fails rather than hangs. */
+    private static final Duration ROUND_TRIP_TIMEOUT = Duration.ofSeconds(60);
+
     /**
      * The sandbox rate-limits repeated searches, and {@code _search} is a read Erli exposes as a
      * {@code POST} — so the default policy will not retry it and a 429 aborts the call. Enabling
@@ -60,22 +64,23 @@ class OrdersLiveE2ETest {
     }
 
     /**
-     * The round-trip itself: the request is accepted, the bare-array body decodes, and the cursor walk
-     * terminates rather than looping. This holds on an empty shop, so it is a real assertion today.
+     * The round-trip itself, and the only thing that can be asserted against an empty shop: the request
+     * is accepted, the bare-array body decodes, and the cursor walk <em>terminates</em>.
+     *
+     * <p>The stream is drained without a {@code limit} on purpose. A {@code limit} would truncate the
+     * walk in the JDK before the SDK's cursor logic could misbehave, so it would hide the very failure
+     * this test exists to catch; the timeout is what fails a walk that never ends. Both assertions can
+     * therefore genuinely fail — a decode error throws, a cursor loop times out.
      */
     @Test
     void completesASearchRoundTripAgainstTheLiveSandbox() {
-        try (ErliClient client = liveClient()) {
-            List<Order> sample = client.orders()
-                    .search(OrderSearchRequest.builder().pageSize(SAMPLE_SIZE).build())
-                    .limit(SAMPLE_SIZE)
-                    .toList();
-
-            // Not a tautology: an unterminated cursor walk would hang or overrun instead of returning,
-            // and a misread body would have thrown during decoding.
-            assertTrue(sample.size() <= SAMPLE_SIZE,
-                    "the live walk returned more than the page it was asked for");
-        }
+        assertTimeoutPreemptively(ROUND_TRIP_TIMEOUT, () -> {
+            try (ErliClient client = liveClient()) {
+                assertDoesNotThrow(() -> client.orders()
+                        .search(OrderSearchRequest.builder().pageSize(SAMPLE_SIZE).build())
+                        .toList());
+            }
+        });
     }
 
     /**

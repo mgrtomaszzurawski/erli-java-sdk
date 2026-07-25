@@ -42,6 +42,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MessageMapperTest {
 
     private static final String ORDER_FIXTURE = "/fixtures/inbox/order-created-message.json";
+    private static final String TRACKING_URL = "https://inpost.pl/sledzenie-przesylek?number=628012345678";
     private static final String SYNC_FIXTURE = "/fixtures/inbox/products-need-sync-message.json";
     private static final String OBSERVED_SYNC_FIXTURE =
             "/fixtures/inbox/observed-products-need-sync-message.json";
@@ -193,6 +195,54 @@ class MessageMapperTest {
         assertEquals(DeliveryVendor.INPOST, tracking.vendor().orElseThrow());
         assertEquals("628012345678", tracking.trackingNumber().orElseThrow());
         assertTrue(tracking.trackingUrl().isEmpty());
+    }
+
+    /**
+     * The other declared shape of {@code deliveryTracking}: a bare tracking URL, with no carrier or
+     * consignment number.
+     *
+     * <p>Added when the Orders bucket's Layer-1 composite merge (CORE-3) replaced this mapper's
+     * two-branch discrimination with a single bind. Only the carrier shape was covered before, so the
+     * URL shape was the branch the rewrite could have broken silently — the whole point of the merge
+     * being that both shapes now arrive through one object.
+     */
+    @Test
+    void mapsTheUrlBranchOfDeliveryTracking() {
+        String urlShaped = withTrackingBlock(
+                "\"status\": \"sent\", \"trackingUrl\": \"" + TRACKING_URL + "\"");
+
+        DeliveryTracking tracking = MessageMapper
+                .toDomain(codec.readTreeLenient(urlShaped), codec)
+                .orderEvent().orElseThrow()
+                .deliveryTracking().orElseThrow();
+
+        assertEquals(TrackingStatus.SENT, tracking.status());
+        assertEquals(TRACKING_URL, tracking.trackingUrl().orElseThrow());
+        assertTrue(tracking.vendor().isEmpty());
+        assertTrue(tracking.trackingNumber().isEmpty());
+    }
+
+    /**
+     * {@code status} is the one property both tracking shapes require, so it is what the single bind
+     * has to keep validating now that the branch classes are gone.
+     */
+    @Test
+    void rejectsDeliveryTrackingWithoutAStatus() {
+        String withoutStatus = withTrackingBlock("\"trackingUrl\": \"" + TRACKING_URL + "\"");
+
+        assertThrows(IllegalStateException.class,
+                () -> MessageMapper.toDomain(codec.readTreeLenient(withoutStatus), codec));
+    }
+
+    /**
+     * Swap the fixture's whole {@code deliveryTracking} object for {@code properties}. Replacing the
+     * block rather than individual lines keeps the JSON valid whichever way the fixture is punctuated.
+     */
+    private static String withTrackingBlock(String properties) {
+        String replaced = readFixture(ORDER_FIXTURE)
+                .replaceAll("(?s)\"deliveryTracking\"\\s*:\\s*\\{.*?}", "\"deliveryTracking\": {" + properties + "}");
+        assertNotEquals(readFixture(ORDER_FIXTURE), replaced, "fixture no longer has a deliveryTracking block");
+        return replaced;
     }
 
     @Test
