@@ -4,6 +4,7 @@ import io.github.mgrtomaszzurawski.erli.core.model.Money;
 
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.Objects;
 
 /**
  * Conversion between the Erli money wire format and {@link Money}. Every amount in the Finance
@@ -41,6 +42,7 @@ public final class MinorUnits {
      *                                  of a grosz that would be silently lost
      */
     public static int toGrosze(Money money, String fieldName) {
+        Objects.requireNonNull(money, fieldName);
         if (!PLN.equals(money.currency())) {
             throw new IllegalArgumentException(
                     fieldName + " must be in " + PLN.getCurrencyCode()

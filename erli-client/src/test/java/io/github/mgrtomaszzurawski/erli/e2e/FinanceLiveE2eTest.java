@@ -19,16 +19,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Live proof for the Finance bucket against the real Erli sandbox — the Definition-of-Done e2e
  * requirement (green WireMock alone is not merge-ready, see {@code TESTING.md}).
  *
- * <p>Skipped automatically unless {@code ERLI_API_KEY} and {@code ERLI_BASE_URL} are exported; source
- * them from {@code /workspace/shared/secrets/erli-sandbox.env}. The key is never printed.
+ * <p>Excluded from the default {@code test} task by its tag; run with {@code ./gradlew :erli-client:e2eTest}
+ * and both {@code ERLI_API_KEY} and {@code ERLI_BASE_URL} exported. Skipped automatically when they
+ * are absent. The key is read from the environment and never printed.
  */
 @Tag("e2e")
 @EnabledIfEnvironmentVariable(named = "ERLI_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "ERLI_BASE_URL", matches = ".+")
 class FinanceLiveE2eTest {
 
-    /** "Elementy dekarskie" — a leaf category on the sandbox; non-leaf ids are rejected by the API. */
+    /** "Elementy dekarskie" (roofing components) — a leaf category; non-leaf ids are rejected. */
     private static final String LEAF_CATEGORY_ID = "4";
+    private static final String UNIT_PRICE_PLN = "100.00";
 
     @Test
     void estimatesACommissionLive() {
@@ -36,13 +38,17 @@ class FinanceLiveE2eTest {
             CommissionEstimate estimate = client.commissions().estimate(
                     CommissionEstimateRequest.builder()
                             .categoryId(CategoryId.of(LEAF_CATEGORY_ID))
-                            .unitPrice(Money.ofPln("100.00"))
+                            .unitPrice(Money.ofPln(UNIT_PRICE_PLN))
                             .build());
 
             assertNotNull(estimate.commission());
             assertEquals("PLN", estimate.commission().currency().getCurrencyCode());
-            assertTrue(estimate.commission().amount().compareTo(BigDecimal.ZERO) > 0,
-                    "a 100 PLN listing should carry a positive commission");
+            // The spec allows a zero commission, so only non-negativity is a contract; the upper
+            // bound catches a grosze/złoty unit mix-up, which would inflate the value 100-fold.
+            assertTrue(estimate.commission().amount().compareTo(BigDecimal.ZERO) >= 0,
+                    "commission must never be negative, got " + estimate.commission().amount());
+            assertTrue(estimate.commission().amount().compareTo(new BigDecimal(UNIT_PRICE_PLN)) < 0,
+                    "commission must be a fraction of the unit price, got " + estimate.commission().amount());
         }
     }
 }

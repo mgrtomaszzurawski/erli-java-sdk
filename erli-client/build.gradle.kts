@@ -20,6 +20,10 @@ dependencies {
     // Layer 1 raw models + Jackson stay internal to this module (never re-exported to consumers).
     implementation(project(":erli-rest-models"))
     implementation(libs.jackson.databind)
+    // Datatype modules JsonCodec registers directly. They also arrive transitively via Layer 1's
+    // `api(...)`, but this module imports them itself, so it declares them itself.
+    implementation(libs.jackson.datatype.jsr310)
+    implementation(libs.jackson.databind.nullable)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)

@@ -15,6 +15,10 @@ import java.util.Objects;
  */
 final class CommissionMapper {
 
+    private static final String FIELD_UNIT_PRICE = "unitPrice";
+    private static final String FIELD_COMMISSION = "commission";
+    private static final String RAW_RESPONSE_NAME = "raw EstimateCommissionResponse";
+
     private CommissionMapper() {
     }
 
@@ -24,16 +28,22 @@ final class CommissionMapper {
         return new EstimateCommissionRequest()
                 .categoryId(toCategoryNumber(request.categoryId()))
                 .quantity(request.quantity())
-                .unitPrice(MinorUnits.toGrosze(request.unitPrice(), "unitPrice"));
+                .unitPrice(MinorUnits.toGrosze(request.unitPrice(), FIELD_UNIT_PRICE));
     }
 
     /** Wire response to the domain record. */
     static CommissionEstimate toDomain(EstimateCommissionResponse rawResponse) {
-        Objects.requireNonNull(rawResponse, "raw EstimateCommissionResponse");
+        Objects.requireNonNull(rawResponse, RAW_RESPONSE_NAME);
         Integer commission = rawResponse.getCommission();
         if (commission == null) {
             throw new IllegalStateException(
-                    "EstimateCommissionResponse is missing the required 'commission' field");
+                    "EstimateCommissionResponse is missing the required '" + FIELD_COMMISSION + "' field");
+        }
+        if (commission < 0) {
+            // The spec declares minimum 0; a negative commission would silently invert a margin
+            // calculation, so fail loudly rather than hand it to the caller.
+            throw new IllegalStateException(
+                    "EstimateCommissionResponse returned a negative '" + FIELD_COMMISSION + "': " + commission);
         }
         return new CommissionEstimate(MinorUnits.fromGrosze(commission));
     }
