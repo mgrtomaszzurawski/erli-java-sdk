@@ -34,6 +34,7 @@ module io.github.mgrtomaszzurawski.erli {
     exports io.github.mgrtomaszzurawski.erli.domain.orders;
     // --- APPEND BLOCK: bucket C Shipping & Delivery ---------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.shipping;
+    exports io.github.mgrtomaszzurawski.erli.domain.delivery;
     // --- APPEND BLOCK: bucket D Dictionaries ----------------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.dictionaries;
     // --- APPEND BLOCK: bucket E Finance ---------------------------------------------------------

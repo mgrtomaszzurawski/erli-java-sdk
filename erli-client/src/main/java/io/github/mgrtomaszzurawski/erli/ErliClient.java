@@ -10,6 +10,7 @@ import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionsAccess;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentsAccess;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.HooksAccess;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InboxAccess;
+import io.github.mgrtomaszzurawski.erli.domain.delivery.DeliveryAccess;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shop.ShopAccess;
@@ -23,6 +24,7 @@ import io.github.mgrtomaszzurawski.erli.internal.client.commissions.CommissionsA
 import io.github.mgrtomaszzurawski.erli.internal.client.payments.PaymentsAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.hooks.HooksAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.inbox.InboxAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.delivery.DeliveryAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.orders.OrderAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shipping.ShippingAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shop.ShopAccessImpl;
@@ -55,6 +57,7 @@ public final class ErliClient implements AutoCloseable {
     private final ShopAccess shop;
     private final OrderAccess orders;
     private final ShippingAccess shipping;
+    private final DeliveryAccess delivery;
     private final DictionariesAccess dictionaries;
     private final CommissionsAccess commissions;
     private final BillingAccess billing;
@@ -79,7 +82,8 @@ public final class ErliClient implements AutoCloseable {
                 new ErrorMapper(codec));
         this.shop = new ShopAccessImpl(runtime);
         this.orders = new OrderAccessImpl(runtime);
-        this.shipping = new ShippingAccessImpl(runtime);
+        this.shipping = new ShippingAccessImpl(runtime, codec);
+        this.delivery = new DeliveryAccessImpl(runtime);
         this.dictionaries = new DictionariesAccessImpl(runtime);
         this.commissions = new CommissionsAccessImpl(runtime);
         this.billing = new BillingAccessImpl(runtime);
@@ -120,6 +124,12 @@ public final class ErliClient implements AutoCloseable {
     public ShippingAccess shipping() {
         ensureOpen();
         return shipping;
+    }
+
+    /** Access to delivery price lists ({@code /delivery/*}). */
+    public DeliveryAccess delivery() {
+        ensureOpen();
+        return delivery;
     }
 
     // --- APPEND BLOCK: bucket D Dictionaries accessor --------------------------------------------
