@@ -18,6 +18,17 @@ public final class ApiPaths {
     public static final String ME = "/me";
 
     // --- APPEND BLOCK: bucket A Products ----------------------------------------------------------
+    /** {@code PATCH /products/batch-update} — update many products in one call. */
+    public static final String PRODUCTS_BATCH_UPDATE = "/products/batch-update";
+
+    /** {@code POST /products/_search} — search the seller's catalog (body cursor). */
+    public static final String PRODUCTS_SEARCH = "/products/_search";
+
+    /** {@code GET|POST|PATCH /products/{externalId}} — read, create or update one product. */
+    public static final String PRODUCT_BY_EXTERNAL_ID = "/products/{externalId}";
+
+    /** {@code GET|POST /products/{externalId}/discount} — read or start a timed discount. */
+    public static final String PRODUCT_DISCOUNT = "/products/{externalId}/discount";
 
     // --- APPEND BLOCK: bucket B Orders ------------------------------------------------------------
 

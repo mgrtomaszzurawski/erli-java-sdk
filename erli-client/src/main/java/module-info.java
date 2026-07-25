@@ -27,6 +27,7 @@ module io.github.mgrtomaszzurawski.erli {
     // Domain facades — Core M1 ships the shop slice; buckets append theirs below.
     exports io.github.mgrtomaszzurawski.erli.domain.shop;
     // --- APPEND BLOCK: bucket A Products ---------------------------------------------------------
+    exports io.github.mgrtomaszzurawski.erli.domain.products;
     // --- APPEND BLOCK: bucket B Orders ----------------------------------------------------------
     // --- APPEND BLOCK: bucket C Shipping & Delivery ---------------------------------------------
     // --- APPEND BLOCK: bucket D Dictionaries ----------------------------------------------------
