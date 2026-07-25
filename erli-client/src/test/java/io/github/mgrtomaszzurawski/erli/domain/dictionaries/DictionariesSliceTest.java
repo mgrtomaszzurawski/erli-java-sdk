@@ -3,6 +3,7 @@ package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 
 /**
  * A delivery method from the Erli dictionary — one of the methods that may appear in

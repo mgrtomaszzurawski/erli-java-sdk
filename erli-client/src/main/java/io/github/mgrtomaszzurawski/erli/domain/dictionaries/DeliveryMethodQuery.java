@@ -1,6 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 
 /**
  * Optional filters for {@link DictionariesAccess#deliveryMethods(DeliveryMethodQuery)}. Every field is
