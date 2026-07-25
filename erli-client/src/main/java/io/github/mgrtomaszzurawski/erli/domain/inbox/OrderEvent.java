@@ -24,9 +24,13 @@ import java.util.Optional;
  * <p>This is a <em>snapshot inside an event</em>, not a live order — read {@code client.orders()} for
  * the current state of the order identified by {@link #id()}.
  *
- * <p><strong>Buyer personal data.</strong> {@link #buyer()} carries the buyer's e-mail and address;
- * those records redact themselves in {@code toString()}, and this record inherits that behaviour by
- * delegating to them.
+ * <p><strong>Buyer personal data.</strong> Like {@code domain.orders.Order}, this record's
+ * {@code toString()} is a log-safe rendering that omits by name every component carrying personal
+ * data — {@link #buyer()}, {@link #delivery()} (its pickup place carries a street address), the
+ * buyer-authored free text {@link #comment()} and {@link OrderReturn#comment()}, and the tracking and
+ * returns detail. A generated {@code toString} would recurse into all of them, and {@code comment} in
+ * particular is a bare {@code Optional<String>} with nothing to redact itself. Read the accessors when
+ * you need those values; they are never redacted there.
  *
  * @param id                    the marketplace's order id
  * @param externalOrderId       the order's id in the shop's own system, once the shop has assigned one
@@ -91,5 +95,23 @@ public record OrderEvent(
         Objects.requireNonNull(cursor, "cursor");
         lines = List.copyOf(lines);
         returns = List.copyOf(returns);
+    }
+
+    /**
+     * A log-safe rendering: order identity, state, totals and counts only. The components that carry
+     * personal data (buyer, delivery, comment, tracking, returns) are omitted by name — see the class
+     * javadoc. Reach for the accessors when you need those values.
+     */
+    @Override
+    public String toString() {
+        return "OrderEvent[id=" + id
+                + ", status=" + status
+                + ", sellerStatus=" + sellerStatus
+                + ", totalPrice=" + totalPrice.amount() + " " + totalPrice.currency()
+                + ", lines=" + lines.size()
+                + ", returns=" + returns.size()
+                + ", created=" + created
+                + ", updated=" + updated
+                + "]";
     }
 }
