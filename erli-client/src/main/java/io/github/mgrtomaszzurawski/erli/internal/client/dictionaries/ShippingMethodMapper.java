@@ -21,7 +21,9 @@ import java.util.Optional;
  */
 final class ShippingMethodMapper {
 
+    /** The size bound, read from the raw tree because its {@code anyOf} cannot survive decoding. */
     private static final String MAX_DIMENSIONS_FIELD = "maxDimensions";
+    /** Required on the girth branch and forbidden on the box branch, so it discriminates the two. */
     private static final String LONGEST_SIDE_FIELD = "longestSide";
 
     private ShippingMethodMapper() {
@@ -35,7 +37,7 @@ final class ShippingMethodMapper {
      * {@code anyOf} cannot be discriminated after decoding (see {@link #toBound}).
      */
     static ShippingMethod toDomain(JsonNode rawNode, JsonCodec codec) {
-        Objects.requireNonNull(rawNode, "raw shipping method");
+        Objects.requireNonNull(rawNode, "raw ShippingMethod");
         Objects.requireNonNull(codec, "codec");
         io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod rawMethod =
                 codec.convert(rawNode, io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod.class);
@@ -99,6 +101,7 @@ final class ShippingMethodMapper {
         if (rawBound == null || !rawBound.isObject()) {
             return Optional.empty();
         }
+        // hasNonNull, not has: an explicit "longestSide": null is not a girth bound.
         if (rawBound.hasNonNull(LONGEST_SIDE_FIELD)) {
             ShippingMethodMaxDimensionsAnyOf1 girth =
                     codec.convert(rawBound, ShippingMethodMaxDimensionsAnyOf1.class);
@@ -109,6 +112,13 @@ final class ShippingMethodMapper {
                     Optional.ofNullable(girth.getWithVolumetricScales())));
         }
         ShippingMethodMaxDimensionsAnyOf box = codec.convert(rawBound, ShippingMethodMaxDimensionsAnyOf.class);
+        if (box.getHeight() == null && box.getWidth() == null && box.getLength() == null) {
+            // Neither documented shape: the box branch accepts any object, so a payload with no linear
+            // dimension is a shape this SDK does not know, not a box. Report it absent rather than as a
+            // box whose every dimension is unknown — callers check an absent bound, a hollow one they
+            // silently do not.
+            return Optional.empty();
+        }
         return Optional.of(new ParcelDimensions.Box(
                 Optional.ofNullable(box.getHeight()),
                 Optional.ofNullable(box.getWidth()),

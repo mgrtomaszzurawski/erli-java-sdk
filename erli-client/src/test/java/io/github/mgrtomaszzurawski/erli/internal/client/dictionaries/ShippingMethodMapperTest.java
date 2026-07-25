@@ -82,8 +82,6 @@ class ShippingMethodMapperTest {
         assertTrue(girth.withVolumetricScales().orElseThrow());
     }
 
-
-
     @Test
     void mapsTheMinimumAndPickupPointBoundsAndOmitsAbsentOnes() {
         ShippingMethod method = mapAll(OBSERVED_SHIPPING_METHODS_JSON).get(2);
@@ -115,10 +113,13 @@ class ShippingMethodMapperTest {
     }
 
     @Test
-    void reportsAnAbsentBoundAsEmpty() {
-        ShippingMethod method = mapAll(OBSERVED_SHIPPING_METHODS_JSON).get(2);
+    void reportsABoundInNeitherDocumentedShapeAsAbsent() {
+        // The box branch accepts any object, so an empty or third-shape bound would otherwise arrive as
+        // a box with every dimension unknown — which a caller would not notice.
+        String json = """
+                [{"id":"erliPaczkomat","name":"x","cod":false,"maxDimensions":{}}]""";
 
-        assertTrue(method.maxDimensions().isEmpty());
+        assertTrue(mapAll(json).get(0).maxDimensions().isEmpty());
     }
 
     @Test
