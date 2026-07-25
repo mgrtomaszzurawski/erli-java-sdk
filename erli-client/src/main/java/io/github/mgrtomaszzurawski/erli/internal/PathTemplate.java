@@ -18,6 +18,7 @@ public final class PathTemplate {
     private static final String ENCODED_SPACE = "%20";
     private static final String PLUS = "+";
     private static final char OPEN_PLACEHOLDER = '{';
+    private static final char CLOSE_PLACEHOLDER = '}';
 
     private PathTemplate() {
     }
@@ -32,7 +33,7 @@ public final class PathTemplate {
     public static String expand(String template, Map<String, String> values) {
         String result = template;
         for (Map.Entry<String, String> entry : values.entrySet()) {
-            String placeholder = OPEN_PLACEHOLDER + entry.getKey() + "}";
+            String placeholder = OPEN_PLACEHOLDER + entry.getKey() + CLOSE_PLACEHOLDER;
             if (!result.contains(placeholder)) {
                 throw new IllegalArgumentException("Template has no placeholder " + placeholder + ": " + template);
             }
