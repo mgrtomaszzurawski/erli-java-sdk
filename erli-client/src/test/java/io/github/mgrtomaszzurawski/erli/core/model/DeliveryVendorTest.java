@@ -1,4 +1,4 @@
-package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import org.junit.jupiter.api.Test;

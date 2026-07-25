@@ -42,7 +42,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -245,9 +244,10 @@ class InboxAccessImplTest {
         assertEquals("lmtps6H4szmP5", thrown.details().traceId());
         assertEquals("lmtps6H4szmP5", thrown.details().spanId());
         assertTrue(thrown.details().polishMessage().contains("walidacj"), thrown.details().polishMessage());
-        // The object-shaped payload degrades to null rather than failing the decode; the raw body keeps
-        // the per-field validation details until core extracts them (BACKLOG CORE-4).
-        assertNull(thrown.details().payload());
+        // CORE-8: the object-shaped payload is now preserved as its JSON string (it used to degrade to
+        // null), so the per-field validation detail is reachable without parsing the whole raw body.
+        assertTrue(thrown.details().payload().contains("does not contain 1 required value"),
+                thrown.details().payload());
         assertTrue(thrown.details().rawBody().contains("does not contain 1 required value"));
     }
 

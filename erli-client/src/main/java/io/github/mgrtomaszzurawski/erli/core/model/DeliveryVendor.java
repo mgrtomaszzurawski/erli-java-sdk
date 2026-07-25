@@ -1,4 +1,4 @@
-package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 
@@ -8,9 +8,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A carrier (vendor) a delivery method belongs to. Values mirror the Erli dictionary; the SDK maps by
- * the wire string (via {@link #fromWire}), not by enum name, so the domain constant names stay
- * decoupled from the generated Layer-1 ones.
+ * A carrier (vendor) — the shared Erli delivery/tracking carrier enumeration. Owned by {@code core}
+ * because several buckets reference it (Dictionaries' delivery methods, Comms' delivery-tracking,
+ * Shipping): a single core type keeps the fan-out's "no bucket → bucket" rule intact instead of one
+ * bucket importing another's package (CORE-7). Values mirror the Erli dictionary; the SDK maps by the
+ * wire string (via {@link #fromWire}), not by enum name, so the constant names stay decoupled from the
+ * generated Layer-1 ones.
  */
 public enum DeliveryVendor {
 
@@ -58,14 +61,14 @@ public enum DeliveryVendor {
     /**
      * Resolve a wire string to a vendor.
      *
-     * <p>On the live path this is only ever called with the wire value of an already-decoded Layer-1
-     * {@code VendorEnum}, so it always resolves — a wire value the API added but the vendored spec
-     * lacks fails earlier, at JSON decode (the generated enum's {@code @JsonCreator} throws, surfaced
-     * as an {@link ErliTransportException}; fail-loud is intentional, see
-     * {@code KNOWN-SERVER-BEHAVIORS.md}). This guard therefore fires only if this domain enum drifts
-     * out of sync with the generated one.
+     * <p>Since CORE-12 the codec decodes an unknown wire value to a {@code null} Layer-1 vendor enum
+     * (it no longer throws at decode), and mappers reject that null before calling this method — so
+     * {@code fromWire} only ever sees the value of a known generated enum. This guard therefore fires
+     * only if this domain enum drifts out of sync with the generated one. (A future move to tolerant
+     * handling would add an {@code UNRECOGNIZED} constant and map null to it in the mapper; see
+     * {@code KNOWN-SERVER-BEHAVIORS.md} "Enum handling".)
      *
-     * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
+     * @throws ErliTransportException if no constant maps the given wire value (enum drift)
      */
     public static DeliveryVendor fromWire(String wireValue) {
         DeliveryVendor vendor = BY_WIRE.get(wireValue);

@@ -14,7 +14,7 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.BillingEntryType;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Category;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethodQuery;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DictionariesAccess;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewAttachment;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;

@@ -219,6 +219,20 @@ class HttpRuntimeTest {
     }
 
     @Test
+    void deleteWithBodySendsDeleteAndJsonBody() {
+        String path = "/dictionaries/attachments";
+        server.stubFor(delete(urlEqualTo(path)).willReturn(okJson(SHOP_JSON)));
+
+        ShopResponse result = runtimeWith(fastRetry())
+                .delete(path, List.of(1, 2, 3), QueryParameters.empty(), ShopResponse.class);
+
+        assertEquals("test-shop", result.getName());
+        server.verify(deleteRequestedFor(urlEqualTo(path))
+                .withHeader("Content-Type", equalTo("application/json"))
+                .withRequestBody(equalToJson("[1,2,3]")));
+    }
+
+    @Test
     void postListDecodesBareJsonArray() {
         String path = "/products/_search";
         server.stubFor(post(urlEqualTo(path)).willReturn(okJson("[" + SHOP_JSON + "]")));
