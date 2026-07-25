@@ -13,6 +13,9 @@ module io.github.mgrtomaszzurawski.erli {
     requires java.net.http;
     // Internal-only dependencies (never re-exported): transport JSON and the generated Layer-1 models.
     requires com.fasterxml.jackson.databind;
+    // Datatype modules the generated models need: date-time properties and JsonNullable fields.
+    requires com.fasterxml.jackson.datatype.jsr310;
+    requires org.openapitools.jackson.nullable;
     requires io.github.mgrtomaszzurawski.erli.rest.models;
 
     // Entry point.
