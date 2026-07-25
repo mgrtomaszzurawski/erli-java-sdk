@@ -63,11 +63,23 @@ Per-domain guides are added as each domain ships:
 
 | Guide | Accessor | What it covers |
 |---|---|---|
-| [`docs/products.md`](docs/products.md) | `client.products()` | publishing and updating offers, the three-state patch, catalog search, timed promotions |
-| [`docs/inbox.md`](docs/inbox.md) | `client.inbox()` | polling the event inbox, order/product-sync events, acknowledging messages |
+| [`docs/finance.md`](docs/finance.md) | `client.payments()`, `client.billing()`, `client.commissions()`, `client.campaigns()` | payments and payouts, the settlement ledger, commission estimates, campaign spend |
 | [`docs/hooks.md`](docs/hooks.md) | `client.hooks()` | registering webhook subscriptions and firing them on demand |
+| [`docs/inbox.md`](docs/inbox.md) | `client.inbox()` | polling the event inbox, order/product-sync events, acknowledging messages |
+| [`docs/orders.md`](docs/orders.md) | `client.orders()` | searching orders with typed filters, cursor-resumed sync, seller-status updates, buyer-PII handling |
+| [`docs/products.md`](docs/products.md) | `client.products()` | publishing and updating offers, the three-state patch, catalog search, timed promotions |
 
 ```java
+// Incremental order sync: a lazy stream that fetches pages only as they are consumed.
+try (ErliClient client = ErliClient.fromEnvironment()) {
+    client.orders()
+            .search(OrderSearchRequest.builder()
+                    .filter(OrderFilter.updatedAfter(lastSync))
+                    .build())
+            .limit(100)
+            .forEach(order -> System.out.println(order.id() + " " + order.sellerStatus()));
+}
+
 // Drain the event inbox, then acknowledge the batch.
 try (ErliClient client = ErliClient.fromEnvironment()) {
     List<Message> batch = client.inbox().unread();

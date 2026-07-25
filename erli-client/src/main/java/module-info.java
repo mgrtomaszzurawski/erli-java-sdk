@@ -13,6 +13,7 @@ module io.github.mgrtomaszzurawski.erli {
     requires java.net.http;
     // Internal-only dependencies (never re-exported): transport JSON and the generated Layer-1 models.
     requires com.fasterxml.jackson.databind;
+    // Datatype modules the generated models need: date-time properties and JsonNullable fields.
     requires com.fasterxml.jackson.datatype.jsr310;
     requires org.openapitools.jackson.nullable;
     requires io.github.mgrtomaszzurawski.erli.rest.models;
@@ -31,11 +32,28 @@ module io.github.mgrtomaszzurawski.erli {
     // --- APPEND BLOCK: bucket A Products ---------------------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.products;
     // --- APPEND BLOCK: bucket B Orders ----------------------------------------------------------
+    exports io.github.mgrtomaszzurawski.erli.domain.orders;
     // --- APPEND BLOCK: bucket C Shipping & Delivery ---------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.shipping;
+    exports io.github.mgrtomaszzurawski.erli.domain.delivery;
     // --- APPEND BLOCK: bucket D Dictionaries ----------------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.dictionaries;
+    // The attach/detach response is undeclared by the spec, so bucket D hand-writes a DTO for it and
+    // Jackson binds that reflectively. Without this the two operations decode fine on the classpath
+    // (so every unit test passes) and fail on the module path — the same trap payments hit below.
+    // `opens` grants reflective access only: the package stays unexported and uncompilable against.
+    opens io.github.mgrtomaszzurawski.erli.internal.client.dictionaries to com.fasterxml.jackson.databind;
     // --- APPEND BLOCK: bucket E Finance ---------------------------------------------------------
+    exports io.github.mgrtomaszzurawski.erli.domain.billing;
+    exports io.github.mgrtomaszzurawski.erli.domain.campaigns;
+    exports io.github.mgrtomaszzurawski.erli.domain.commissions;
+    exports io.github.mgrtomaszzurawski.erli.domain.payments;
+    // The payments search body is hand-written (the generated models cannot express the live
+    // contract), so unlike Layer 1 — an automatic, therefore open, module — Jackson cannot reflect
+    // on it unless this package is opened. Without this, every payments search fails at runtime on
+    // the module path with InaccessibleObjectException while passing on the classpath.
+    // `opens` grants reflective access only: the package stays unexported and uncompilable against.
+    opens io.github.mgrtomaszzurawski.erli.internal.client.payments to com.fasterxml.jackson.databind;
     // --- APPEND BLOCK: bucket F Comms & Automation ----------------------------------------------
     exports io.github.mgrtomaszzurawski.erli.domain.hooks;
     exports io.github.mgrtomaszzurawski.erli.domain.inbox;

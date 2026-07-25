@@ -74,12 +74,11 @@ public enum ParcelStatus {
     /**
      * Resolve a wire string to a status.
      *
-     * <p>On the live path this only ever receives the wire value of an already-decoded Layer-1 enum, so
-     * it always resolves. A status Erli added but the vendored spec lacks fails earlier, at JSON decode
-     * — the generated enum's creator throws, surfaced as an {@link ErliTransportException}. That
-     * fail-loud behaviour is inherited from the shared codec rather than chosen here; see
-     * {@code KNOWN-SERVER-BEHAVIORS.md}. This guard therefore fires only if this domain enum drifts out
-     * of sync with the generated one.
+     * <p>On the live path this receives the wire value of an already-decoded Layer-1 enum. Note the
+     * shared codec decodes an unknown enum value as {@code null} rather than throwing, so a status Erli
+     * adds after the vendored spec does not reach here at all: a required field then fails in the
+     * mapper naming the field, and an optional one reads as absent. This guard therefore fires only if
+     * this domain enum drifts out of sync with the generated one.
      *
      * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
      */
