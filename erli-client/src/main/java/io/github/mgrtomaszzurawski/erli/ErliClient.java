@@ -6,6 +6,7 @@ import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DictionariesAccess;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.HooksAccess;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InboxAccess;
+import io.github.mgrtomaszzurawski.erli.domain.delivery.DeliveryAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shop.ShopAccess;
 import io.github.mgrtomaszzurawski.erli.internal.ErrorMapper;
@@ -14,6 +15,7 @@ import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.internal.client.dictionaries.DictionariesAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.hooks.HooksAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.inbox.InboxAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.delivery.DeliveryAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shipping.ShippingAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shop.ShopAccessImpl;
 
@@ -44,6 +46,7 @@ public final class ErliClient implements AutoCloseable {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final ShopAccess shop;
     private final ShippingAccess shipping;
+    private final DeliveryAccess delivery;
     private final DictionariesAccess dictionaries;
     private final InboxAccess inbox;
     private final HooksAccess hooks;
@@ -64,6 +67,7 @@ public final class ErliClient implements AutoCloseable {
                 new ErrorMapper(codec));
         this.shop = new ShopAccessImpl(runtime);
         this.shipping = new ShippingAccessImpl(runtime);
+        this.delivery = new DeliveryAccessImpl(runtime);
         this.dictionaries = new DictionariesAccessImpl(runtime);
         this.inbox = new InboxAccessImpl(runtime, codec);
         this.hooks = new HooksAccessImpl(runtime);
@@ -94,6 +98,12 @@ public final class ErliClient implements AutoCloseable {
     public ShippingAccess shipping() {
         ensureOpen();
         return shipping;
+    }
+
+    /** Access to delivery price lists ({@code /delivery/*}). */
+    public DeliveryAccess delivery() {
+        ensureOpen();
+        return delivery;
     }
 
     // --- APPEND BLOCK: bucket D Dictionaries accessor --------------------------------------------

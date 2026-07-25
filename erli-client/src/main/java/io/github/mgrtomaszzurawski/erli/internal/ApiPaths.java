@@ -24,6 +24,14 @@ public final class ApiPaths {
     // --- APPEND BLOCK: bucket C Shipping & Delivery -----------------------------------------------
     /** {@code GET /shipping/parcels/{id}} — one parcel by id. */
     public static final String SHIPPING_PARCEL_BY_ID = "/shipping/parcels/{id}";
+    /** {@code POST /delivery/priceList} — create a delivery price list. */
+    public static final String DELIVERY_PRICE_LIST = "/delivery/priceList";
+    /** {@code PATCH /delivery/priceList/{id}} — replace a price list's content. */
+    public static final String DELIVERY_PRICE_LIST_BY_ID = "/delivery/priceList/{id}";
+    /** {@code GET /delivery/priceLists} — price lists, id and name only. */
+    public static final String DELIVERY_PRICE_LISTS = "/delivery/priceLists";
+    /** {@code GET /delivery/priceListsDetails} — price lists with their priced entries. */
+    public static final String DELIVERY_PRICE_LISTS_DETAILS = "/delivery/priceListsDetails";
 
     // --- APPEND BLOCK: bucket D Dictionaries ------------------------------------------------------
     /** {@code GET /dictionaries/deliveryMethods} — delivery methods reference list. */
