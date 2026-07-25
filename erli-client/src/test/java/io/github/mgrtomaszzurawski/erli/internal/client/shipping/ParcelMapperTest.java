@@ -87,8 +87,26 @@ class ParcelMapperTest {
         List<ParcelStatusChange> history = parcel.statusHistory();
         assertEquals(2, history.size());
         assertEquals(ParcelStatus.PREPARING, history.get(0).status());
-        assertEquals(OffsetDateTime.parse("2026-07-20T08:15:00Z"), history.get(0).changed());
+        assertEquals(Optional.of(OffsetDateTime.parse("2026-07-20T08:15:00Z")), history.get(0).changed());
         assertEquals(ParcelStatus.SENT, history.get(1).status());
+    }
+
+    @Test
+    void acceptsAHistoryEntryWithoutATimestampBecauseTheSpecOnlyRequiresTheStatus() {
+        Parcel parcel = mapFrom(ParcelFixtures.PARCEL_WITH_UNTIMED_HISTORY_JSON);
+
+        ParcelStatusChange entry = parcel.statusHistory().get(0);
+        assertEquals(ParcelStatus.PREPARING, entry.status());
+        assertTrue(entry.changed().isEmpty());
+    }
+
+    @Test
+    void rejectsANullListElementWithTheFieldNameRatherThanABareNullPointer() {
+        IllegalStateException failure = assertThrows(
+                IllegalStateException.class, () -> mapFrom(ParcelFixtures.PARCEL_WITH_NULL_WAYBILL_JSON));
+
+        assertTrue(failure.getMessage().contains("shipping.waybills"), failure.getMessage());
+        assertTrue(failure.getMessage().contains("index 1"), failure.getMessage());
     }
 
     @Test
@@ -98,7 +116,7 @@ class ParcelMapperTest {
         assertEquals(Optional.of(ShippingMethodId.of(DELIVERY_METHOD)), shipping.deliveryMethod());
         assertEquals(Optional.of(POSTING_POINT_ID), shipping.postingPointId());
         assertEquals(Optional.of("Leave at reception"), shipping.additionalInformation());
-        assertFalse(shipping.nonStandard());
+        assertTrue(shipping.nonStandard());
         assertEquals(Optional.of(OffsetDateTime.parse("2026-07-21T09:29:00Z")), shipping.registeredAt());
         assertEquals(Optional.of(OffsetDateTime.parse("2026-08-21T09:29:00Z")), shipping.waybillExpiration());
         assertEquals(List.of("https://erli.pl/waybill/55123.pdf"), shipping.waybills());
@@ -163,8 +181,11 @@ class ParcelMapperTest {
         assertFalse(rendered.contains("600300400"), rendered);
         assertFalse(rendered.contains("Nowak"), rendered);
         assertFalse(rendered.contains("00-950"), rendered);
+        // Free-text courier instructions routinely restate the address, so they are personal data too.
+        assertFalse(rendered.contains("Leave at reception"), rendered);
         // Presence must stay visible, and non-identifying routing detail stays readable.
         assertTrue(rendered.contains("email=***"), rendered);
+        assertTrue(rendered.contains("additionalInformation=***"), rendered);
         assertTrue(rendered.contains("pointCode=WAW01A"), rendered);
     }
 }

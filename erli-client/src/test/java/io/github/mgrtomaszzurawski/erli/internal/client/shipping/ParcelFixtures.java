@@ -58,7 +58,7 @@ final class ParcelFixtures {
                   "pickupType": "point",
                   "pointCode": "WAW01A"
                 },
-                "nonStandard": false,
+                "nonStandard": true,
                 "registeredAt": "2026-07-21T09:29:00Z",
                 "waybillExpiration": "2026-08-21T09:29:00Z",
                 "waybills": [ "https://erli.pl/waybill/55123.pdf" ],
@@ -70,13 +70,47 @@ final class ParcelFixtures {
             }
             """;
 
-    /** The same parcel reduced to the spec-required fields only — every optional one absent. */
+    /**
+     * The leanest payload the mapper must still handle: the six fields {@code Parcel} itself marks
+     * required, with every optional top-level field absent and the nested {@code shipping} block trimmed
+     * to one property.
+     *
+     * <p>Note this is deliberately <em>thinner</em> than the spec strictly allows — {@code shipping}
+     * declares {@code sender}, {@code receiver} and {@code registeredAt} required too. Mapping them as
+     * optional is the intended leniency: a read must not fail on a parcel the server trimmed (a
+     * just-created parcel genuinely has no {@code registeredAt} yet), and this fixture pins that.
+     */
     static final String MINIMAL_PARCEL_JSON = """
             {
               "type": "internal",
               "dimensions": { "width": 10, "height": 10, "length": 10, "weight": 500 },
               "status": "preparing",
               "shipping": { "typeId": "erliPaczkomat" },
+              "createdAt": "2026-07-20T08:14:00Z",
+              "updatedAt": "2026-07-20T08:14:00Z"
+            }
+            """;
+
+    /** A history entry without {@code changed} — spec-legal, since only {@code status} is required. */
+    static final String PARCEL_WITH_UNTIMED_HISTORY_JSON = """
+            {
+              "type": "internal",
+              "dimensions": { "width": 10, "height": 10, "length": 10, "weight": 500 },
+              "status": "sent",
+              "statusHistory": [ { "status": "preparing" } ],
+              "shipping": { "typeId": "erliPaczkomat" },
+              "createdAt": "2026-07-20T08:14:00Z",
+              "updatedAt": "2026-07-20T08:14:00Z"
+            }
+            """;
+
+    /** A null element inside a list property — must fail with a named field, not a bare NPE. */
+    static final String PARCEL_WITH_NULL_WAYBILL_JSON = """
+            {
+              "type": "internal",
+              "dimensions": { "width": 10, "height": 10, "length": 10, "weight": 500 },
+              "status": "sent",
+              "shipping": { "typeId": "erliPaczkomat", "waybills": [ "https://erli.pl/a.pdf", null ] },
               "createdAt": "2026-07-20T08:14:00Z",
               "updatedAt": "2026-07-20T08:14:00Z"
             }

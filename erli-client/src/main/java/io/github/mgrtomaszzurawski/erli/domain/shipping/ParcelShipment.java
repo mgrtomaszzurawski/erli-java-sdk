@@ -50,4 +50,25 @@ public record ParcelShipment(
         Objects.requireNonNull(pickupProtocol, "pickupProtocol");
         waybills = List.copyOf(Objects.requireNonNull(waybills, "waybills"));
     }
+
+    /**
+     * Renders the shipment with its personal data withheld. Beyond the two parties — which redact
+     * themselves — {@code additionalInformation} is free text the seller passes to the courier
+     * ("leave with the neighbour at flat 3, gate code 1234"), so it routinely restates the delivery
+     * address and is treated as personal data here.
+     */
+    @Override
+    public String toString() {
+        return "ParcelShipment[deliveryMethod=" + Redaction.show(deliveryMethod)
+                + ", postingPointId=" + Redaction.show(postingPointId)
+                + ", additionalInformation=" + Redaction.hide(additionalInformation)
+                + ", sender=" + Redaction.show(sender)
+                + ", receiver=" + Redaction.show(receiver)
+                + ", nonStandard=" + nonStandard
+                + ", registeredAt=" + Redaction.show(registeredAt)
+                + ", waybillExpiration=" + Redaction.show(waybillExpiration)
+                + ", waybills=" + waybills
+                + ", pickupProtocol=" + Redaction.show(pickupProtocol)
+                + ']';
+    }
 }

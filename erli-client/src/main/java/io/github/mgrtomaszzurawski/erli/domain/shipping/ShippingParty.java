@@ -61,6 +61,11 @@ public record ShippingParty(
      * Renders the party without its personal data: identifying fields collapse to a redaction marker,
      * while non-identifying routing detail (country, pickup type, pickup-point code) stays readable so
      * the output remains useful for diagnosing a delivery problem.
+     *
+     * <p>This override <em>is</em> the PII guard, so it must list every component — a component added
+     * to the record and forgotten here would simply vanish from the output rather than leak, but a
+     * personal one routed through {@link Redaction#show} would leak. Add new identifying fields via
+     * {@link Redaction#hide}.
      */
     @Override
     public String toString() {
@@ -72,11 +77,11 @@ public record ShippingParty(
                 + ", flatNumber=" + Redaction.hide(flatNumber)
                 + ", city=" + Redaction.hide(city)
                 + ", zip=" + Redaction.hide(zip)
-                + ", country=" + country.map(Enum::name).orElse(null)
+                + ", country=" + Redaction.show(country.map(ShippingCountry::wireValue))
                 + ", phoneNumber=" + Redaction.hide(phoneNumber)
                 + ", email=" + Redaction.hide(email)
-                + ", pickupType=" + pickupType.map(Enum::name).orElse(null)
-                + ", pointCode=" + pointCode.orElse(null)
+                + ", pickupType=" + Redaction.show(pickupType.map(PickupType::wireValue))
+                + ", pointCode=" + Redaction.show(pointCode)
                 + ']';
     }
 }

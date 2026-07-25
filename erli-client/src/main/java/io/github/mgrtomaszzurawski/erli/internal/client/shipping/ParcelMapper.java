@@ -22,18 +22,23 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ParcelShippingSender;
 import io.github.mgrtomaszzurawski.erli.rest.model.ParcelStatusHistoryInner;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Maps the generated Layer-1 {@link io.github.mgrtomaszzurawski.erli.rest.model.Parcel} onto the public
  * {@link Parcel} domain record. Kept internal so no {@code *Raw} type reaches an exported signature.
  *
- * <p>Enums are translated with exhaustive switches rather than {@code valueOf(name())}: when Erli adds
- * a parcel status or country, this file stops compiling instead of throwing at runtime on a live
- * payload. Fields the spec marks required are asserted here — a response missing one is a server
- * contract break, and failing loudly beats handing the caller a half-built record.
+ * <p>Enums translate through each domain enum's {@code fromWire}, matching the convention the
+ * Dictionaries bucket established. A status the API added but the vendored spec lacks already fails
+ * earlier, at JSON decode, so a second hand-written switch here would buy nothing — and this bucket's
+ * schemas repeat the status vocabulary five times.
+ *
+ * <p>Fields the spec marks required are asserted; a response missing one is a server contract break,
+ * and failing with the field name beats handing the caller a half-built record.
  */
 final class ParcelMapper {
 
@@ -44,13 +49,13 @@ final class ParcelMapper {
         Objects.requireNonNull(rawParcel, "raw Parcel");
         return new Parcel(
                 Optional.ofNullable(rawParcel.getId()).map(String::valueOf).map(ParcelId::of),
-                toType(rawParcel.getType()),
+                toType(requireField(rawParcel.getType(), "type")),
                 Optional.ofNullable(rawParcel.getOrderId()).map(OrderId::of),
                 Boolean.TRUE.equals(rawParcel.getErliPro()),
                 toDimensions(requireField(rawParcel.getDimensions(), "dimensions")),
-                toErrors(rawParcel.getErrors()),
+                mapEach(rawParcel.getErrors(), ParcelMapper::toError, "errors"),
                 toStatus(requireField(rawParcel.getStatus(), "status")),
-                toStatusHistory(rawParcel.getStatusHistory()),
+                mapEach(rawParcel.getStatusHistory(), ParcelMapper::toStatusChange, "statusHistory"),
                 toShipment(requireField(rawParcel.getShipping(), "shipping")),
                 Optional.ofNullable(rawParcel.getTrackingNumber()),
                 requireField(rawParcel.getCreatedAt(), "createdAt"),
@@ -64,11 +69,35 @@ final class ParcelMapper {
         return value;
     }
 
+    /**
+     * Map a nullable raw list, rejecting null elements with the same named failure the scalar fields
+     * use. Without this a null element reaches {@code List.copyOf} in a record's compact constructor and
+     * surfaces as a bare {@code NullPointerException} carrying no message — outside the SDK's exception
+     * contract and impossible to trace back to a field.
+     */
+    private static <R, D> List<D> mapEach(List<R> rawItems, Function<R, D> mapper, String fieldName) {
+        if (rawItems == null) {
+            return List.of();
+        }
+        List<D> mapped = new ArrayList<>(rawItems.size());
+        for (int index = 0; index < rawItems.size(); index++) {
+            R rawItem = rawItems.get(index);
+            if (rawItem == null) {
+                throw new IllegalStateException(
+                        "Parcel field '" + fieldName + "' contains a null element at index " + index);
+            }
+            mapped.add(mapper.apply(rawItem));
+        }
+        return List.copyOf(mapped);
+    }
+
     private static ParcelType toType(io.github.mgrtomaszzurawski.erli.rest.model.Parcel.TypeEnum rawType) {
-        requireField(rawType, "type");
-        return switch (rawType) {
-            case INTERNAL -> ParcelType.INTERNAL;
-        };
+        return ParcelType.fromWire(rawType.getValue());
+    }
+
+    private static ParcelStatus toStatus(
+            io.github.mgrtomaszzurawski.erli.rest.model.Parcel.StatusEnum rawStatus) {
+        return ParcelStatus.fromWire(rawStatus.getValue());
     }
 
     private static ParcelDimensions toDimensions(CreateParcelsInnerDimensions rawDimensions) {
@@ -79,29 +108,28 @@ final class ParcelMapper {
                 requireField(rawDimensions.getWeight(), "dimensions.weight"));
     }
 
-    private static List<ParcelError> toErrors(List<ErrorResponseInner> rawErrors) {
-        if (rawErrors == null) {
-            return List.of();
-        }
-        return rawErrors.stream().map(ParcelMapper::toError).toList();
-    }
-
+    /**
+     * The error code arrives as a JSON number, so the generated model types it {@link BigDecimal}. Erli
+     * codes are whole numbers (the 1100/1200/1300/1400 families); a fractional or out-of-range one is a
+     * server contract break, reported as such rather than as a bare {@code ArithmeticException}.
+     */
     private static ParcelError toError(ErrorResponseInner rawError) {
         BigDecimal errorCode = requireField(rawError.getErrorCode(), "errors[].errorCode");
-        return new ParcelError(errorCode.intValueExact(), Optional.ofNullable(rawError.getErrorMessage()));
-    }
-
-    private static List<ParcelStatusChange> toStatusHistory(List<ParcelStatusHistoryInner> rawHistory) {
-        if (rawHistory == null) {
-            return List.of();
+        try {
+            return new ParcelError(errorCode.intValueExact(), Optional.ofNullable(rawError.getErrorMessage()));
+        } catch (ArithmeticException notAWholeNumber) {
+            throw new IllegalStateException(
+                    "Parcel field 'errors[].errorCode' is not a whole 32-bit number: " + errorCode,
+                    notAWholeNumber);
         }
-        return rawHistory.stream().map(ParcelMapper::toStatusChange).toList();
     }
 
+    /** Per the spec only {@code status} is required on a history entry; {@code changed} is optional. */
     private static ParcelStatusChange toStatusChange(ParcelStatusHistoryInner rawEntry) {
+        ParcelStatusHistoryInner.StatusEnum rawStatus =
+                requireField(rawEntry.getStatus(), "statusHistory[].status");
         return new ParcelStatusChange(
-                toHistoryStatus(requireField(rawEntry.getStatus(), "statusHistory[].status")),
-                requireField(rawEntry.getChanged(), "statusHistory[].changed"));
+                ParcelStatus.fromWire(rawStatus.getValue()), Optional.ofNullable(rawEntry.getChanged()));
     }
 
     private static ParcelShipment toShipment(ParcelShipping rawShipping) {
@@ -116,7 +144,7 @@ final class ParcelMapper {
                 Boolean.TRUE.equals(rawShipping.getNonStandard()),
                 Optional.ofNullable(rawShipping.getRegisteredAt()),
                 Optional.ofNullable(rawShipping.getWaybillExpiration()),
-                rawShipping.getWaybills() == null ? List.of() : List.copyOf(rawShipping.getWaybills()),
+                mapEach(rawShipping.getWaybills(), Function.identity(), "shipping.waybills"),
                 Optional.ofNullable(rawShipping.getPickupProtocol()));
     }
 
@@ -129,11 +157,15 @@ final class ParcelMapper {
                 Optional.ofNullable(rawSender.getBuildingNumber()),
                 Optional.ofNullable(rawSender.getFlatNumber()),
                 Optional.ofNullable(rawSender.getCity()),
-                toZip(rawSender.getZip()),
-                Optional.ofNullable(rawSender.getCountry()).map(ParcelMapper::toSenderCountry),
+                toZip(rawSender.getZip(), "shipping.sender.zip"),
+                Optional.ofNullable(rawSender.getCountry())
+                        .map(ParcelShippingSender.CountryEnum::getValue)
+                        .map(ShippingCountry::fromWire),
                 Optional.ofNullable(rawSender.getPhoneNumber()),
                 Optional.ofNullable(rawSender.getEmail()),
-                Optional.ofNullable(rawSender.getPickupType()).map(ParcelMapper::toSenderPickupType),
+                Optional.ofNullable(rawSender.getPickupType())
+                        .map(ParcelShippingSender.PickupTypeEnum::getValue)
+                        .map(PickupType::fromWire),
                 Optional.ofNullable(rawSender.getPointCode()));
     }
 
@@ -146,100 +178,33 @@ final class ParcelMapper {
                 Optional.ofNullable(rawReceiver.getBuildingNumber()),
                 Optional.ofNullable(rawReceiver.getFlatNumber()),
                 Optional.ofNullable(rawReceiver.getCity()),
-                toZip(rawReceiver.getZip()),
-                Optional.ofNullable(rawReceiver.getCountry()).map(ParcelMapper::toReceiverCountry),
+                toZip(rawReceiver.getZip(), "shipping.receiver.zip"),
+                Optional.ofNullable(rawReceiver.getCountry())
+                        .map(ParcelShippingReceiver.CountryEnum::getValue)
+                        .map(ShippingCountry::fromWire),
                 Optional.ofNullable(rawReceiver.getPhoneNumber()),
                 Optional.ofNullable(rawReceiver.getEmail()),
-                Optional.ofNullable(rawReceiver.getPickupType()).map(ParcelMapper::toReceiverPickupType),
+                Optional.ofNullable(rawReceiver.getPickupType())
+                        .map(ParcelShippingReceiver.PickupTypeEnum::getValue)
+                        .map(PickupType::fromWire),
                 Optional.ofNullable(rawReceiver.getPointCode()));
     }
 
     /**
-     * The postcode arrives as a {@code oneOf} wrapper (the spec constrains the format per country), so
-     * the generated type exposes the branch rather than a plain string. Only the string branch exists
-     * today; anything else is surfaced as absent rather than guessed at.
+     * The postcode arrives as a {@code oneOf} wrapper — the spec constrains its format per country — so
+     * the generated type exposes the branch rather than a plain string. Every declared branch is a
+     * string today; an unexpected one is reported rather than silently dropped, so a spec change shows
+     * up as a named failure instead of a postcode quietly going missing from a delivery address.
      */
-    private static Optional<String> toZip(CreateParcelsInnerShippingReceiverZip rawZip) {
-        if (rawZip == null) {
+    private static Optional<String> toZip(CreateParcelsInnerShippingReceiverZip rawZip, String fieldName) {
+        if (rawZip == null || rawZip.getActualInstance() == null) {
             return Optional.empty();
         }
         Object actualZip = rawZip.getActualInstance();
-        return actualZip instanceof String zipText ? Optional.of(zipText) : Optional.empty();
-    }
-
-    private static ShippingCountry toSenderCountry(ParcelShippingSender.CountryEnum rawCountry) {
-        return switch (rawCountry) {
-            case PL -> ShippingCountry.PL;
-            case DE -> ShippingCountry.DE;
-        };
-    }
-
-    private static ShippingCountry toReceiverCountry(ParcelShippingReceiver.CountryEnum rawCountry) {
-        return switch (rawCountry) {
-            case PL -> ShippingCountry.PL;
-            case DE -> ShippingCountry.DE;
-        };
-    }
-
-    private static PickupType toSenderPickupType(ParcelShippingSender.PickupTypeEnum rawPickupType) {
-        return switch (rawPickupType) {
-            case COURIER -> PickupType.COURIER;
-            case POINT -> PickupType.POINT;
-        };
-    }
-
-    private static PickupType toReceiverPickupType(ParcelShippingReceiver.PickupTypeEnum rawPickupType) {
-        return switch (rawPickupType) {
-            case COURIER -> PickupType.COURIER;
-            case POINT -> PickupType.POINT;
-        };
-    }
-
-    private static ParcelStatus toStatus(io.github.mgrtomaszzurawski.erli.rest.model.Parcel.StatusEnum rawStatus) {
-        return switch (rawStatus) {
-            case PREPARING -> ParcelStatus.PREPARING;
-            case READY_TO_SEND -> ParcelStatus.READY_TO_SEND;
-            case WAITING_FOR_COURIER -> ParcelStatus.WAITING_FOR_COURIER;
-            case SENT -> ParcelStatus.SENT;
-            case ON_THE_WAY -> ParcelStatus.ON_THE_WAY;
-            case READY_TO_DELIVER -> ParcelStatus.READY_TO_DELIVER;
-            case DELIVERED -> ParcelStatus.DELIVERED;
-            case READY_TO_PICKUP -> ParcelStatus.READY_TO_PICKUP;
-            case PICKUP_TIME_EXPIRED -> ParcelStatus.PICKUP_TIME_EXPIRED;
-            case RETURNED -> ParcelStatus.RETURNED;
-            case CANCELED -> ParcelStatus.CANCELED;
-            case CLAIMED -> ParcelStatus.CLAIMED;
-            case TRACKING_UNAVAILABLE -> ParcelStatus.TRACKING_UNAVAILABLE;
-            case UNKNOWN -> ParcelStatus.UNKNOWN;
-            case ERROR -> ParcelStatus.ERROR;
-            case DELIVERY_UNSUCCESSFUL -> ParcelStatus.DELIVERY_UNSUCCESSFUL;
-            case REDIRECTED -> ParcelStatus.REDIRECTED;
-            case TECHNICAL -> ParcelStatus.TECHNICAL;
-            case TRACKING_EXPIRED -> ParcelStatus.TRACKING_EXPIRED;
-        };
-    }
-
-    private static ParcelStatus toHistoryStatus(ParcelStatusHistoryInner.StatusEnum rawStatus) {
-        return switch (rawStatus) {
-            case PREPARING -> ParcelStatus.PREPARING;
-            case READY_TO_SEND -> ParcelStatus.READY_TO_SEND;
-            case WAITING_FOR_COURIER -> ParcelStatus.WAITING_FOR_COURIER;
-            case SENT -> ParcelStatus.SENT;
-            case ON_THE_WAY -> ParcelStatus.ON_THE_WAY;
-            case READY_TO_DELIVER -> ParcelStatus.READY_TO_DELIVER;
-            case DELIVERED -> ParcelStatus.DELIVERED;
-            case READY_TO_PICKUP -> ParcelStatus.READY_TO_PICKUP;
-            case PICKUP_TIME_EXPIRED -> ParcelStatus.PICKUP_TIME_EXPIRED;
-            case RETURNED -> ParcelStatus.RETURNED;
-            case CANCELED -> ParcelStatus.CANCELED;
-            case CLAIMED -> ParcelStatus.CLAIMED;
-            case TRACKING_UNAVAILABLE -> ParcelStatus.TRACKING_UNAVAILABLE;
-            case UNKNOWN -> ParcelStatus.UNKNOWN;
-            case ERROR -> ParcelStatus.ERROR;
-            case DELIVERY_UNSUCCESSFUL -> ParcelStatus.DELIVERY_UNSUCCESSFUL;
-            case REDIRECTED -> ParcelStatus.REDIRECTED;
-            case TECHNICAL -> ParcelStatus.TECHNICAL;
-            case TRACKING_EXPIRED -> ParcelStatus.TRACKING_EXPIRED;
-        };
+        if (actualZip instanceof String zipText) {
+            return Optional.of(zipText);
+        }
+        throw new IllegalStateException("Parcel field '" + fieldName
+                + "' decoded to an unexpected branch type: " + actualZip.getClass().getName());
     }
 }

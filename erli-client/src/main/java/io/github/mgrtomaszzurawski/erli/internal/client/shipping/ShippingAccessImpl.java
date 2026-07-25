@@ -24,6 +24,9 @@ public final class ShippingAccessImpl implements ShippingAccess {
      */
     private static final String FORM_ENCODED_SPACE = "+";
     private static final String PATH_ENCODED_SPACE = "%20";
+    /** Relative path segments; percent-encoding leaves both intact because {@code .} is unreserved. */
+    private static final String DOT_SEGMENT = ".";
+    private static final String DOUBLE_DOT_SEGMENT = "..";
 
     private final HttpRuntime runtime;
 
@@ -46,11 +49,27 @@ public final class ShippingAccessImpl implements ShippingAccess {
      * to prove an operation is genuinely wired (see {@code tools/README.md}).
      */
     private static String withId(String pathTemplate, String idValue) {
+        if (!pathTemplate.contains(PARCEL_ID_PLACEHOLDER)) {
+            throw new IllegalStateException(
+                    "Path template '" + pathTemplate + "' has no " + PARCEL_ID_PLACEHOLDER + " placeholder");
+        }
         return pathTemplate.replace(PARCEL_ID_PLACEHOLDER, encodeSegment(idValue));
     }
 
-    /** Percent-encode a value for use as a single path segment. */
+    /**
+     * Percent-encode a value for use as a single path segment.
+     *
+     * <p>Percent-encoding alone is not enough. {@link URLEncoder} leaves {@code .} untouched because it
+     * is an unreserved character, so an id of {@code "."} or {@code ".."} survives encoding and is then
+     * collapsed as a relative path segment by the server's gateway — {@code /shipping/parcels/.} becomes
+     * the collection endpoint. Harmless on a read, destructive once the by-id {@code DELETE} operations
+     * of this bucket use the same helper, so dot segments are rejected before the request is built.
+     */
     private static String encodeSegment(String value) {
+        if (DOT_SEGMENT.equals(value) || DOUBLE_DOT_SEGMENT.equals(value)) {
+            throw new IllegalArgumentException(
+                    "'" + value + "' is a relative path segment and cannot address a resource");
+        }
         return URLEncoder.encode(value, StandardCharsets.UTF_8).replace(FORM_ENCODED_SPACE, PATH_ENCODED_SPACE);
     }
 }

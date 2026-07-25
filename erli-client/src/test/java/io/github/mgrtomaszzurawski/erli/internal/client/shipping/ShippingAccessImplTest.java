@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -33,6 +34,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -126,6 +128,21 @@ class ShippingAccessImplTest {
         shippingAccess().parcel(ParcelId.of(hostileId));
 
         server.verify(getRequestedFor(urlEqualTo(encodedPath)));
+    }
+
+    /**
+     * Percent-encoding does not save a bare dot segment: {@code .} is unreserved, so it survives
+     * encoding and the server's gateway then collapses {@code /shipping/parcels/.} to the collection
+     * endpoint. Harmless on this read, destructive once the by-id DELETE operations use the same
+     * helper — so it is rejected before a request is built, and no request must leave the client.
+     */
+    @ParameterizedTest(name = "id \"{0}\" is rejected as a relative path segment")
+    @ValueSource(strings = {".", ".."})
+    void refusesRelativePathSegmentsAsParcelIds(String relativeSegment) {
+        assertThrows(IllegalArgumentException.class,
+                () -> shippingAccess().parcel(ParcelId.of(relativeSegment)));
+
+        server.verify(0, getRequestedFor(urlMatching(".*")));
     }
 
     /**

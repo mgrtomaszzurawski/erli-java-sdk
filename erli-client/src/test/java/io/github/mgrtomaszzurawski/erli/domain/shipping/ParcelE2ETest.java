@@ -6,7 +6,7 @@ import io.github.mgrtomaszzurawski.erli.core.model.ParcelId;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -35,15 +35,24 @@ class ParcelE2ETest {
         try (ErliClient client = ErliClient.fromEnvironment()) {
             ShippingAccess shipping = client.shipping();
 
+            // The exception type IS the assertion: a wrong base URL would surface as
+            // ErliTransportException and a rejected credential as ErliAuthException, so reaching
+            // "not found" proves the host resolved, TLS completed and the Bearer key was accepted.
             ErliNotFoundException failure = assertThrows(
                     ErliNotFoundException.class, () -> shipping.parcel(ParcelId.of(ABSENT_PARCEL_ID)));
 
-            // The credential was accepted (an auth failure would surface as ErliAuthException instead),
-            // and the SDK preserved whatever the server actually sent rather than inventing a message.
-            assertNotNull(failure.details(), "error details");
-            assertNotNull(failure.details().rawBody(), "raw body from the live server");
+            // The server answered with a body of its own rather than the SDK inventing one. Asserting
+            // non-emptiness, not merely non-null: `rawBody` is never null by construction, so a null
+            // check here would pass no matter what came back.
+            assertFalse(failure.details().rawBody().isBlank(), "live server sent an empty error body");
         }
     }
+
+    /**
+     * The one operation the empty sandbox cannot exercise is a successful fetch. Recorded here so the
+     * gap is visible rather than implied: the Phase 3 live write→read sweep seeds an order, creates a
+     * parcel, and this class gains a happy-path test asserting mapped fields against a real payload.
+     */
 
     private static boolean isSet(String variable) {
         String value = System.getenv(variable);
