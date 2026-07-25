@@ -142,14 +142,26 @@ or `trackingUrl` are populated depending on what the carrier reported.
 
 ## Carriers
 
-`ShippingVendor` is a value object, not an enum. Erli's carrier list grows as it signs carriers, and
-the spec, the `deliveryVendors` dictionary and observed `DeliveryMethod.vendor` values do not agree
-on it — so a closed enum would turn a new carrier into an exception and force an SDK release before
-you could see it. Compare against the constants, and fall back to the wire value:
+`DeliveryTracking.vendor()` is a `core.model.DeliveryVendor` — the carrier type shared with the inbox
+and dictionaries APIs:
 
 ```java
-ShippingVendor vendor = tracking.vendor().orElseThrow();
-if (ShippingVendor.INPOST.equals(vendor)) { ... }
-myErp.setCarrier(vendor.wireValue());       // always round-trips, known or not
-if (!vendor.isKnown()) { log.info("carrier not in this SDK's list: {}", vendor); }
+tracking.vendor().ifPresent(vendor -> myErp.setCarrier(vendor.wireValue()));
+if (tracking.vendor().filter(DeliveryVendor.INPOST::equals).isPresent()) { ... }
 ```
+
+> The shipping API still takes its own `domain.shipping.ShippingVendor` on `ExternalParcelDraft` and
+> friends, so you cannot pass this value straight into it yet. Translate via `wireValue()` until the
+> two are folded together.
+
+One caveat worth knowing. Erli's carrier list grows, and the SDK vendors the API spec — so a carrier
+added after your SDK version was built decodes to *no vendor* rather than failing: you lose the
+carrier's identity, not the rest of the order. An empty `vendor` therefore has two causes, which
+`trackingNumber` tells apart:
+
+| `vendor` | `trackingNumber` | meaning |
+|---|---|---|
+| empty | empty | URL-only tracking — read `trackingUrl` |
+| empty | present | a carrier newer than your SDK version — upgrade to name it |
+
+So do not read an empty `vendor` as "shipped without a carrier".
