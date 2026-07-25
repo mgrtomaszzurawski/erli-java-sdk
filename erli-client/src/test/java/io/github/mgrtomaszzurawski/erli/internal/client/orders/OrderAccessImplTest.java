@@ -1,5 +1,8 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import io.github.mgrtomaszzurawski.erli.ErliClient;
@@ -58,6 +61,13 @@ class OrderAccessImplTest {
     private static final String STATUS_PATH = ORDER_PATH + "/status";
     private static final String TEST_KEY = "test-key";
     private static final String CURSOR_PAGE_ONE = "1753178730;221201x12345";
+    private static final String FULL_ORDER_FIXTURE = "fixtures/orders/order-full.json";
+    private static final String MINIMAL_ORDER_FIXTURE = "fixtures/orders/order-minimal.json";
+    private static final String MINIMAL_FIXTURE_ORDER_ID = "221202x12346";
+    private static final String STATE_DRAINED = "drained";
+    private static final String STATE_SECOND_PAGE = "second-page";
+
+    private static final ObjectMapper FIXTURE_MAPPER = new ObjectMapper();
 
     private WireMockServer server;
     private ErliClient client;
@@ -87,10 +97,27 @@ class OrderAccessImplTest {
         return "[" + String.join(",", orderJson) + "]";
     }
 
+    /**
+     * The minimal fixture re-identified, optionally carrying a pagination cursor. Parsed and rebuilt
+     * rather than string-spliced, so a change to the fixture surfaces as a parse error here instead of
+     * as a malformed request body inside WireMock.
+     */
     private static String orderJson(String id, String cursor) {
-        return TestFixtures.read("fixtures/orders/order-minimal.json")
-                .replace("221202x12346", id)
-                .replaceFirst("\\{", "{\"cursor\":\"" + cursor + "\",");
+        try {
+            ObjectNode order =
+                    (ObjectNode) FIXTURE_MAPPER.readTree(TestFixtures.read(MINIMAL_ORDER_FIXTURE));
+            order.put("id", id);
+            if (cursor != null) {
+                order.put("cursor", cursor);
+            }
+            return order.toString();
+        } catch (JsonProcessingException failure) {
+            throw new IllegalStateException(MINIMAL_ORDER_FIXTURE + " is not valid JSON", failure);
+        }
+    }
+
+    private static String orderJson(String id) {
+        return orderJson(id, null);
     }
 
     // --- search -----------------------------------------------------------------------------------
@@ -100,10 +127,10 @@ class OrderAccessImplTest {
         String scenario = "single-page-search";
         server.stubFor(post(urlEqualTo(SEARCH_PATH)).inScenario(scenario)
                 .whenScenarioStateIs(Scenario.STARTED)
-                .willReturn(okJson(pageOf(TestFixtures.read("fixtures/orders/order-full.json"))))
-                .willSetStateTo("drained"));
+                .willReturn(okJson(pageOf(TestFixtures.read(FULL_ORDER_FIXTURE))))
+                .willSetStateTo(STATE_DRAINED));
         server.stubFor(post(urlEqualTo(SEARCH_PATH)).inScenario(scenario)
-                .whenScenarioStateIs("drained")
+                .whenScenarioStateIs(STATE_DRAINED)
                 .willReturn(okJson("[]")));
 
         List<Order> found = orders().search(OrderSearchRequest.all()).toList();
@@ -149,9 +176,9 @@ class OrderAccessImplTest {
         server.stubFor(post(urlEqualTo(SEARCH_PATH)).inScenario(scenario)
                 .whenScenarioStateIs(Scenario.STARTED)
                 .willReturn(okJson(pageOf(orderJson("221201x1", "cursor-a"), orderJson("221201x2", CURSOR_PAGE_ONE))))
-                .willSetStateTo("second"));
+                .willSetStateTo(STATE_SECOND_PAGE));
         server.stubFor(post(urlEqualTo(SEARCH_PATH)).inScenario(scenario)
-                .whenScenarioStateIs("second")
+                .whenScenarioStateIs(STATE_SECOND_PAGE)
                 .willReturn(okJson("[]")));
 
         List<Order> found = orders().search(OrderSearchRequest.all()).toList();
@@ -222,7 +249,7 @@ class OrderAccessImplTest {
     @Test
     void byIdGetsTheTemplatedPathAndMapsTheOrder() {
         server.stubFor(get(urlEqualTo(ORDER_PATH))
-                .willReturn(okJson(TestFixtures.read("fixtures/orders/order-full.json"))));
+                .willReturn(okJson(TestFixtures.read(FULL_ORDER_FIXTURE))));
 
         Order order = orders().byId(OrderId.of(ORDER_ID));
 
@@ -263,6 +290,35 @@ class OrderAccessImplTest {
         server.verify(patchRequestedFor(urlEqualTo(STATUS_PATH))
                 .withHeader("Authorization", equalTo("Bearer " + TEST_KEY))
                 .withRequestBody(equalToJson("{\"status\":\"readyToProcess\"}")));
+    }
+
+    /**
+     * A hostile order id must not be able to move the write to another endpoint. Before the id was
+     * encoded, {@code "221201x1#"} truncated the path and this call arrived as
+     * {@code PATCH /orders/221201x1} — the order-update endpoint — instead of its {@code /status}
+     * sub-resource.
+     */
+    @Test
+    void changeStatusCannotBeRedirectedByAHostileOrderId() {
+        String hostileId = ORDER_ID + "#";
+        String encodedStatusPath = "/orders/" + ORDER_ID + "%23/status";
+        server.stubFor(patch(urlEqualTo(encodedStatusPath)).willReturn(aResponse().withStatus(204)));
+
+        orders().changeStatus(OrderId.of(hostileId), SellerStatus.SENT);
+
+        server.verify(patchRequestedFor(urlEqualTo(encodedStatusPath)));
+        server.verify(0, patchRequestedFor(urlEqualTo(ORDER_PATH)));
+    }
+
+    @Test
+    void byIdCannotHaveAQueryStringInjectedThroughTheOrderId() {
+        String encodedPath = "/orders/" + ORDER_ID + "%3Flimit%3D999";
+        server.stubFor(get(urlEqualTo(encodedPath))
+                .willReturn(okJson(TestFixtures.read(FULL_ORDER_FIXTURE))));
+
+        orders().byId(OrderId.of(ORDER_ID + "?limit=999"));
+
+        server.verify(getRequestedFor(urlEqualTo(encodedPath)));
     }
 
     @Test

@@ -14,6 +14,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Live proof that the Orders bucket works against the real Erli sandbox, not just against WireMock.
@@ -35,18 +37,40 @@ class OrdersLiveE2ETest {
 
     private static final int SAMPLE_SIZE = 5;
 
+    /**
+     * The round-trip itself: the request is accepted, the bare-array body decodes, and the cursor walk
+     * terminates rather than looping. This holds on an empty shop, so it is a real assertion today.
+     */
     @Test
-    void searchesOrdersOnTheLiveSandbox() {
+    void completesASearchRoundTripAgainstTheLiveSandbox() {
         try (ErliClient client = ErliClient.fromEnvironment()) {
             List<Order> sample = client.orders()
                     .search(OrderSearchRequest.builder().pageSize(SAMPLE_SIZE).build())
                     .limit(SAMPLE_SIZE)
                     .toList();
 
-            assertNotNull(sample, "the live search must return a list, even an empty one");
-            assertTrue(sample.size() <= SAMPLE_SIZE, "the stream must respect the limit");
+            // Not a tautology: an unterminated cursor walk would hang or overrun instead of returning,
+            // and a misread body would have thrown during decoding.
+            assertTrue(sample.size() <= SAMPLE_SIZE,
+                    "the live walk returned more than the page it was asked for");
+        }
+    }
 
-            // Everything the mapper marks required must genuinely be present on a live payload.
+    /**
+     * The deep field mapping, which needs real data. The sandbox shop is empty today, so this reports
+     * SKIPPED rather than passing on an empty loop — a green tick here must mean a live payload was
+     * actually inspected.
+     */
+    @Test
+    void mapsEveryRequiredFieldOfALiveOrder() {
+        try (ErliClient client = ErliClient.fromEnvironment()) {
+            List<Order> sample = client.orders()
+                    .search(OrderSearchRequest.builder().pageSize(SAMPLE_SIZE).build())
+                    .limit(SAMPLE_SIZE)
+                    .toList();
+
+            assumeFalse(sample.isEmpty(), "sandbox shop has no orders yet — nothing to verify");
+
             for (Order order : sample) {
                 assertNotNull(order.id(), "live order is missing its id");
                 assertNotNull(order.status(), "live order is missing its status");
@@ -58,16 +82,25 @@ class OrdersLiveE2ETest {
         }
     }
 
+    /**
+     * Write-side round-trip is not covered live: with an empty shop there is no order safe to update,
+     * and this test must never invent one. Reports SKIPPED until Phase 3 seeds data.
+     */
     @Test
-    void fetchesASingleOrderByIdWhenTheSandboxHasOne() {
+    void fetchesASingleOrderById() {
         try (ErliClient client = ErliClient.fromEnvironment()) {
             Optional<Order> first = client.orders()
                     .search(OrderSearchRequest.builder().pageSize(1).build())
                     .findFirst();
 
-            // An empty sandbox is the expected state today; there is nothing to round-trip yet.
-            first.ifPresent(order ->
-                    assertEquals(order.id().value(), client.orders().byId(order.id()).id().value()));
+            assumeTrue(first.isPresent(), "sandbox shop has no orders yet — nothing to fetch by id");
+
+            Order fetched = client.orders().byId(first.get().id());
+
+            assertEquals(first.get().id().value(), fetched.id().value());
+            // Prove the single-order endpoint really was read, not just echoed back.
+            assertEquals(first.get().created(), fetched.created());
+            assertEquals(first.get().totalPrice(), fetched.totalPrice());
         }
     }
 }

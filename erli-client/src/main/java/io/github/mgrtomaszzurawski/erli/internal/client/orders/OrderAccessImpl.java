@@ -11,6 +11,7 @@ import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.CursorPagination;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.Page;
+import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
 
 import java.util.Arrays;
 import java.util.List;
@@ -88,8 +89,13 @@ public final class OrderAccessImpl implements OrderAccess {
         return new Page<>(orders, nextCursor);
     }
 
+    /**
+     * Substitute the order id into a templated path. The value is percent-encoded as a single path
+     * segment by {@link PathTemplate} — an id is consumer-supplied data and must not be able to alter
+     * the request's path.
+     */
     private static String withId(String template, OrderId orderId) {
         Objects.requireNonNull(orderId, "orderId");
-        return template.replace(ID_PLACEHOLDER, orderId.value());
+        return PathTemplate.expand(template, ID_PLACEHOLDER, orderId.value());
     }
 }

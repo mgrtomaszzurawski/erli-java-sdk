@@ -49,25 +49,40 @@ val normalizeSpec by tasks.registering {
                 !branch.containsKey("oneOf") &&
                 !branch.containsKey("anyOf")
 
-        // A composite is mergeable when every branch is a plain object and no property name is
-        // declared twice with different definitions. That second condition is what keeps the rule
-        // narrow: OrderFilter's branches all define `operator` differently, so it is left alone.
+        // A composite is mergeable when every branch is a plain object, no property name is declared
+        // twice with different definitions, AND every branch shares at least one required property.
+        //
+        // Both guards keep the rule narrow, and each one protects a real schema:
+        //   - the conflicting-definition guard leaves `OrderFilter` alone, whose branches each define
+        //     `operator` differently;
+        //   - the shared-required guard leaves an exclusive-choice schema alone. `MarkRead`
+        //     (POST /inbox/mark-read) is "either lastMessageId or ids", so the branches' required sets
+        //     are disjoint. Merging would intersect them to nothing and hand the Comms bucket a request
+        //     model where no field is required — silently discarding the XOR contract. A shared
+        //     required property is what distinguishes "one shape with optional extras"
+        //     (Order.deliveryTracking, always `status`) from "pick exactly one shape".
         fun isMergeableObjectComposite(branches: List<*>): Boolean {
             if (branches.size < 2 || !branches.all { isPlainObjectBranch(it) }) {
                 return false
             }
             val seen = mutableMapOf<String, Any?>()
+            var sharedRequired: MutableSet<String>? = null
             for (branch in branches) {
                 @Suppress("UNCHECKED_CAST")
-                val properties = (branch as Map<String, Any?>)["properties"] as Map<String, Any?>
+                val branchMap = branch as Map<String, Any?>
+                @Suppress("UNCHECKED_CAST")
+                val properties = branchMap["properties"] as Map<String, Any?>
                 for ((name, definition) in properties) {
                     if (seen.containsKey(name) && seen[name] != definition) {
                         return false
                     }
                     seen[name] = definition
                 }
+                @Suppress("UNCHECKED_CAST")
+                val required = ((branchMap["required"] as? List<String>) ?: emptyList()).toMutableSet()
+                sharedRequired = sharedRequired?.apply { retainAll(required) } ?: required
             }
-            return true
+            return !sharedRequired.isNullOrEmpty()
         }
 
         val mergedComposites = mutableListOf<String>()
