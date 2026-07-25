@@ -129,3 +129,12 @@ sourceSets {
 tasks.named("compileJava") {
     dependsOn(tasks.named("openApiGenerate"))
 }
+
+// Layer 1 ships without a module-info (generated POJOs), so it is consumed as an automatic module.
+// Pin its name so erli-client's module-info can `requires` it deterministically instead of relying
+// on the jar-filename derivation. The package is still never re-exported (JPMS-internal).
+tasks.named<Jar>("jar") {
+    manifest {
+        attributes("Automatic-Module-Name" to "io.github.mgrtomaszzurawski.erli.rest.models")
+    }
+}
