@@ -9,13 +9,20 @@ import java.util.Optional;
  * {@link ExternalAttributeType}, so this is a sealed hierarchy rather than a free-form blob: the compiler
  * forces a consumer to handle every shape, and an unmatched shape cannot be constructed by mistake.
  *
+ * <p>The SDK targets Java 17, so the idiomatic consumer form is an {@code instanceof} chain; on Java 21
+ * and later the same hierarchy also works with an exhaustive {@code switch} pattern.
+ *
  * <pre>{@code
- * String rendered = switch (attribute.values()) {
- *     case AttributeValues.NumericValues numeric -> numeric.numbers().toString();
- *     case AttributeValues.RangeValues range     -> range.from() + "-" + range.to();
- *     case AttributeValues.DictionaryValues dict -> dict.entries().toString();
- *     case AttributeValues.TextValues text       -> String.join(", ", text.texts());
- * };
+ * AttributeValues values = attribute.values();
+ * if (values instanceof AttributeValues.NumericValues numeric) {
+ *     render(numeric.numbers());
+ * } else if (values instanceof AttributeValues.RangeValues range) {
+ *     render(range.from(), range.to());
+ * } else if (values instanceof AttributeValues.DictionaryValues dictionary) {
+ *     render(dictionary.entries());
+ * } else if (values instanceof AttributeValues.TextValues text) {
+ *     render(text.texts());
+ * }
  * }</pre>
  */
 public sealed interface AttributeValues {
