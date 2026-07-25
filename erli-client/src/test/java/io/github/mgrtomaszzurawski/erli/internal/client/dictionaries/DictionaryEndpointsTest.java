@@ -327,7 +327,7 @@ class DictionaryEndpointsTest {
         ProductAttachmentResult result = dictionaries().attachProducts(7L, List.of(999999999L));
 
         assertFalse(result.isComplete());
-        assertEquals(999999999L, result.errors().get(0).productId());
+        assertEquals(999999999L, result.errors().get(0).productId().orElseThrow());
     }
 
     @Test

@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsibleParty;
@@ -9,8 +10,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.CreateResponsibleSchema;
 import io.github.mgrtomaszzurawski.erli.rest.model.ResponsibleSchema;
 import io.github.mgrtomaszzurawski.erli.rest.model.UpdateResponsibleSchema;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -24,7 +23,10 @@ final class ResponsiblePartyMapper {
     }
 
     static ResponsibleParty toDomain(ResponsibleSchema rawParty) {
-        Objects.requireNonNull(rawParty, "raw ResponsibleSchema");
+        if (rawParty == null) {
+            // An empty body decodes to null; surface it as a transport fault rather than an NPE.
+            throw new ErliTransportException("A responsible-party endpoint returned no response body");
+        }
         return new ResponsibleParty(
                 requireId(rawParty),
                 require(rawParty.getName(), "name"),

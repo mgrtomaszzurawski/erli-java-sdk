@@ -2,6 +2,7 @@ package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The outcome of attaching or detaching products
@@ -32,9 +33,13 @@ public record ProductAttachmentResult(boolean ok, List<Long> updatedProductIds, 
     /**
      * One product the API refused.
      *
-     * @param productId the product that could not be updated
+     * @param productId the product that could not be updated, when the API names one
      * @param error the API's explanation, verbatim
      */
-    public record ProductError(Long productId, String error) {
+    public record ProductError(Optional<Long> productId, String error) {
+
+        public ProductError {
+            productId = productId == null ? Optional.empty() : productId;
+        }
     }
 }

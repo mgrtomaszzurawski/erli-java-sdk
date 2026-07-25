@@ -8,7 +8,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.AttributeResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.AttributeValuesResponseInner;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

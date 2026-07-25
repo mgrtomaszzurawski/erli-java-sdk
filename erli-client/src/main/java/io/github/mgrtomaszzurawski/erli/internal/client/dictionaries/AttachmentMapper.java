@@ -162,7 +162,7 @@ final class AttachmentMapper {
                 ? List.of()
                 : rawResult.getErrors().stream()
                         .map(error -> new ProductAttachmentResult.ProductError(
-                                error.getProductId() == null ? null : error.getProductId().longValue(),
+                                Optional.ofNullable(error.getProductId()).map(Integer::longValue),
                                 error.getError()))
                         .toList();
         // A body that omits `ok` but reports no errors is a success; only an explicit false is not.

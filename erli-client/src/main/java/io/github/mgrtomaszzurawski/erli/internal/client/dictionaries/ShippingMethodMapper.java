@@ -10,8 +10,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensionsAn
 import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxPointDimensions;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMinDimensions;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 

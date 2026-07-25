@@ -133,13 +133,20 @@ public record NewResponsibleParty(
                     required(name, "name"),
                     required(idempotenceKey, "idempotenceKey"),
                     required(properName, "properName"),
-                    Objects.requireNonNull(country, "country is required"),
+                    requiredCountry(country),
                     required(address, "address"),
                     required(postalCode, "postalCode"),
                     required(city, "city"),
                     required(email, "email"),
                     Optional.ofNullable(phone),
                     Optional.ofNullable(source));
+        }
+
+        private static CountryCode requiredCountry(CountryCode value) {
+            if (value == null) {
+                throw new IllegalArgumentException("country is required");
+            }
+            return value;
         }
 
         private static String required(String value, String fieldName) {

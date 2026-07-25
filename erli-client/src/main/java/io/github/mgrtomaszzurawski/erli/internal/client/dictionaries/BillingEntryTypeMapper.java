@@ -3,8 +3,6 @@ package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.BillingEntryType;
 import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntryTypesResponseInner;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 /**

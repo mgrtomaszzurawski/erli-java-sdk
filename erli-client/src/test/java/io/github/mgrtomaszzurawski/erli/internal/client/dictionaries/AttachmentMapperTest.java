@@ -14,6 +14,8 @@ import io.github.mgrtomaszzurawski.erli.rest.model.GetAttachmentsResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ManageAttachedProducts;
 import io.github.mgrtomaszzurawski.erli.rest.model.PatchAttachmentRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -131,7 +133,8 @@ class AttachmentMapperTest {
 
     @Test
     void omitsMarketsFromAPatchThatDidNotSetThem() {
-        // An empty array would ask the API to clear the markets; absent means "leave them alone".
+        // An empty array is invalid (minItems: 1) and AttachmentUpdate refuses it, so absent is the
+        // only way to say "leave the markets alone" — the key must not appear at all.
         PatchAttachmentRequest request =
                 AttachmentMapper.toPatchRequest(AttachmentUpdate.builder(73L).name("Nowa").build());
 
@@ -196,17 +199,23 @@ class AttachmentMapperTest {
     }
 
     @Test
+    void refusesToTruncateAnAttachmentIdOnPatch() {
+        AttachmentUpdate tooLarge = AttachmentUpdate.builder(Integer.MAX_VALUE + 1L).name("x").build();
+
+        assertThrows(IllegalArgumentException.class, () -> AttachmentMapper.toPatchRequest(tooLarge));
+    }
+
+    @Test
     void refusesToTruncateAnAttachmentIdOnDelete() {
         List<Long> tooLarge = List.of(Integer.MAX_VALUE + 1L);
 
         assertThrows(IllegalArgumentException.class, () -> AttachmentMapper.toDeleteRequest(tooLarge));
     }
 
-    @Test
-    void resolvesEveryMarketFromItsWireValue() {
-        for (Market market : Market.values()) {
-            assertEquals(market, Market.fromWire(market.wireValue()));
-        }
+    @ParameterizedTest
+    @EnumSource(Market.class)
+    void resolvesEveryMarketFromItsWireValue(Market market) {
+        assertEquals(market, Market.fromWire(market.wireValue()));
     }
 
     @Test
@@ -223,7 +232,7 @@ class AttachmentMapperTest {
         assertFalse(result.isComplete());
         assertEquals(List.of(11L), result.updatedProductIds());
         assertEquals(1, result.errors().size());
-        assertEquals(999999999L, result.errors().get(0).productId());
+        assertEquals(999999999L, result.errors().get(0).productId().orElseThrow());
         assertTrue(result.errors().get(0).error().contains("NotFoundFailure"), result.errors().get(0).error());
     }
 
@@ -236,6 +245,33 @@ class AttachmentMapperTest {
 
         assertTrue(result.isComplete());
         assertEquals(List.of(11L, 12L), result.updatedProductIds());
+    }
+
+    @Test
+    void treatsAnOmittedOkFlagWithNoErrorsAsComplete() {
+        // The spec documents no body at all, so a response that reports only `updated` is plausible.
+        ManageAttachedProductsResponse raw =
+                new JsonCodec().read("{\"updated\":[11]}", ManageAttachedProductsResponse.class);
+
+        assertTrue(AttachmentMapper.toProductAttachmentResult(raw).isComplete());
+    }
+
+    @Test
+    void treatsAnOmittedOkFlagWithErrorsAsIncomplete() {
+        ManageAttachedProductsResponse raw = new JsonCodec().read(
+                "{\"errors\":[{\"productId\":9,\"error\":\"nope\"}]}", ManageAttachedProductsResponse.class);
+
+        assertFalse(AttachmentMapper.toProductAttachmentResult(raw).isComplete());
+    }
+
+    @Test
+    void reportsARefusedProductWithoutAnIdAsAnAbsentId() {
+        ManageAttachedProductsResponse raw = new JsonCodec()
+                .read("{\"ok\":false,\"errors\":[{\"error\":\"nope\"}]}", ManageAttachedProductsResponse.class);
+
+        ProductAttachmentResult result = AttachmentMapper.toProductAttachmentResult(raw);
+
+        assertTrue(result.errors().get(0).productId().isEmpty());
     }
 
     @Test
