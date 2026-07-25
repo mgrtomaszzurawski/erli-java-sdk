@@ -34,7 +34,7 @@ import java.util.function.Function;
  *
  * <p>Enums translate through each domain enum's {@code fromWire}, matching the convention the
  * Dictionaries bucket established — the schemas of this bucket repeat the status vocabulary five times,
- * so a hand-written switch per occurrence would be 87 branches. Parcel status is mapped tolerantly
+ * so a hand-written switch per occurrence would be 98 branches. Parcel status is mapped tolerantly
  * (unknown or absent → {@link ParcelStatus#UNRECOGNIZED}); the closed vocabularies stay fail-loud.
  *
  * <p>Fields the spec marks required are asserted; a response missing one is a server contract break,

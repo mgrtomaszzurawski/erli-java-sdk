@@ -59,9 +59,12 @@ public enum ParcelStatus {
      * A status this release does not know. Erli's parcel statuses come from carrier integrations and
      * grow as carriers are added, so a status minted after this SDK was built must not be able to fail
      * a whole read: one unrecognised value in a 200-parcel search would otherwise cost the caller every
-     * other parcel. Branch on it if you need to; {@link #wireValue()} returns
-     * an empty string, because the real wire string is not carried here — read it from the raw payload
-     * if you need the exact value.
+     * other parcel. Branch on it if you need to; {@link #wireValue()} returns an empty string.
+     *
+     * <p>Note this constant does <em>not</em> carry the value Erli actually sent — the SDK exposes no
+     * raw payload on a successful read, so that value is lost. The Orders bucket answers the same
+     * question with a value object that round-trips the unknown string verbatim; aligning the two is a
+     * fleet decision, filed as CORE-15.
      */
     UNRECOGNIZED("");
 

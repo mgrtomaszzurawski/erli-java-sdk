@@ -332,6 +332,34 @@ class ShippingWriteOperationsTest {
     }
 
     @Test
+    void degradesAnUnknownStatusOnBothExternalReadPaths() {
+        server.stubFor(get(urlEqualTo(EXTERNAL_BY_ID_PATH)).willReturn(okJson("""
+                { "id": 77, "orderId": "100007x1234", "type": "external",
+                  "shipping": { "vendor": "dpd" }, "status": "handedToDrone",
+                  "statusHistory": [ { "status": "alsoUnknown" } ],
+                  "createdAt": "2026-07-20T08:14:00Z", "updatedAt": "2026-07-21T09:30:00Z" }
+                """)));
+        server.stubFor(post(urlEqualTo(EXTERNAL_PATH)).willReturn(okJson("""
+                [ { "id": 77, "orderId": "100007x1234", "type": "external",
+                    "shipping": { "vendor": "dpd" }, "status": "handedToDrone",
+                    "createdAt": "2026-07-20T08:14:00Z", "updatedAt": "2026-07-21T09:30:00Z" } ]
+                """)));
+
+        ExternalParcel fetched = shippingAccess().externalParcel(ParcelId.of("77"));
+        List<ExternalParcelResult> batch = shippingAccess().registerExternalParcels(List.of(
+                ExternalParcelDraft.builder(OrderId.of("100007x1234"), DeliveryVendor.DPD).build()));
+
+        // Each of the three generated status enums has its own overload; one regression would ship
+        // green if only the plain read were pinned.
+        assertEquals(ParcelStatus.UNRECOGNIZED, fetched.status());
+        assertEquals(ParcelStatus.UNRECOGNIZED, fetched.statusHistory().get(0).status());
+        assertEquals(ParcelStatus.UNRECOGNIZED,
+                assertInstanceOf(ExternalParcelResult.Created.class, batch.get(0)).parcel().status());
+        // The rest of the payload must survive — that is the point of degrading rather than failing.
+        assertEquals(OrderId.of("100007x1234"), fetched.orderId());
+    }
+
+    @Test
     void mapsTheStatusHistoryOfAnExternalParcel() {
         server.stubFor(get(urlEqualTo(EXTERNAL_BY_ID_PATH)).willReturn(okJson("""
                 { "id": 77, "orderId": "100007x1234", "type": "external",

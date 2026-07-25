@@ -142,12 +142,24 @@ final class ExternalParcelMapper {
         return List.copyOf(errors);
     }
 
-    /** Tolerant like {@link ParcelMapper}: an unknown or absent status degrades to a sentinel. */
-    private static ParcelStatus toStatus(Object rawStatus) {
-        if (rawStatus == null) {
-            return ParcelStatus.UNRECOGNIZED;
-        }
-        return ParcelStatus.fromWire(String.valueOf(rawStatus));
+    /**
+     * Tolerant like {@link ParcelMapper}: an unknown or absent status degrades to a sentinel.
+     *
+     * <p>Three generated enum types carry a parcel status, with no common supertype, so there is one
+     * overload each rather than an {@code Object} parameter — {@code getValue()} is the {@code @JsonValue}
+     * contract, whereas {@code toString()} agreeing with it today is a generator artifact, and an
+     * {@code Object} parameter would switch the compiler off for all three.
+     */
+    private static ParcelStatus toStatus(io.github.mgrtomaszzurawski.erli.rest.model.ExternalParcel.StatusEnum rawStatus) {
+        return rawStatus == null ? ParcelStatus.UNRECOGNIZED : ParcelStatus.fromWire(rawStatus.getValue());
+    }
+
+    private static ParcelStatus toStatus(CreateExternalParcelResponseAnyOf.StatusEnum rawStatus) {
+        return rawStatus == null ? ParcelStatus.UNRECOGNIZED : ParcelStatus.fromWire(rawStatus.getValue());
+    }
+
+    private static ParcelStatus toStatus(ParcelStatusHistoryInner.StatusEnum rawStatus) {
+        return rawStatus == null ? ParcelStatus.UNRECOGNIZED : ParcelStatus.fromWire(rawStatus.getValue());
     }
 
     private static <T> T requireField(T value, String fieldName) {
