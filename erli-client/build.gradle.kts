@@ -7,6 +7,7 @@
 
 plugins {
     `java-library`
+    jacoco
 }
 
 java {
@@ -14,6 +15,10 @@ java {
         languageVersion = JavaLanguageVersion.of(17)
     }
     withSourcesJar()
+}
+
+jacoco {
+    toolVersion = "0.8.12"
 }
 
 dependencies {
@@ -40,6 +45,24 @@ tasks.test {
     useJUnitPlatform {
         excludeTags("e2e")
     }
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+// Line/branch coverage of the hand-written SDK. The generated Layer 1 (erli-rest-models) is a
+// separate module and carries no JaCoCo; module-info has no executable coverage, so it is excluded.
+// Report-only for now (does not fail the build) — a coverage floor can be ratcheted in once the
+// baseline is documented in the binding CLAUDE.md.
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    classDirectories.setFrom(
+        classDirectories.files.map { classDir ->
+            fileTree(classDir) { exclude("module-info.class") }
+        }
+    )
 }
 
 // Live end-to-end tests against the Erli sandbox. Reads ERLI_BASE_URL / ERLI_API_KEY from the
