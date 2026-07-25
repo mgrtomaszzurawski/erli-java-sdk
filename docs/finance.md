@@ -3,8 +3,10 @@
 Everything about seller money: what buyers paid, what Erli paid out, what it charged, what a
 listing would cost, and what advertising spent.
 
-All amounts are exposed as `Money` (always PLN — the Erli marketplace settles in złoty). The API
-sends most of them as whole *grosze*; the SDK converts, so you never divide by 100.
+All amounts are exposed as `Money`. The API sends most of them as whole *grosze* and states no
+currency, so they are PLN — the Erli marketplace settles in złoty; the SDK converts, so you never
+divide by 100. The one exception is operator transaction lines, which carry their own
+[`currency()`](#returns-the-operators-transaction-history).
 
 ```java
 try (ErliClient client = ErliClient.fromEnvironment()) {
@@ -83,8 +85,10 @@ client.payments().searchPayouts(PayoutSearch.builder()
 Optional<Payment> payment = client.payments().findPayment(77L);
 ```
 
-`Payment`, `Payout` and `Transaction` share the sealed `PaymentOperation` type, so a `switch` over
-them is exhaustive without a default branch.
+`Payment`, `Payout` and `Transaction` share the sealed `PaymentOperation` type, so results of the
+three searches can be combined into one timeline and dispatched over a closed set of cases. On the
+SDK's Java 17 baseline use `instanceof` patterns; on Java 21+ the same dispatch can be an exhaustive
+`switch` with no default branch.
 
 ### Returns (the operator's transaction history)
 

@@ -69,6 +69,18 @@ public record PayoutSearch(
                         "operator " + operator + " compares against a single value, got " + value.size()
                                 + "; use IN or NOT_IN to match several");
             }
+            // The API's payout filter has two mutually exclusive shapes: id only with in/nin, and
+            // createdAt/amount only with the ordering operators. Refuse the pairings it would 400 on
+            // rather than making the caller discover it from the server.
+            if (field == PayoutFilterField.ID && !operator.multiValued()) {
+                throw new IllegalArgumentException(
+                        "payout filter on ID supports only IN or NOT_IN, got " + operator);
+            }
+            if (field != PayoutFilterField.ID && operator.multiValued()) {
+                throw new IllegalArgumentException(
+                        "payout filter on " + field + " does not support " + operator
+                                + "; only the ID field can match a list");
+            }
         }
     }
 

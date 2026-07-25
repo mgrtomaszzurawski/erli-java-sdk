@@ -28,8 +28,13 @@ import java.util.List;
  * bucket: any hand-written request body in a non-opened package fails the build here.
  *
  * <p>Each call is pointed at an unroutable address, so the request never leaves the machine. Reaching
- * the transport at all means encoding succeeded, which is what is under test; a connection failure is
- * the expected outcome.
+ * the transport means encoding succeeded, which is what is under test, so a <em>connection</em>
+ * failure is the required outcome — the check asserts that positively rather than only looking for a
+ * known-bad message, which would stay green if a call short-circuited before the body was ever built.
+ *
+ * <p><strong>Each bucket must add its own call below.</strong> The gate covers exactly the operations
+ * listed in {@code run()}; a hand-written request body in a package nobody exercises here is still
+ * unguarded.
  */
 public final class JpmsRuntimeCheck {
 
@@ -37,6 +42,7 @@ public final class JpmsRuntimeCheck {
     private static final String UNROUTABLE_BASE_URL = "http://127.0.0.1:1";
     private static final String PLACEHOLDER_KEY = "jpms:check";
     private static final String ENCODE_FAILURE_MARKER = "Failed to encode request body";
+    private static final String REACHED_TRANSPORT_MARKER = "Request to ";
     private static final int FAILURE_EXIT_CODE = 1;
 
     private JpmsRuntimeCheck() {
@@ -79,18 +85,40 @@ public final class JpmsRuntimeCheck {
         return failures;
     }
 
+
     /**
-     * Run one call and record a failure only when it could not encode. Any other outcome — including
-     * the expected connection error — means reflection into the request body worked.
+     * Require the call to fail at the <em>connection</em>, which can only happen once the body was
+     * encoded. Anything else — an encoding failure, or a success that never touched the wire — is
+     * reported, so the gate cannot pass by simply not exercising the code.
      */
     private static void check(List<String> failures, String operation, Runnable call) {
         try {
             call.run();
+            failures.add(operation + " -> returned without reaching the transport; "
+                    + "the request body was never encoded, so this check proved nothing");
         } catch (RuntimeException failure) {
             if (containsEncodeFailure(failure)) {
                 failures.add(operation + " -> " + rootCauseOf(failure));
+                return;
+            }
+            if (!reachedTransport(failure)) {
+                failures.add(operation + " -> failed before the transport: " + rootCauseOf(failure));
             }
         }
+    }
+
+    /** True when the failure came from the transport, i.e. after the body was serialized. */
+    private static boolean reachedTransport(Throwable failure) {
+        for (Throwable current = failure; current != null; current = current.getCause()) {
+            String message = current.getMessage();
+            if (message != null && message.startsWith(REACHED_TRANSPORT_MARKER)) {
+                return true;
+            }
+            if (current.getCause() == current) {
+                break;
+            }
+        }
+        return false;
     }
 
     private static boolean containsEncodeFailure(Throwable failure) {

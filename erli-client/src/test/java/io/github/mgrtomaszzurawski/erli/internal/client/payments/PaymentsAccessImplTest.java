@@ -360,6 +360,56 @@ class PaymentsAccessImplTest {
     }
 
     @Test
+    void returnsPageByNumberAndStopOnAShortPage() {
+        // Returns use a page counter, a third paging shape distinct from the two cursor paths, and it
+        // was previously exercised only one page deep.
+        String onePerPage = """
+                [{"type":"RETURN","amount":1.0,"currency":"PLN"}]""";
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.page", equalTo("1")))
+                .willReturn(aResponse().withStatus(200).withBody(onePerPage)));
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.page", equalTo("2")))
+                .willReturn(aResponse().withStatus(200).withBody(onePerPage)));
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.page", equalTo("3")))
+                .willReturn(aResponse().withStatus(200).withBody(EMPTY_BODY)));
+
+        List<Transaction> all = client.payments().searchReturns(ReturnSearch.builder(
+                        LocalDate.of(2026, 1, 1), LocalDate.of(2026, 7, 20))
+                .pageSize(1)
+                .build()).toList();
+
+        assertEquals(2, all.size(), "both full pages must be walked before the empty one stops it");
+        server.verify(3, postRequestedFor(urlEqualTo(SEARCH_PATH)));
+        server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
+                .withRequestBody(matchingJsonPath("$.perPage", equalTo("1"))));
+    }
+
+    @Test
+    void stopsReturnsWithoutASecondRequestWhenTheFirstPageIsShort() {
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(aResponse().withStatus(200).withBody(EMPTY_BODY)));
+
+        assertTrue(client.payments().searchReturns(ReturnSearch.builder(
+                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 7, 20)).pageSize(10).build()).toList().isEmpty());
+
+        server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
+    }
+
+    @Test
+    void rejectsPayoutFilterPairingsTheApiWouldReject() {
+        // The API's payout filter has two mutually exclusive shapes: id only with in/nin, and
+        // createdAt/amount only with the ordering operators.
+        assertThrows(IllegalArgumentException.class, () -> PayoutSearch.builder()
+                .matching(PayoutSearch.PayoutFilterField.ID, PaymentSearch.ComparisonOperator.EQUAL, 5L)
+                .build());
+        assertThrows(IllegalArgumentException.class, () -> PayoutSearch.builder()
+                .matching(PayoutSearch.PayoutFilterField.AMOUNT, PaymentSearch.ComparisonOperator.IN, 5L)
+                .build());
+    }
+
+    @Test
     void searchesFetchLazily() {
         server.stubFor(post(urlEqualTo(SEARCH_PATH))
                 .willReturn(aResponse().withStatus(200).withBody(TWO_PAYMENTS_BODY)));
@@ -370,7 +420,6 @@ class PaymentsAccessImplTest {
                 .toList();
 
         assertEquals(1, first.size());
-        assertFalse(first.isEmpty());
         server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
     }
 }

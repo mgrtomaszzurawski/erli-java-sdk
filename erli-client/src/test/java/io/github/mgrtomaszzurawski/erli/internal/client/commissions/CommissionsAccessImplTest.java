@@ -178,7 +178,7 @@ class CommissionsAccessImplTest {
         server.stubFor(post(urlEqualTo(ESTIMATE_PATH))
                 .willReturn(aResponse().withStatus(httpStatus)
                         .withBody("{\"message\":\"failure\",\"httpCode\":" + httpStatus + "}")));
-        // 5xx is retried before it surfaces, so use the fast policy for every row.
+        // POST is never retried, so the fast policy only matters if that rule ever changes.
         try (ErliClient retryingClient = clientWith(fastRetry())) {
             ErliApiException failure = assertThrows(ErliApiException.class,
                     () -> retryingClient.commissions().estimate(leafRequest()));

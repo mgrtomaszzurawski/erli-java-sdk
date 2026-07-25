@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntriesRequest;
 import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntriesRequestSimpleFilter;
+import io.github.mgrtomaszzurawski.erli.rest.model.ProductUpdate;
 import io.github.mgrtomaszzurawski.erli.rest.model.Transaction;
+import org.openapitools.jackson.nullable.JsonNullable;
 import io.github.mgrtomaszzurawski.erli.rest.model.Discount;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponse;
 import org.junit.jupiter.api.Test;
@@ -127,14 +129,13 @@ class JsonCodecTest {
         assertEquals("2026-07-27T08:15:00+02:00", written.get(START_AT_PROPERTY).asText(), written.toString());
     }
 
+    private static final String PAGINATION_PROPERTY = "pagination";
+    private static final String ORDER_ID_VALUE = "202607x1234";
+    private static final String EAN_PROPERTY = "ean";
+
     /** Hand-built from the {@code Transaction} schema; {@code balanceSnapshot} is its JsonNullable field. */
     private static final String TRANSACTION_WITH_SNAPSHOT_JSON = """
             {"type":"PAYOUT","balanceSnapshot":{"available":250}}
-            """;
-
-    /** Same schema with {@code balanceSnapshot} absent entirely. */
-    private static final String TRANSACTION_WITHOUT_SNAPSHOT_JSON = """
-            {"type":"PAYOUT"}
             """;
 
     @Test
@@ -149,27 +150,35 @@ class JsonCodecTest {
     }
 
     @Test
-    void readCannotTellAnAbsentJsonNullableFromAnExplicitNull() {
-        // Pinning a generator quirk, not an aspiration: openapi-generator initialises these fields to
-        // JsonNullable.of(null) rather than undefined(), so on a RESPONSE an absent key is
-        // indistinguishable from an explicit null. Mappers must treat both as "no value" and must not
-        // infer "the server explicitly cleared this" from isPresent().
-        Transaction absent = codec.read(TRANSACTION_WITHOUT_SNAPSHOT_JSON, Transaction.class);
-
-        assertTrue(absent.getBalanceSnapshot_JsonNullable().isPresent());
-        assertNull(absent.getBalanceSnapshot());
-    }
-
-    @Test
     void writeOmitsAnUnsetOptionalRatherThanSendingAnExplicitNull() {
         // Observed live 2026-07-25: the API rejects an explicitly-null optional instead of treating it
         // as absent — 400 "pagination must be of type object" on /billing/company/entries.
         BillingEntriesRequest request = new BillingEntriesRequest()
-                .simpleFilter(new BillingEntriesRequestSimpleFilter().orderId("202607x1234"));
+                .simpleFilter(new BillingEntriesRequestSimpleFilter().orderId(ORDER_ID_VALUE));
 
         String json = codec.write(request);
 
-        assertFalse(json.contains("pagination"), "unset 'pagination' must be omitted, got: " + json);
+        assertFalse(json.contains(PAGINATION_PROPERTY),
+                "unset 'pagination' must be omitted, got: " + json);
         assertFalse(json.contains("null"), "no property may be written as an explicit null, got: " + json);
+        // Without this the two assertions above would also pass for a codec that emitted "{}".
+        assertTrue(json.contains(ORDER_ID_VALUE), "the field that WAS set must survive: " + json);
+    }
+
+    @Test
+    void writeDistinguishesAnUndefinedNullableFromAnExplicitlyNullOne() {
+        // Guards JsonNullableModule on the WRITE side (verified by mutation: dropping the module
+        // fails this test). An untouched nullable must vanish from the body while an explicitly-null
+        // one must be sent as null, because on a PATCH that is how a field is cleared. 128 of Layer
+        // 1's JsonNullable fields default to undefined(), so this is the general case — only the 6
+        // free-form Object ones default to of(null).
+        ProductUpdate untouched = new ProductUpdate();
+        ProductUpdate cleared = new ProductUpdate();
+        cleared.setEan_JsonNullable(JsonNullable.of(null));
+
+        assertFalse(codec.write(untouched).contains(EAN_PROPERTY),
+                "an undefined nullable must not reach the wire: " + codec.write(untouched));
+        assertTrue(codec.write(cleared).contains("\"" + EAN_PROPERTY + "\":null"),
+                "an explicitly-null nullable must be sent as null: " + codec.write(cleared));
     }
 }

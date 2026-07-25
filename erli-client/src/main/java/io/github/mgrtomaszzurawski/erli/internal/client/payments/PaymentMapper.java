@@ -17,7 +17,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.TransactionOrdersInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.TransactionOrdersInnerItemsInner;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,12 +34,15 @@ final class PaymentMapper {
     private static final String FIELD_OPERATOR = "operator";
     private static final String FIELD_METHOD_CODE = "methodCode";
     private static final String FIELD_ORDER_IDS = "orderIds";
+    private static final String RAW_PAYMENT_NAME = "raw Payment";
+    private static final String RAW_PAYOUT_NAME = "raw Payout";
+    private static final String RAW_TRANSACTION_NAME = "raw Transaction";
 
     private PaymentMapper() {
     }
 
     static Payment toPayment(io.github.mgrtomaszzurawski.erli.rest.model.Payment rawPayment) {
-        Objects.requireNonNull(rawPayment, "raw Payment");
+        Objects.requireNonNull(rawPayment, RAW_PAYMENT_NAME);
         return new Payment(
                 require(rawPayment.getId(), FIELD_ID).longValue(),
                 toOrderIds(rawPayment.getOrderIds()),
@@ -57,7 +59,7 @@ final class PaymentMapper {
     }
 
     static Payout toPayout(io.github.mgrtomaszzurawski.erli.rest.model.Payout rawPayout) {
-        Objects.requireNonNull(rawPayout, "raw Payout");
+        Objects.requireNonNull(rawPayout, RAW_PAYOUT_NAME);
         return new Payout(
                 require(rawPayout.getId(), FIELD_ID).longValue(),
                 MinorUnits.fromGrosze(require(rawPayout.getAmount(), FIELD_AMOUNT)),
@@ -66,7 +68,7 @@ final class PaymentMapper {
     }
 
     static Transaction toTransaction(io.github.mgrtomaszzurawski.erli.rest.model.Transaction rawTransaction) {
-        Objects.requireNonNull(rawTransaction, "raw Transaction");
+        Objects.requireNonNull(rawTransaction, RAW_TRANSACTION_NAME);
         // Transaction lines state their own currency; everything else in Finance is PLN grosze.
         String currencyCode = rawTransaction.getCurrency();
         return new Transaction(

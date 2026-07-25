@@ -2,8 +2,6 @@ package io.github.mgrtomaszzurawski.erli.domain.campaigns;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 
-import java.math.BigDecimal;
-import java.util.Currency;
 import java.util.List;
 
 /**
@@ -15,7 +13,7 @@ import java.util.List;
 public record CampaignCostSummary(long shopId, List<CampaignDailyCost> dailyCosts) {
 
     /** Identity for {@link #totalNetCost()}; also the answer for a range with no spend. */
-    private static final Money ZERO_COST = new Money(BigDecimal.ZERO, Currency.getInstance("PLN"));
+    private static final Money ZERO_COST = Money.ofPln("0");
 
     public CampaignCostSummary {
         dailyCosts = List.copyOf(dailyCosts);
@@ -25,7 +23,15 @@ public record CampaignCostSummary(long shopId, List<CampaignDailyCost> dailyCost
     public Money totalNetCost() {
         return dailyCosts.stream()
                 .map(CampaignDailyCost::netShopCost)
-                .reduce(ZERO_COST, (left, right) ->
-                        new Money(left.amount().add(right.amount()), right.currency()));
+                .reduce(ZERO_COST, CampaignCostSummary::add);
+    }
+
+    /** Campaign costs are PLN-only; refuse to add across currencies rather than pick one silently. */
+    private static Money add(Money left, Money right) {
+        if (!left.currency().equals(right.currency())) {
+            throw new IllegalStateException("Cannot total campaign costs across currencies: "
+                    + left.currency().getCurrencyCode() + " and " + right.currency().getCurrencyCode());
+        }
+        return new Money(left.amount().add(right.amount()), left.currency());
     }
 }

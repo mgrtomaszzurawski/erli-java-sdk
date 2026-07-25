@@ -24,6 +24,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -130,8 +131,8 @@ class BillingAccessImplTest {
 
         String body = server.getAllServeEvents().get(0).getRequest().getBodyAsString();
         assertTrue(body.contains("fromOccurredAt"), body);
-        assertTrue(!body.contains("null"), "the API rejects explicit nulls: " + body);
-        assertTrue(!body.contains("\"after\""), "no cursor on the first page: " + body);
+        assertFalse(body.contains("null"), "the API rejects explicit nulls: " + body);
+        assertFalse(body.contains("\"after\""), "no cursor on the first page: " + body);
     }
 
     @Test

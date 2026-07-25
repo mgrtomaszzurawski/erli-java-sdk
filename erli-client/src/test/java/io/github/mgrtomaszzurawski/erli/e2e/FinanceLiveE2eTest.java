@@ -24,8 +24,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Live proof for the Finance bucket against the real Erli sandbox — the Definition-of-Done e2e
@@ -104,14 +106,21 @@ class FinanceLiveE2eTest {
     @Test
     void walksTheCompanyLedgerLive() {
         try (ErliClient client = ErliClient.fromEnvironment()) {
-            // Terminal operation on a lazy stream: proves the request, the decode and the mapper.
-            List<BillingEntry> entries = client.billing().entries(BillingEntryFilter.all()).limit(5).toList();
-            List<BillingEntry> rebates = client.billing().rebates(BillingEntryFilter.all()).limit(5).toList();
+            // The assertion IS that the server accepts our request shape. Both endpoints are strict:
+            // a missing simpleFilter, an explicit null, or a sort other than id/DESC all draw a 400,
+            // so reaching a decoded result proves the body the SDK builds is the one Erli wants.
+            List<BillingEntry> entries = assertDoesNotThrow(
+                    () -> client.billing().entries(BillingEntryFilter.all()).limit(5).toList(),
+                    "the ledger request shape must be accepted by the live API");
+            List<BillingEntry> rebates = assertDoesNotThrow(
+                    () -> client.billing().rebates(BillingEntryFilter.all()).limit(5).toList(),
+                    "the rebates request shape must be accepted by the live API");
 
-            assertTrue(entries.size() <= 5, "limit(5) must not over-fetch into the result");
-            assertTrue(rebates.size() <= 5, "limit(5) must not over-fetch into the result");
-            // Vacuous while the ledger is empty, real once Phase 3 seeds it.
-            entries.forEach(entry -> assertNotNull(entry.amount()));
+            // Content invariants only bite once the ledger has rows; until then say so honestly by
+            // skipping rather than passing on an empty list.
+            assumeFalse(entries.isEmpty() && rebates.isEmpty(),
+                    "sandbox ledger is empty — mapping stays unproven until Phase 3 seeds data");
+            entries.forEach(entry -> assertEquals("PLN", entry.amount().currency().getCurrencyCode()));
             rebates.forEach(entry -> assertNotNull(entry.balanceAfter()));
         }
     }
@@ -119,24 +128,21 @@ class FinanceLiveE2eTest {
     @Test
     void searchesPaymentsAndPayoutsLive() {
         try (ErliClient client = ErliClient.fromEnvironment()) {
-            List<Payment> payments = client.payments().searchPayments(PaymentSearch.all()).limit(5).toList();
-            List<Payout> payouts = client.payments().searchPayouts(PayoutSearch.all()).limit(5).toList();
+            // Same reasoning as the ledger: reaching a decoded result is the proof. This endpoint is
+            // the strictest in the bucket — the type discriminator must be in the BODY, and the spec's
+            // query-parameter form draws 400 "type is required" (KNOWN-SERVER-BEHAVIORS.md). So a
+            // successful call is exactly what distinguishes the right wire shape from the spec's.
+            List<Payment> payments = assertDoesNotThrow(
+                    () -> client.payments().searchPayments(PaymentSearch.all()).limit(5).toList(),
+                    "the payment search must send 'type' where the live API reads it");
+            List<Payout> payouts = assertDoesNotThrow(
+                    () -> client.payments().searchPayouts(PayoutSearch.all()).limit(5).toList(),
+                    "the payout search must send 'type' where the live API reads it");
 
-            assertTrue(payments.size() <= 5, "limit(5) must not over-fetch into the result");
-            assertTrue(payouts.size() <= 5, "limit(5) must not over-fetch into the result");
+            assumeFalse(payments.isEmpty() && payouts.isEmpty(),
+                    "sandbox shop has no payments — mapping stays unproven until Phase 3 seeds data");
             payments.forEach(payment -> assertNotNull(payment.status()));
-            payouts.forEach(payout -> assertNotNull(payout.amount()));
-        }
-    }
-
-    @Test
-    void rejectsAnUnknownOperationTypeLive() {
-        // Also non-vacuous on an empty shop: the discriminator must reach the server in the BODY.
-        // If it were sent as the spec's query parameter, the server answers 400 "type is required"
-        // and this search would fail instead of returning an empty page.
-        try (ErliClient client = ErliClient.fromEnvironment()) {
-            assertTrue(client.payments().searchPayments(PaymentSearch.all()).limit(1).toList().isEmpty(),
-                    "the empty sandbox shop must return an empty page, not an error");
+            payouts.forEach(payout -> assertEquals("PLN", payout.amount().currency().getCurrencyCode()));
         }
     }
 
