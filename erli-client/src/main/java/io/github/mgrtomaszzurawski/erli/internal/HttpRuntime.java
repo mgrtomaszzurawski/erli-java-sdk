@@ -3,7 +3,6 @@ package io.github.mgrtomaszzurawski.erli.internal;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

@@ -16,7 +16,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.CreatePriceListSchemaPricesIn
 import io.github.mgrtomaszzurawski.erli.rest.model.CreatePriceListSchemaPricesInnerDeliveryMethodDeliveryTime;
 import io.github.mgrtomaszzurawski.erli.rest.model.PriceListDetailsSchema;
 import io.github.mgrtomaszzurawski.erli.rest.model.PriceListListItem;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

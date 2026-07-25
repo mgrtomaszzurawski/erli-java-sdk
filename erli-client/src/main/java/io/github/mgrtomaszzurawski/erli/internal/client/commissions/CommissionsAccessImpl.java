@@ -6,7 +6,6 @@ import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionsAccess;
 import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.rest.model.EstimateCommissionResponse;
-
 import java.util.Objects;
 
 /**

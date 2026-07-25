@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsibleParty;

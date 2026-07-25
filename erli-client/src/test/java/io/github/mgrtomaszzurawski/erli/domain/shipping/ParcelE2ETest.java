@@ -1,14 +1,14 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliNotFoundException;
 import io.github.mgrtomaszzurawski.erli.core.model.ParcelId;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Live end-to-end proof of the parcel slice against the Erli sandbox. Tagged {@code e2e}, so it is

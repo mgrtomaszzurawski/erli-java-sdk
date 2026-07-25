@@ -2,7 +2,6 @@ package io.github.mgrtomaszzurawski.erli.domain.billing;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliApiException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-
 import java.util.stream.Stream;
 
 /**

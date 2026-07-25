@@ -2,7 +2,6 @@ package io.github.mgrtomaszzurawski.erli.domain.commissions;
 
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
-
 import java.util.Objects;
 
 /**

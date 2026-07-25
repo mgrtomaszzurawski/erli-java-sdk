@@ -35,10 +35,10 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDescriptionAnyOf
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDescriptionAnyOfSectionsInnerItemsInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDispatchTime;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInner;
+import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf2;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf3;
-import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalCategoriesInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalProductSets;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalReferencesInner;

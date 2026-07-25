@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
-
 import java.util.Currency;
 import java.util.List;
 import java.util.Optional;

@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.shipping;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.core.model.ParcelId;
@@ -9,7 +10,6 @@ import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelError;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelStatus;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelStatusChange;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ParcelType;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.CreateExternalParcelInnerTrackingNumber;
 import io.github.mgrtomaszzurawski.erli.rest.model.CreateExternalParcelResponseAnyOf;
@@ -17,7 +17,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.CreateExternalParcelResponseA
 import io.github.mgrtomaszzurawski.erli.rest.model.ErrorResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ExternalParcelShipping;
 import io.github.mgrtomaszzurawski.erli.rest.model.ParcelStatusHistoryInner;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;

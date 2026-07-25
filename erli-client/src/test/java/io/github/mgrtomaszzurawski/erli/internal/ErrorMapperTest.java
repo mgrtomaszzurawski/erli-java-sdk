@@ -1,5 +1,10 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.mgrtomaszzurawski.erli.core.error.ErliApiException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliErrorDetails;
@@ -7,11 +12,6 @@ import io.github.mgrtomaszzurawski.erli.core.error.ErliNotFoundException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ErrorMapperTest {
 

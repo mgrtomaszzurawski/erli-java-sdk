@@ -3,7 +3,6 @@ package io.github.mgrtomaszzurawski.erli.demo;
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Order;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderSearchRequest;
-
 import java.util.List;
 
 /**

@@ -6,7 +6,6 @@ import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionEstimateReq
 import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
 import io.github.mgrtomaszzurawski.erli.rest.model.EstimateCommissionRequest;
 import io.github.mgrtomaszzurawski.erli.rest.model.EstimateCommissionResponse;
-
 import java.util.Objects;
 
 /**

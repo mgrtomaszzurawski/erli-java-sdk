@@ -1,26 +1,25 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsibleParty;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartySource;
-import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
-import io.github.mgrtomaszzurawski.erli.rest.model.CreateResponsibleSchema;
-import io.github.mgrtomaszzurawski.erli.rest.model.ResponsibleSchema;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyUpdate;
-import io.github.mgrtomaszzurawski.erli.rest.model.UpdateResponsibleSchema;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-
-import java.util.Arrays;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsibleParty;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartySource;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsiblePartyUpdate;
+import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
+import io.github.mgrtomaszzurawski.erli.rest.model.CreateResponsibleSchema;
+import io.github.mgrtomaszzurawski.erli.rest.model.ResponsibleSchema;
+import io.github.mgrtomaszzurawski.erli.rest.model.UpdateResponsibleSchema;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class ResponsiblePartyMapperTest {
 

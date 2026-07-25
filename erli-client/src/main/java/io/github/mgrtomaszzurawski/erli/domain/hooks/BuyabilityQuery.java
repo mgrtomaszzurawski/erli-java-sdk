@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.hooks;
 
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
-
 import java.util.Objects;
 
 /**

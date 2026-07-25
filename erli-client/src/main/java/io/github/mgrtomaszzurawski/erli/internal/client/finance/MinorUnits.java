@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.finance;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
-
 import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.Locale;

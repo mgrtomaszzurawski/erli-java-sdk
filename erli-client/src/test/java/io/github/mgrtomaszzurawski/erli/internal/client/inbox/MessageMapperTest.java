@@ -1,5 +1,12 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.inbox;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.model.Buyer;
 import io.github.mgrtomaszzurawski.erli.core.model.Country;
@@ -37,13 +44,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Deep field-level assertions on the inbox mapping. The two fixtures are derived from the vendored

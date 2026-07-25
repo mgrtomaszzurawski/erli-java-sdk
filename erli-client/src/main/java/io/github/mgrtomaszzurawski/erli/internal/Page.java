@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
-
 import java.util.List;
 
 /**

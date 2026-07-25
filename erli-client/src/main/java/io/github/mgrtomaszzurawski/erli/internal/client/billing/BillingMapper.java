@@ -11,7 +11,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntriesRequestPaginati
 import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntriesRequestSimpleFilter;
 import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntriesResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntriesResponseInnerRebateOriginInner;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

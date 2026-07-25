@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.delivery;
 
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
-
 import java.util.Objects;
 import java.util.Optional;
 

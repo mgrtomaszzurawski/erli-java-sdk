@@ -20,7 +20,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ParcelShipping;
 import io.github.mgrtomaszzurawski.erli.rest.model.ParcelShippingReceiver;
 import io.github.mgrtomaszzurawski.erli.rest.model.ParcelShippingSender;
 import io.github.mgrtomaszzurawski.erli.rest.model.ParcelStatusHistoryInner;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;

@@ -18,7 +18,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.MarkReadAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.MessagePayloadAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.MessagePayloadAnyOf3;
 import io.github.mgrtomaszzurawski.erli.rest.model.MessageRequest;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

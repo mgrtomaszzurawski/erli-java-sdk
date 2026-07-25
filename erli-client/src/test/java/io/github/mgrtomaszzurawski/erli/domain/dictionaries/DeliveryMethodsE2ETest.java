@@ -1,13 +1,13 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Live end-to-end proof of the delivery-methods slice against the Erli sandbox. Tagged {@code e2e}, so

@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.products;
 
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

@@ -1,22 +1,21 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ParcelDimensions;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingMethod;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ShippingOperator;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class ShippingMethodMapperTest {
 

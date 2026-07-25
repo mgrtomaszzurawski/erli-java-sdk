@@ -1,13 +1,13 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
-import io.github.mgrtomaszzurawski.erli.rest.model.CheckBuyabilityResponseInner;
-import io.github.mgrtomaszzurawski.erli.rest.model.HookSave;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.mgrtomaszzurawski.erli.rest.model.CheckBuyabilityResponseInner;
+import io.github.mgrtomaszzurawski.erli.rest.model.HookSave;
+import org.junit.jupiter.api.Test;
 
 /**
  * Regression guard for two codec behaviours the generated Layer-1 models depend on and that a bare

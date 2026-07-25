@@ -1,5 +1,8 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderFilter;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderSearchRequest;
@@ -11,9 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Request-mapping contract: every domain-to-wire token the SDK can emit.

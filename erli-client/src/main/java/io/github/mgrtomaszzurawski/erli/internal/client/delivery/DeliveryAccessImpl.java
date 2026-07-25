@@ -12,7 +12,6 @@ import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
 import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
 import io.github.mgrtomaszzurawski.erli.rest.model.PriceListDetailsSchema;
 import io.github.mgrtomaszzurawski.erli.rest.model.PriceListListItem;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

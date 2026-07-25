@@ -1,11 +1,11 @@
 package io.github.mgrtomaszzurawski.erli.core.model;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 class DeliveryVendorTest {
 

@@ -13,7 +13,6 @@ import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
 import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
 import io.github.mgrtomaszzurawski.erli.rest.model.CheckBuyabilityResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.HookResponseInner;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

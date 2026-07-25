@@ -2,7 +2,6 @@ package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;

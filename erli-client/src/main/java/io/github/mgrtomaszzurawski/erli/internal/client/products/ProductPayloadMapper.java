@@ -1,6 +1,5 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
-import io.github.mgrtomaszzurawski.erli.core.model.Market;
 import io.github.mgrtomaszzurawski.erli.domain.products.AttributeValues;
 import io.github.mgrtomaszzurawski.erli.domain.products.DescriptionItem;
 import io.github.mgrtomaszzurawski.erli.domain.products.DescriptionSection;
@@ -27,12 +26,12 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDescriptionAnyOf
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDispatchTime;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateDispatchTimePeriod;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInner;
+import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf1Values;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf2;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf2ValuesInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf3;
-import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOfId;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalCategoriesInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalProductSets;

@@ -1,5 +1,10 @@
 package io.github.mgrtomaszzurawski.erli.domain;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.mgrtomaszzurawski.erli.core.model.BankAccount;
 import io.github.mgrtomaszzurawski.erli.core.model.Buyer;
 import io.github.mgrtomaszzurawski.erli.core.model.Country;
@@ -19,11 +24,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Contract of the public Comms &amp; Automation records: the constraints they enforce up front, and the

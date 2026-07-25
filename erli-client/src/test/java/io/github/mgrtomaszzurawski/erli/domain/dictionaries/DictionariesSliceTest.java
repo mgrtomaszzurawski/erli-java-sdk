@@ -1,15 +1,5 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
-import io.github.mgrtomaszzurawski.erli.ErliClient;
-import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
-import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -20,6 +10,15 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import io.github.mgrtomaszzurawski.erli.ErliClient;
+import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** Full delivery-methods slice through {@link ErliClient}: accessor → impl → query → transport → mapper. */
 class DictionariesSliceTest {

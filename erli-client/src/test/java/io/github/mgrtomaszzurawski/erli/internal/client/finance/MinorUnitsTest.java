@@ -1,15 +1,14 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.finance;
 
-import io.github.mgrtomaszzurawski.erli.core.model.Money;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
-import java.math.BigDecimal;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.mgrtomaszzurawski.erli.core.model.Money;
+import java.math.BigDecimal;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Direct coverage of the money conversion shared by all four Finance areas (TESTING.md principle 2:

@@ -21,7 +21,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.SearchParcelsFilter;
 import io.github.mgrtomaszzurawski.erli.rest.model.SearchParcelsFilterAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.SearchParcelsFilterAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.SearchParcelsFilterAnyOfValue;
-
 import java.util.ArrayList;
 import java.util.List;
 

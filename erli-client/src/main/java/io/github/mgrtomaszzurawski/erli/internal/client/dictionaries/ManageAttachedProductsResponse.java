@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import java.util.List;
 
 /**

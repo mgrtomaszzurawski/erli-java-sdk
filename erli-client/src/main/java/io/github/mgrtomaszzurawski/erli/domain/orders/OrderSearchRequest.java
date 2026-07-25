@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.orders;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
-
 import java.util.Objects;
 import java.util.Optional;
 

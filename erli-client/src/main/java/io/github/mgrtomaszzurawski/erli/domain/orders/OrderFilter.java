@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.orders;
 
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
-
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;

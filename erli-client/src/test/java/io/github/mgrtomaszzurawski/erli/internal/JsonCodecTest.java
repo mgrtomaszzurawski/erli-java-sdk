@@ -1,21 +1,20 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-import io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod;
-import io.github.mgrtomaszzurawski.erli.rest.model.Discount;
-import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponse;
-import org.junit.jupiter.api.Test;
-
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod;
+import io.github.mgrtomaszzurawski.erli.rest.model.Discount;
+import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponse;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class JsonCodecTest {
 

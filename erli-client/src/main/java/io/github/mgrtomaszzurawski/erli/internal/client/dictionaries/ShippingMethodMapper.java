@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensionsAn
 import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxDimensionsAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMaxPointDimensions;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethodMinDimensions;
-
 import java.util.Objects;
 import java.util.Optional;
 

@@ -3,7 +3,6 @@ package io.github.mgrtomaszzurawski.erli.domain.campaigns;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliApiException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
-
 import java.time.LocalDate;
 
 /**

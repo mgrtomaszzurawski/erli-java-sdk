@@ -13,10 +13,9 @@ import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.CursorPagination;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.Page;
-import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
-import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
 import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
-
+import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
+import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;

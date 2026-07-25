@@ -1,9 +1,8 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
-
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethod;
 import java.util.Objects;
 
 /**

@@ -2,19 +2,18 @@ package io.github.mgrtomaszzurawski.erli.internal.client.shipping;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
-import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.CarrierPoint;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.GeoLocation;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.PointAddress;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.PostingPoint;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.PostingPointType;
+import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.PostingPointAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.PostingPointAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.PostingPointAnyOf1Location;
 import io.github.mgrtomaszzurawski.erli.rest.model.PostingPointAnyOf1PointAddress;
 import io.github.mgrtomaszzurawski.erli.rest.model.PostingPointAnyOf2;
 import io.github.mgrtomaszzurawski.erli.rest.model.PostingPointAnyOf2PointsInner;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

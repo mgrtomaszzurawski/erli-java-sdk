@@ -9,7 +9,6 @@ import io.github.mgrtomaszzurawski.erli.internal.CursorPagination;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.Page;
 import io.github.mgrtomaszzurawski.erli.rest.model.BillingEntriesResponseInner;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;

@@ -22,7 +22,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.ProductBatchResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductResponse;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductUpdateResponse;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductsBatchUpdatePatchRequestInner;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

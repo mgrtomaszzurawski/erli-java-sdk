@@ -9,9 +9,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-import org.openapitools.jackson.nullable.JsonNullableModule;
-
 import java.util.List;
+import org.openapitools.jackson.nullable.JsonNullableModule;
 
 /**
  * Thin Jackson wrapper for the SDK's JSON boundary. Internal: never exported to consumers.

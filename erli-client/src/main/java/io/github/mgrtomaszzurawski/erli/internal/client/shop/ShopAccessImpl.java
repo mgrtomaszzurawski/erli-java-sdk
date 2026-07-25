@@ -5,7 +5,6 @@ import io.github.mgrtomaszzurawski.erli.domain.shop.ShopAccess;
 import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponse;
-
 import java.util.Objects;
 
 /**
