@@ -186,6 +186,27 @@ if (values instanceof AttributeValues.TextValues text) {
 }
 ```
 
+## Markets the SDK does not know yet
+
+Erli adds markets as it expands. A product attachment carries its market scope as a list, and one
+unfamiliar entry must not fail the whole product read — so the scope arrives split:
+
+```java
+ProductAttachment attachment = product.productAttachments().get(0);
+attachment.markets();              // [PL]      — the ones this SDK version can name
+attachment.unrecognisedMarkets();  // ["cz"]    — kept verbatim, nothing lost
+attachment.marketCount();          // 2         — the true scope
+```
+
+Write the attachment back unchanged and both halves go out again, so a read-modify-write never quietly
+narrows the scope to what this SDK happens to understand.
+
+Elsewhere the marketplace declares these fields as enums rather than lists, and the transport turns a
+value it cannot read into an absent one. On `product.markets()` that is the *only* thing an empty
+`Optional` means — the spec defaults the field to `pl`, so a product that never mentions it still reads
+back as `PL`. For required fields the SDK stays loud instead: an unreadable `status` or `dispatchTime`
+fails the read rather than yielding a product you cannot trust.
+
 ## Errors
 
 Exceptions group by what you can do about them, not by status code:
