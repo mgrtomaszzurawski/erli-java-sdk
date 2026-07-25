@@ -54,9 +54,10 @@ public final class JsonCodec {
                 // Unknown enum values decode to null instead of throwing (CORE-12). A Layer-1 enum is a
                 // snapshot of the vendored spec; when the API grows one (a new PayU method, a new
                 // carrier), a strict decoder would fail the WHOLE response over a single field. With
-                // this, decoding survives and the field is null — closed enums stay fail-loud via the
-                // mapper's required-field check, while open/growing enums map null to an UNRECOGNIZED
-                // sentinel. See KNOWN-SERVER-BEHAVIORS.md "Enum handling".
+                // this, decoding survives and the field is null; the domain layer then decides — a
+                // required-field null-check keeps closed enums fail-loud, and open/growing enums may
+                // instead map null to an UNRECOGNIZED sentinel. See KNOWN-SERVER-BEHAVIORS.md "Enum
+                // handling". Note: an unknown value on an OPTIONAL enum field is now silently absent.
                 .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
     }
 

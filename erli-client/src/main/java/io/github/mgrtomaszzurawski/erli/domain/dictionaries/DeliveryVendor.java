@@ -58,12 +58,12 @@ public enum DeliveryVendor {
     /**
      * Resolve a wire string to a vendor.
      *
-     * <p>On the live path this is only ever called with the wire value of an already-decoded Layer-1
-     * {@code VendorEnum}, so it always resolves — a wire value the API added but the vendored spec
-     * lacks fails earlier, at JSON decode (the generated enum's {@code @JsonCreator} throws, surfaced
-     * as an {@link ErliTransportException}; fail-loud is intentional, see
-     * {@code KNOWN-SERVER-BEHAVIORS.md}). This guard therefore fires only if this domain enum drifts
-     * out of sync with the generated one.
+     * <p>Since CORE-12 the codec decodes an unknown wire value to a {@code null} Layer-1
+     * {@code VendorEnum} (it no longer throws at decode), and the mapper rejects that null before
+     * calling this method — so {@code fromWire} only ever sees the value of a known {@code VendorEnum}.
+     * This guard therefore fires only if this domain enum drifts out of sync with the generated one.
+     * (A future move to tolerant handling would add an {@code UNRECOGNIZED} constant and map null to
+     * it in the mapper; see {@code KNOWN-SERVER-BEHAVIORS.md} "Enum handling".)
      *
      * @throws ErliTransportException if no domain constant maps the given wire value (enum drift)
      */
