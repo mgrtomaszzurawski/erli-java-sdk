@@ -1,10 +1,13 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 
 import java.util.List;
@@ -13,6 +16,16 @@ import java.util.List;
  * Thin Jackson wrapper for the SDK's JSON boundary. Configured to <strong>ignore unknown
  * properties</strong> so the SDK stays forward-compatible with the API's richer-than-spec payloads
  * (see {@code KNOWN-SERVER-BEHAVIORS.md}). Internal: never exported to consumers.
+ *
+ * <p>Three further settings are load-bearing for every domain bucket:
+ * <ul>
+ *   <li>the JSR-310 module, because the generated models expose {@code date-time} properties as
+ *       {@link java.time.OffsetDateTime} — without it decoding any dated payload fails outright;</li>
+ *   <li>ISO-8601 (not numeric) date output, matching what the API sends and accepts;</li>
+ *   <li>{@link JsonInclude.Include#NON_NULL} serialization, so an unset optional property is
+ *       <em>omitted</em> rather than written as an explicit {@code null}. This matters on the
+ *       {@code PATCH} endpoints, where an explicit {@code null} is a request to clear the field.</li>
+ * </ul>
  */
 public final class JsonCodec {
 
@@ -20,7 +33,10 @@ public final class JsonCodec {
 
     public JsonCodec() {
         this.mapper = new ObjectMapper()
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+                .registerModule(new JavaTimeModule())
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
     /** Deserialize a response body into {@code type}, wrapping any failure as a transport error. */

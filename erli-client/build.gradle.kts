@@ -20,6 +20,9 @@ dependencies {
     // Layer 1 raw models + Jackson stay internal to this module (never re-exported to consumers).
     implementation(project(":erli-rest-models"))
     implementation(libs.jackson.databind)
+    // The generated models expose `date-time` properties as java.time types; the codec registers the
+    // JSR-310 module, so the dependency is declared here rather than relied on transitively.
+    implementation(libs.jackson.datatype.jsr310)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
