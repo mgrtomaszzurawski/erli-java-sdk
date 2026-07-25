@@ -66,4 +66,23 @@ class ErrorMapperTest {
         assertEquals("trace-xyz", exception.details().traceId());
         assertTrue(exception.getMessage().contains("trace-xyz"));
     }
+
+    @Test
+    void preservesScalarPayload() {
+        ErliApiException exception = mapper.toException(401,
+                "{\"failureType\":\"security\",\"payload\":\"Invalid API key\"}");
+        assertEquals("Invalid API key", exception.details().payload());
+    }
+
+    @Test
+    void preservesObjectPayloadAsJsonInsteadOfDroppingIt() {
+        // CORE-8: validation errors carry per-field detail as an object payload; a plain-text
+        // extraction would silently drop it. It is kept as its compact JSON string.
+        ErliApiException exception = mapper.toException(400,
+                "{\"failureType\":\"validation\",\"payload\":{\"details\":{\"types\":\"unknown filter\"}}}");
+
+        String payload = exception.details().payload();
+        assertTrue(payload.contains("details"), "object payload lost");
+        assertTrue(payload.contains("unknown filter"), "per-field detail lost");
+    }
 }
