@@ -175,7 +175,7 @@ final class PaymentSearchMapper {
         };
     }
 
-    /** The marketplace discriminator; the API spells it lowercase. */
+    /** The marketplace discriminator, as the API's lowercase wire token ({@code pl}/{@code de}). */
     private static String wireMarket(Market market) {
         return market.wireValue();
     }
