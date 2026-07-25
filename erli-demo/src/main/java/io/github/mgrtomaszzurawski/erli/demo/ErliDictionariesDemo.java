@@ -164,7 +164,8 @@ public final class ErliDictionariesDemo {
             System.out.printf("attachProducts             -> complete=%b, errors=%d (HTTP 200 with ok=false)%n",
                     attached.isComplete(), attached.errors().size());
             attached.errors().forEach(error ->
-                    System.out.printf("    product %d refused: %s%n", error.productId(), error.error()));
+                    System.out.printf("    product %s refused: %s%n",
+                            error.productId().map(String::valueOf).orElse("(unnamed)"), error.error()));
         } finally {
             AttachmentRemoval removal = dictionaries.deleteAttachments(List.of(created.id()));
             System.out.printf("deleteAttachments          -> removed=%s, complete=%b (sandbox left clean)%n",
