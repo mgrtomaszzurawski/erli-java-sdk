@@ -18,5 +18,8 @@ dependencies {
 }
 
 application {
-    mainClass = "io.github.mgrtomaszzurawski.erli.demo.ErliMeDemo"
+    // Defaults to the Core M1 proof; override to run a bucket's runner, e.g.
+    //   ./gradlew :erli-demo:run -PmainClass=io.github.mgrtomaszzurawski.erli.demo.ErliOrdersDemo
+    mainClass = providers.gradleProperty("mainClass")
+        .orElse("io.github.mgrtomaszzurawski.erli.demo.ErliMeDemo")
 }
