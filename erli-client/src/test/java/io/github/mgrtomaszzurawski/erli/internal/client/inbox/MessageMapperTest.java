@@ -1,15 +1,20 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.inbox;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
+import io.github.mgrtomaszzurawski.erli.core.model.Country;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.InvoiceAddressType;
+import io.github.mgrtomaszzurawski.erli.core.model.OrderStatus;
+import io.github.mgrtomaszzurawski.erli.core.model.PaymentStatus;
+import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
+import io.github.mgrtomaszzurawski.erli.core.model.ReturnReason;
+import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
+import io.github.mgrtomaszzurawski.erli.core.model.TrackingStatus;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Buyer;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.Country;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Delivery;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryTracking;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddress;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddressType;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Message;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.MessageId;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.MessageQuery;
@@ -17,20 +22,13 @@ import io.github.mgrtomaszzurawski.erli.domain.inbox.MessageType;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.OrderEvent;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.OrderLine;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.OrderReturn;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.OrderStatus;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.PaymentStatus;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.PickupPlace;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.PickupProvider;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.ProductsSyncEvent;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.ReadReceipt;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Rebate;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.ReturnReason;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.SellerStatus;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.TaxRate;
-import io.github.mgrtomaszzurawski.erli.domain.inbox.TrackingStatus;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -38,11 +36,12 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

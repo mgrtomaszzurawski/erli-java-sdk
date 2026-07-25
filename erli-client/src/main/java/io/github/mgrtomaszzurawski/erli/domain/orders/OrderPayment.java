@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.orders;
 
+import io.github.mgrtomaszzurawski.erli.core.model.PaymentStatus;
 import java.util.Optional;
 
 /**

@@ -1,4 +1,4 @@
-package io.github.mgrtomaszzurawski.erli.domain.orders;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 /**
  * Country of a buyer address. Erli's address schema currently enumerates Poland only; the enum exists

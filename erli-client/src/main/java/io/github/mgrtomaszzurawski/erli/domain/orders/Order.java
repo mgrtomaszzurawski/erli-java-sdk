@@ -3,7 +3,8 @@ package io.github.mgrtomaszzurawski.erli.domain.orders;
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
-
+import io.github.mgrtomaszzurawski.erli.core.model.OrderStatus;
+import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;

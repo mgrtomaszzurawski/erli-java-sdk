@@ -1,4 +1,4 @@
-package io.github.mgrtomaszzurawski.erli.domain.orders;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 /**
  * The marketplace-side lifecycle of an order, as Erli sees it. Distinct from {@link SellerStatus},
@@ -15,6 +15,6 @@ public enum OrderStatus {
     /** Cancelled; an order in this state can no longer be updated. */
     CANCELLED,
 
-    /** Returned by the buyer. See {@link Order#returns()} for the details. */
+    /** Returned by the buyer. */
     RETURNED
 }

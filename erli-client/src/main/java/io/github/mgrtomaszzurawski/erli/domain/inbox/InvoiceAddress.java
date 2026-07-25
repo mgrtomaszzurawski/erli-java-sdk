@@ -1,5 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.inbox;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Country;
+import io.github.mgrtomaszzurawski.erli.core.model.InvoiceAddressType;
 import java.util.Objects;
 import java.util.Optional;
 

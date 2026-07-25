@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.inbox;
 
+import io.github.mgrtomaszzurawski.erli.core.model.ReturnReason;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;

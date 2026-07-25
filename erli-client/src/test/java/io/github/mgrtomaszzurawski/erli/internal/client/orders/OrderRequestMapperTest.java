@@ -1,17 +1,16 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
+import io.github.mgrtomaszzurawski.erli.core.model.SellerStatus;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderFilter;
 import io.github.mgrtomaszzurawski.erli.domain.orders.OrderSearchRequest;
-import io.github.mgrtomaszzurawski.erli.domain.orders.SellerStatus;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

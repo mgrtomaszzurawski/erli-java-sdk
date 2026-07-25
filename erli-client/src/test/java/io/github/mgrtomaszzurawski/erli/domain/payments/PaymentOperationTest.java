@@ -2,11 +2,11 @@ package io.github.mgrtomaszzurawski.erli.domain.payments;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
-import org.junit.jupiter.api.Test;
-
+import io.github.mgrtomaszzurawski.erli.core.model.PaymentStatus;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

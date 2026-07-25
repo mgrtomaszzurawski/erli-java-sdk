@@ -1,7 +1,7 @@
-package io.github.mgrtomaszzurawski.erli.domain.orders;
+package io.github.mgrtomaszzurawski.erli.core.model;
 
 /**
- * Where the parcel is, as reported by {@link DeliveryTracking}.
+ * Where the parcel is, as reported by an order's delivery tracking.
  */
 public enum TrackingStatus {
 

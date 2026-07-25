@@ -2,9 +2,9 @@ package io.github.mgrtomaszzurawski.erli.internal.client.payments;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
+import io.github.mgrtomaszzurawski.erli.core.model.PaymentStatus;
 import io.github.mgrtomaszzurawski.erli.domain.payments.Payment;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentOperator;
-import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentStatus;
 import io.github.mgrtomaszzurawski.erli.domain.payments.Payout;
 import io.github.mgrtomaszzurawski.erli.domain.payments.Transaction;
 import io.github.mgrtomaszzurawski.erli.domain.payments.TransactionCustomer;
@@ -15,7 +15,6 @@ import io.github.mgrtomaszzurawski.erli.domain.payments.TransactionSubjectType;
 import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
 import io.github.mgrtomaszzurawski.erli.rest.model.TransactionOrdersInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.TransactionOrdersInnerItemsInner;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
