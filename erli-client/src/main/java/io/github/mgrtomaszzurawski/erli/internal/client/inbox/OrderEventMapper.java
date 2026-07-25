@@ -12,7 +12,7 @@ import io.github.mgrtomaszzurawski.erli.domain.inbox.Country;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Delivery;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.DeliveryTracking;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryVendor;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddress;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InvoiceAddressType;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.OrderEvent;
@@ -44,7 +44,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.OrderUser;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderUserDeliveryAddress;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderUserInvoiceAddress;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Currency;
 import java.util.List;
@@ -58,7 +57,8 @@ import java.util.Optional;
  * <p>Two things are worth knowing about the shape:
  * <ul>
  *   <li>All money in the payload arrives as an <strong>integer count of minor units</strong> (grosze
- *       for {@code PLN}); the order-level {@code currency} applies to every amount in the payload.</li>
+ *       for {@code PLN}); the order-level {@code currency} applies to every amount in the payload, and
+ *       {@link Money#ofMinorUnits(long, java.util.Currency)} rebuilds it at that currency's own scale.</li>
  *   <li>{@code deliveryTracking} is declared as two alternative shapes ({@code trackingUrl} versus
  *       {@code vendor} + {@code trackingNumber}). Layer 1 merges them into one lossless object (the
  *       {@code normalizeSpec} composite merge, CORE-3), so which shape arrived is simply which optional
@@ -91,7 +91,7 @@ final class OrderEventMapper {
                 Optional.ofNullable(rawPayload.getRebate()).map(OrderEventMapper::toRebate),
                 toDelivery(requireDelivery(rawPayload), currency),
                 Optional.ofNullable(rawPayload.getComment()),
-                toMoney(requireInteger(rawPayload.getTotalPrice(), "payload.totalPrice"), currency),
+                Money.ofMinorUnits(requireInteger(rawPayload.getTotalPrice(), "payload.totalPrice"), currency),
                 currency,
                 toDeliveryTracking(payloadNode, codec),
                 Optional.ofNullable(rawPayload.getPayment()).map(OrderEventMapper::toPaymentSummary),
@@ -155,9 +155,9 @@ final class OrderEventMapper {
                 ProductExternalId.of(requireText(rawItem.getExternalId(), "items[].externalId")),
                 requireInteger(rawItem.getQuantity(), "items[].quantity"),
                 Optional.ofNullable(rawItem.getWeight()),
-                toMoney(requireInteger(rawItem.getUnitPrice(), "items[].unitPrice"), currency),
+                Money.ofMinorUnits(requireInteger(rawItem.getUnitPrice(), "items[].unitPrice"), currency),
                 Optional.ofNullable(rawItem.getUnitPriceBeforeRebate())
-                        .map(minorUnits -> toMoney(minorUnits, currency)),
+                        .map(minorUnits -> Money.ofMinorUnits(minorUnits, currency)),
                 requireText(rawItem.getName(), "items[].name"),
                 requireText(rawItem.getSlug(), "items[].slug"),
                 Optional.ofNullable(rawItem.getEan()),
@@ -176,8 +176,9 @@ final class OrderEventMapper {
         return new Delivery(
                 requireText(rawDelivery.getName(), "delivery.name"),
                 DeliveryMethodId.of(requireText(rawDelivery.getTypeId(), "delivery.typeId")),
-                toMoney(requireInteger(rawDelivery.getPrice(), "delivery.price"), currency),
-                Optional.ofNullable(rawDelivery.getCancelled()).map(minorUnits -> toMoney(minorUnits, currency)),
+                Money.ofMinorUnits(requireInteger(rawDelivery.getPrice(), "delivery.price"), currency),
+                Optional.ofNullable(rawDelivery.getCancelled())
+                        .map(minorUnits -> Money.ofMinorUnits(minorUnits, currency)),
                 requireBoolean(rawDelivery.getCod(), "delivery.cod"),
                 Optional.ofNullable(rawDelivery.getSourceMarket()),
                 Optional.ofNullable(rawDelivery.getTargetMarket()),
@@ -260,15 +261,6 @@ final class OrderEventMapper {
         return new BankAccount(
                 requireText(rawAccount.getNumber(), "bankAccount.number"),
                 requireText(rawAccount.getName(), "bankAccount.name"));
-    }
-
-    /**
-     * The payload states every amount as an integer count of minor units. The scale comes from the
-     * currency itself rather than a hard-coded 2, so a currency with a different fraction digit count
-     * cannot be silently mis-scaled if the API's enum grows one.
-     */
-    private static Money toMoney(long minorUnits, Currency currency) {
-        return Money.of(BigDecimal.valueOf(minorUnits, currency.getDefaultFractionDigits()), currency);
     }
 
     private static Currency toCurrency(MessagePayloadAnyOf rawPayload) {

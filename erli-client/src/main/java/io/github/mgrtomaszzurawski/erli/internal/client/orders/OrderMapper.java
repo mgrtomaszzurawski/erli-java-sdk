@@ -3,6 +3,7 @@ package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
 import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
@@ -26,7 +27,6 @@ import io.github.mgrtomaszzurawski.erli.domain.orders.Rebate;
 import io.github.mgrtomaszzurawski.erli.domain.orders.ReturnReason;
 import io.github.mgrtomaszzurawski.erli.domain.orders.ReturnedItem;
 import io.github.mgrtomaszzurawski.erli.domain.orders.SellerStatus;
-import io.github.mgrtomaszzurawski.erli.domain.orders.ShippingVendor;
 import io.github.mgrtomaszzurawski.erli.domain.orders.TaxRate;
 import io.github.mgrtomaszzurawski.erli.domain.orders.TrackingStatus;
 import io.github.mgrtomaszzurawski.erli.rest.model.OrderDelivery;
@@ -61,9 +61,10 @@ import java.util.OptionalLong;
  *       {@code valueOf(name())}. That decouples the public enums from the generated constant names and
  *       turns a new upstream value into a compile error here — a deliberate signal to map it — instead
  *       of a runtime surprise for a consumer.</li>
- *   <li><strong>Growing reference sets</strong> ({@link ShippingVendor}) are mapped by wire value
- *       instead, so a carrier Erli adds tomorrow arrives as data rather than as an exception. The
- *       split follows the guideline in {@code KNOWN-SERVER-BEHAVIORS.md}.</li>
+ *   <li><strong>Growing reference sets</strong> ({@link DeliveryVendor}) are mapped by wire value
+ *       instead of an N-arm switch. Since CORE-12 an unrecognised carrier decodes to {@code null}
+ *       rather than throwing, and lands here as an absent {@code vendor}; see the note on
+ *       {@link #toDeliveryTracking}.</li>
  * </ul>
  *
  * <p>Required fields are validated: a payload missing one fails fast with a message naming the field,
@@ -203,13 +204,22 @@ final class OrderMapper {
 
     /**
      * Erli declares tracking as a choice between {@code {status, trackingUrl}} and
-     * {@code {status, vendor, trackingNumber}}. Layer 1 merges the two into one object (see the
-     * {@code normalizeSpec} step), so which shape arrived is simply which optional fields are set.
+     * {@code {status, vendor, trackingNumber}}. Layer 1 merges the two into one object (the
+     * {@code normalizeSpec} composite merge, CORE-3), so which shape arrived is simply which optional
+     * fields are set.
+     *
+     * <p>One consequence of CORE-12 is worth knowing: the codec decodes an unrecognised enum value to
+     * {@code null} instead of throwing, and {@code vendor} is optional, so a carrier Erli adds after
+     * this SDK was built is indistinguishable here from a payload that carried no carrier at all —
+     * both surface as an empty {@code vendor}. An {@code UNRECOGNIZED} sentinel would mislabel the
+     * genuinely-absent case, so it is deliberately not used; recovering the real value would mean
+     * reading {@code vendor} from the JSON tree, which is filed in {@code BACKLOG.md} rather than done
+     * here. {@code status}, by contrast, is required, so a {@code null} there still fails loudly.
      */
     private static DeliveryTracking toDeliveryTracking(OrderDeliveryTracking rawTracking) {
         return new DeliveryTracking(
                 toTrackingStatus(rawTracking.getStatus()),
-                Optional.ofNullable(rawTracking.getVendor()).map(OrderMapper::toShippingVendor),
+                Optional.ofNullable(rawTracking.getVendor()).map(OrderMapper::toDeliveryVendor),
                 Optional.ofNullable(rawTracking.getTrackingNumber()),
                 Optional.ofNullable(rawTracking.getTrackingUrl()));
     }
@@ -345,11 +355,13 @@ final class OrderMapper {
     }
 
     /**
-     * Mapped by wire value rather than by an exhaustive switch, because the carrier list is a growing
-     * reference set — the guideline in {@code KNOWN-SERVER-BEHAVIORS.md} for exactly this shape.
+     * Mapped by wire value rather than an exhaustive switch: the carrier list is a growing reference
+     * set, the fleet convention for which is a {@code fromWire} lookup (see
+     * {@code KNOWN-SERVER-BEHAVIORS.md}). The type is core's, shared with Shipping, Comms and
+     * Dictionaries, so no bucket mints its own copy (CORE-7).
      */
-    private static ShippingVendor toShippingVendor(OrderDeliveryTracking.VendorEnum rawVendor) {
-        return ShippingVendor.of(rawVendor.getValue());
+    private static DeliveryVendor toDeliveryVendor(OrderDeliveryTracking.VendorEnum rawVendor) {
+        return DeliveryVendor.fromWire(rawVendor.getValue());
     }
 
     @SuppressWarnings("deprecation")

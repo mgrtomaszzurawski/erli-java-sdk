@@ -8,11 +8,13 @@ import io.github.mgrtomaszzurawski.erli.domain.hooks.ProductBuyability;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.ProductSyncNotification;
 import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
+import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
 import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
 import io.github.mgrtomaszzurawski.erli.rest.model.CheckBuyabilityResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.HookResponseInner;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -39,14 +41,14 @@ public final class HooksAccessImpl implements HooksAccess {
     @Override
     public void save(Hook hook) {
         Objects.requireNonNull(hook, "hook").requireRegisterable();
-        runtime.put(ApiPaths.HOOK_BY_NAME.replace(ApiPaths.HOOK_NAME_PLACEHOLDER, hook.kind().wireValue()),
+        runtime.put(PathTemplate.expand(ApiPaths.HOOK_BY_NAME, hookNamePathParams(hook.kind())),
                 HookMapper.toRaw(hook), Void.class);
     }
 
     @Override
     public void delete(HookKind kind) {
         Objects.requireNonNull(kind, "kind");
-        runtime.delete(ApiPaths.HOOK_BY_NAME.replace(ApiPaths.HOOK_NAME_PLACEHOLDER, kind.wireValue()),
+        runtime.delete(PathTemplate.expand(ApiPaths.HOOK_BY_NAME, hookNamePathParams(kind)),
                 QueryParameters.empty(), Void.class);
     }
 
@@ -62,6 +64,10 @@ public final class HooksAccessImpl implements HooksAccess {
     public void notifyProductsNeedSync(ProductSyncNotification notification) {
         Objects.requireNonNull(notification, "notification");
         runtime.post(ApiPaths.HOOK_PRODUCTS_NEED_SYNC_RUN, HookMapper.toRaw(notification), Void.class);
+    }
+
+    private static Map<String, String> hookNamePathParams(HookKind kind) {
+        return Map.of(ApiPaths.HOOK_NAME_PARAM, kind.wireValue());
     }
 
     /** An absent (rather than empty) JSON array is treated as no results. */

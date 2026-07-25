@@ -2,6 +2,7 @@ package io.github.mgrtomaszzurawski.erli.internal;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.rest.model.Discount;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponse;
 import org.junit.jupiter.api.Test;
@@ -71,6 +72,18 @@ class JsonCodecTest {
     void readTreeLenientReturnsNullForNonJson() {
         assertNull(codec.readTreeLenient("<html>nope</html>"));
         assertNull(codec.readTreeLenient(""));
+    }
+
+    @Test
+    void unknownEnumValueDecodesToNullInsteadOfFailingTheWholeResponse() {
+        // CORE-12: a wire value the vendored spec doesn't know (a new carrier here) must not throw and
+        // sink the entire response — the strict generated enum creator would. The field comes back null;
+        // the domain layer decides whether that is fail-loud (required) or an UNRECOGNIZED sentinel.
+        DeliveryMethod method = codec.read(
+                "{\"id\":\"x\",\"name\":\"n\",\"cod\":true,\"vendor\":\"quantumTeleport\"}", DeliveryMethod.class);
+
+        assertNull(method.getVendor(), "unknown enum should decode to null");
+        assertEquals("x", method.getId());
     }
 
     // Every OpenAPI `date-time` property becomes an OffsetDateTime in the generated Layer-1 models, and

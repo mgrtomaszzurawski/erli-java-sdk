@@ -1,5 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.orders;
 
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
+
 import java.util.Optional;
 
 /**
@@ -17,7 +19,7 @@ import java.util.Optional;
  */
 public record DeliveryTracking(
         TrackingStatus status,
-        Optional<ShippingVendor> vendor,
+        Optional<DeliveryVendor> vendor,
         Optional<String> trackingNumber,
         Optional<String> trackingUrl) {
 }

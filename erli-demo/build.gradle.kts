@@ -31,3 +31,12 @@ val runComms by tasks.registering(JavaExec::class) {
     mainClass = "io.github.mgrtomaszzurawski.erli.demo.ErliCommsDemo"
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+// Bucket D (Dictionaries) live proof. Dictionaries are marketplace-wide reference data, so this
+// returns real payloads even against the empty sandbox shop.
+val runDictionaries by tasks.registering(JavaExec::class) {
+    group = "application"
+    description = "Live proof of bucket D Dictionaries against the Erli sandbox."
+    mainClass = "io.github.mgrtomaszzurawski.erli.demo.ErliDictionariesDemo"
+    classpath = sourceSets["main"].runtimeClasspath
+}

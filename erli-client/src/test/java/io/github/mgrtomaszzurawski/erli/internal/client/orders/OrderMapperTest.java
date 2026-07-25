@@ -2,6 +2,7 @@ package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryVendor;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Buyer;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Country;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Delivery;
@@ -19,7 +20,6 @@ import io.github.mgrtomaszzurawski.erli.domain.orders.PickupProvider;
 import io.github.mgrtomaszzurawski.erli.domain.orders.Rebate;
 import io.github.mgrtomaszzurawski.erli.domain.orders.ReturnReason;
 import io.github.mgrtomaszzurawski.erli.domain.orders.SellerStatus;
-import io.github.mgrtomaszzurawski.erli.domain.orders.ShippingVendor;
 import io.github.mgrtomaszzurawski.erli.domain.orders.TaxRate;
 import io.github.mgrtomaszzurawski.erli.domain.orders.TrackingStatus;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
@@ -205,7 +205,7 @@ class OrderMapperTest {
         DeliveryTracking tracking = mapFixture(FULL_FIXTURE).deliveryTracking().orElseThrow();
 
         assertEquals(TrackingStatus.ON_THE_WAY, tracking.status());
-        assertEquals(ShippingVendor.INPOST, tracking.vendor().orElseThrow());
+        assertEquals(DeliveryVendor.INPOST, tracking.vendor().orElseThrow());
         assertEquals("6231979280641", tracking.trackingNumber().orElseThrow());
         assertTrue(tracking.trackingUrl().isEmpty());
     }
@@ -310,15 +310,37 @@ class OrderMapperTest {
         assertEquals(new BigDecimal("12.90"), order.delivery().price().amount());
     }
 
+    /**
+     * A carrier newer than this SDK must not sink the order. Since CORE-12 the codec decodes an
+     * unrecognised enum to {@code null} rather than throwing, so it reaches the domain as an absent
+     * vendor — the rest of the payload still maps. This pins that contract, which is easy to break by
+     * making the mapper require the field.
+     */
     @Test
-    void keepsACarrierThisSdkDoesNotKnowInsteadOfFailing() {
-        // The carrier list grows upstream; an unrecognised value must arrive as data, not an exception.
-        ShippingVendor future = ShippingVendor.of("someCarrierAddedNextYear");
+    void survivesACarrierThisSdkDoesNotKnow() {
+        String futureCarrier = """
+                {"id":"221206x1","status":"purchased","items":[],"currency":"PLN","totalPrice":1000,
+                 "sellerStatus":"sent","created":"2026-07-23T10:00:00Z","updated":"2026-07-23T10:00:00Z",
+                 "delivery":{"name":"Kurier","typeId":"courier","price":0,"cod":false},
+                 "deliveryTracking":{"status":"sent","vendor":"carrierAddedNextYear",
+                                     "trackingNumber":"TRK-1"}}""";
 
-        assertEquals("someCarrierAddedNextYear", future.wireValue());
-        assertFalse(future.isKnown());
-        assertTrue(ShippingVendor.INPOST.isKnown());
-        assertEquals(ShippingVendor.INPOST, ShippingVendor.of("inpost"));
+        Order order = OrderMapper.toDomain(
+                codec.read(futureCarrier, io.github.mgrtomaszzurawski.erli.rest.model.Order.class));
+
+        DeliveryTracking tracking = order.deliveryTracking().orElseThrow();
+        assertEquals(TrackingStatus.SENT, tracking.status());
+        assertEquals("TRK-1", tracking.trackingNumber().orElseThrow());
+        // The carrier itself is lost — AS_NULL does not preserve the wire value. Documented in
+        // docs/orders.md so an empty vendor is not read as "shipped without a carrier".
+        assertTrue(tracking.vendor().isEmpty());
+    }
+
+    @Test
+    void mapsAKnownCarrierToTheSharedCoreVendorType() {
+        DeliveryTracking tracking = mapFixture(FULL_FIXTURE).deliveryTracking().orElseThrow();
+
+        assertEquals(DeliveryVendor.INPOST, tracking.vendor().orElseThrow());
     }
 
     @Test
