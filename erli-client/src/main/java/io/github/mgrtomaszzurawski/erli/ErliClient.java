@@ -4,6 +4,10 @@ import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliConfigurationException;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DictionariesAccess;
+import io.github.mgrtomaszzurawski.erli.domain.billing.BillingAccess;
+import io.github.mgrtomaszzurawski.erli.domain.campaigns.CampaignsAccess;
+import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionsAccess;
+import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentsAccess;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.HooksAccess;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.InboxAccess;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingAccess;
@@ -12,6 +16,10 @@ import io.github.mgrtomaszzurawski.erli.internal.ErrorMapper;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.internal.client.dictionaries.DictionariesAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.billing.BillingAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.campaigns.CampaignsAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.commissions.CommissionsAccessImpl;
+import io.github.mgrtomaszzurawski.erli.internal.client.payments.PaymentsAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.hooks.HooksAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.inbox.InboxAccessImpl;
 import io.github.mgrtomaszzurawski.erli.internal.client.shipping.ShippingAccessImpl;
@@ -45,6 +53,10 @@ public final class ErliClient implements AutoCloseable {
     private final ShopAccess shop;
     private final ShippingAccess shipping;
     private final DictionariesAccess dictionaries;
+    private final CommissionsAccess commissions;
+    private final BillingAccess billing;
+    private final CampaignsAccess campaigns;
+    private final PaymentsAccess payments;
     private final InboxAccess inbox;
     private final HooksAccess hooks;
 
@@ -65,6 +77,10 @@ public final class ErliClient implements AutoCloseable {
         this.shop = new ShopAccessImpl(runtime);
         this.shipping = new ShippingAccessImpl(runtime);
         this.dictionaries = new DictionariesAccessImpl(runtime);
+        this.commissions = new CommissionsAccessImpl(runtime);
+        this.billing = new BillingAccessImpl(runtime);
+        this.campaigns = new CampaignsAccessImpl(runtime);
+        this.payments = new PaymentsAccessImpl(runtime);
         this.inbox = new InboxAccessImpl(runtime, codec);
         this.hooks = new HooksAccessImpl(runtime);
     }
@@ -103,6 +119,31 @@ public final class ErliClient implements AutoCloseable {
         return dictionaries;
     }
     // --- APPEND BLOCK: bucket E Finance accessor -------------------------------------------------
+
+    /** Commission estimates ({@code POST /commissions/_estimate}). */
+    public CommissionsAccess commissions() {
+        ensureOpen();
+        return commissions;
+    }
+
+    /** The company's settlement ledger ({@code POST /billing/company/*}). */
+    public BillingAccess billing() {
+        ensureOpen();
+        return billing;
+    }
+
+    /** Ad-campaign spend ({@code GET /campaigns/campaigns-summary}). */
+    public CampaignsAccess campaigns() {
+        ensureOpen();
+        return campaigns;
+    }
+
+    /** Payments in, payouts out and the operator's transaction history ({@code /payments/operations/*}). */
+    public PaymentsAccess payments() {
+        ensureOpen();
+        return payments;
+    }
+
     // --- APPEND BLOCK: bucket F Comms & Automation accessor --------------------------------------
     /** Access to the shop's event inbox ({@code /inbox}). */
     public InboxAccess inbox() {

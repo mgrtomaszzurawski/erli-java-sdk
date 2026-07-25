@@ -65,6 +65,7 @@ Per-domain guides are added as each domain ships:
 |---|---|---|
 | [`docs/inbox.md`](docs/inbox.md) | `client.inbox()` | polling the event inbox, order/product-sync events, acknowledging messages |
 | [`docs/hooks.md`](docs/hooks.md) | `client.hooks()` | registering webhook subscriptions and firing them on demand |
+| [`docs/finance.md`](docs/finance.md) | `client.payments()`, `client.billing()`, `client.commissions()`, `client.campaigns()` | payments and payouts, the settlement ledger, commission estimates, campaign spend |
 
 ```java
 // Drain the event inbox, then acknowledge the batch.
