@@ -122,6 +122,9 @@ class PaymentsAccessImplTest {
         assertEquals("PAYU.blik", payment.methodCode().orElseThrow());
         assertEquals("BLIK", payment.methodName().orElseThrow());
         assertEquals("PAYU-XYZ", payment.externalPaymentId().orElseThrow());
+        // Guards the other direction of the CORE-12 sentinel: without this, toOperator could return
+        // UNRECOGNIZED for everything and the suite would stay green.
+        assertEquals(PaymentOperator.PAYU, payment.operator());
         assertTrue(payment.completedAt().isPresent());
     }
 
@@ -135,6 +138,7 @@ class PaymentsAccessImplTest {
         // Payout.amount really is grosze: 250000 -> 2500.00 PLN.
         assertEquals(Money.ofPln("2500.00"), payout.amount());
         assertEquals(9L, payout.id());
+        assertEquals(PaymentOperator.PAYU, payout.operator());
         server.verify(postRequestedFor(urlEqualTo(SEARCH_PATH))
                 .withRequestBody(matchingJsonPath("$.type", equalTo("payout"))));
     }
@@ -335,6 +339,21 @@ class PaymentsAccessImplTest {
         assertEquals(81L, payment.id());
         assertEquals(Money.ofPln("25.00"), payment.amount());
         assertEquals(PaymentStatus.COMPLETED, payment.status());
+    }
+
+    @Test
+    void keepsAPayoutSettledByAnOperatorThisSdkDoesNotKnow() {
+        // The operator change touched two call sites; the payout one resolves against a different
+        // generated enum, so it is not covered by the payment test.
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(aResponse().withStatus(200).withBody("""
+                        [{"id":11,"amount":250000,"createdAt":"2026-07-20T08:00:00.000+02:00",
+                          "operator":"PRZELEWY24"}]""")));
+
+        Payout payout = client.payments().searchPayouts(PayoutSearch.all()).findFirst().orElseThrow();
+
+        assertEquals(PaymentOperator.UNRECOGNIZED, payout.operator());
+        assertEquals(Money.ofPln("2500.00"), payout.amount(), "the rest of the payout still maps");
     }
 
     @Test

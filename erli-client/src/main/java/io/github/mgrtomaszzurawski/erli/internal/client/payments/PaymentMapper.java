@@ -32,6 +32,7 @@ final class PaymentMapper {
     private static final String FIELD_CREATED_AT = "createdAt";
     private static final String FIELD_COMPLETED_AT = "completedAt";
     private static final String FIELD_ORDER_IDS = "orderIds";
+    private static final String OPERATOR_PAYU_WIRE_VALUE = "PAYU";
     private static final String RAW_PAYMENT_NAME = "raw Payment";
     private static final String RAW_PAYOUT_NAME = "raw Payout";
     private static final String RAW_TRANSACTION_NAME = "raw Transaction";
@@ -178,24 +179,42 @@ final class PaymentMapper {
     }
 
     /**
-     * Map the operator, tolerating one Erli adds later. CORE-12 decodes an unknown enum value to
-     * null, so null here means "a provider this SDK does not know" — a growing enum, so it takes the
-     * sentinel rather than failing the whole page. Contrast {@link #toStatus}, a closed lifecycle
-     * that stays fail-loud.
+     * Map the payment's operator, tolerating one Erli adds later. CORE-12 decodes an unknown enum
+     * value to null, so null here means "a provider this SDK does not know" — a growing enum, so it
+     * takes the sentinel rather than failing the whole page. Contrast {@link #toStatus}, a closed
+     * lifecycle that stays fail-loud.
+     *
+     * <p>Typed to the generated enum rather than {@code <T extends Enum<T>>}: a wildcard signature
+     * would accept any enum in the model, so passing the wrong field would silently yield a sentinel
+     * instead of failing to compile.
      */
-    private static <T extends Enum<T>> PaymentOperator toOperator(T operator) {
-        if (operator == null) {
-            return PaymentOperator.UNRECOGNIZED;
-        }
-        return PaymentOperator.PAYU.name().equalsIgnoreCase(operator.name())
+    private static PaymentOperator toOperator(
+            io.github.mgrtomaszzurawski.erli.rest.model.Payment.OperatorEnum operator) {
+        return operator == null ? PaymentOperator.UNRECOGNIZED : fromWireValue(operator.getValue());
+    }
+
+    /** Same for the payout's operator; the generator emits a separate enum per schema. */
+    private static PaymentOperator toOperator(
+            io.github.mgrtomaszzurawski.erli.rest.model.Payout.OperatorEnum operator) {
+        return operator == null ? PaymentOperator.UNRECOGNIZED : fromWireValue(operator.getValue());
+    }
+
+    /** Match on the value Erli sends, not the generated constant name — the generator sanitizes names. */
+    private static PaymentOperator fromWireValue(String wireValue) {
+        return OPERATOR_PAYU_WIRE_VALUE.equalsIgnoreCase(wireValue)
                 ? PaymentOperator.PAYU
                 : PaymentOperator.UNRECOGNIZED;
     }
 
+    /**
+     * Require a field the SDK cannot do without. Since CORE-12, an unrecognised <em>enum</em> value
+     * also arrives as null, so the message names both possibilities rather than sending the reader
+     * looking for a field that was in fact present.
+     */
     private static <T> T require(T value, String fieldName) {
         if (value == null) {
-            throw new IllegalStateException(
-                    "Payment operation is missing the required '" + fieldName + "' field");
+            throw new IllegalStateException("Payment operation is missing the required '" + fieldName
+                    + "' field, or carries a value this SDK does not recognise");
         }
         return value;
     }

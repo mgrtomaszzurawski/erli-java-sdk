@@ -15,8 +15,10 @@ public enum PaymentOperator {
     PAYU,
 
     /**
-     * A provider this SDK's spec snapshot does not know. Everything else about the operation is
-     * still mapped; only the provider's identity is unavailable.
+     * A provider this SDK's spec snapshot does not know — or, less often, an operation the API sent
+     * without an operator at all. The two are indistinguishable by the time the mapper runs, because
+     * an unrecognised enum value reaches it as {@code null} (CORE-12). Everything else about the
+     * operation is still mapped; only the provider's identity is unavailable.
      */
     UNRECOGNIZED
 }

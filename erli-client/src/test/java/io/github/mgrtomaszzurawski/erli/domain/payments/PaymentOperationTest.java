@@ -23,17 +23,25 @@ class PaymentOperationTest {
                 WHEN, Optional.of(WHEN), PaymentOperator.PAYU, Optional.of("PAYU.blik"), Optional.empty(), Optional.empty());
     }
 
+    private static Transaction transaction() {
+        return new Transaction(Optional.of("RETURN"), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                List.of(), Optional.empty(), Optional.empty(), Optional.empty(), false);
+    }
+
     private static Payout payout() {
         return new Payout(9L, Money.ofPln("2500.00"), WHEN, PaymentOperator.PAYU);
     }
 
     @Test
     void combinesEveryOperationKindIntoOneTimeline() {
-        List<PaymentOperation> timeline = List.of(payment(), payout());
+        List<PaymentOperation> timeline = List.of(payment(), payout(), transaction());
 
         List<String> rendered = timeline.stream().map(PaymentOperationTest::render).toList();
 
-        assertEquals(List.of("in 149.99", "out 2500.00"), rendered);
+        assertEquals(List.of("in 149.99", "out 2500.00", "txn RETURN"), rendered);
     }
 
     /**
