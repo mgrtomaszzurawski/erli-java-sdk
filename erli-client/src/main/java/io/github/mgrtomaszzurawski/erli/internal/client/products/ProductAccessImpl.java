@@ -140,14 +140,26 @@ public final class ProductAccessImpl implements ProductAccess {
             // to discover an empty page.
             return new Page<>(products, null);
         }
-        Product lastRow = products.get(products.size() - 1);
-        Cursor next = ProductSearchMapper.cursorOf(lastRow, page.sortField())
-                .orElseThrow(() -> new IllegalStateException(
-                        "Cannot continue a search sorted by " + page.sortField() + ": the last product on"
-                                + " a full page (" + lastRow.externalId() + ") has no value for that"
-                                + " field, so there is no cursor to page from. Sort by EXTERNAL_ID or"
-                                + " MARKETPLACE_ID, which every product has."));
-        return new Page<>(products, next);
+        return new Page<>(products, nextCursor(products, page.sortField()));
+    }
+
+    /**
+     * The cursor to continue from after a full page, or {@code null} when there is none.
+     *
+     * <p>A cursor is offered even for a sort field that cannot be paged safely, so that asking for the
+     * next page reaches {@link #requireUniqueSortForPaging} and the caller is <em>told</em> the walk
+     * cannot continue. Returning {@code null} there instead would end the stream quietly, and a caller
+     * who asked to iterate the whole catalog would receive one page and no indication that the rest
+     * exists — the silent-incompleteness this class exists to avoid.
+     *
+     * <p>When the last row simply has no value for the sort field there is nothing to page from, so the
+     * walk does end here. That is not a contradiction of the above: it cannot be reported by throwing,
+     * because this runs after the page has been fetched and mapped but before any element is emitted, so
+     * a throw would discard the page the caller has already paid for. It is unreachable for the two sort
+     * fields a walk may actually continue on — both are present on every product.
+     */
+    private static Cursor nextCursor(List<Product> products, ProductSortField sortField) {
+        return ProductSearchMapper.cursorOf(products.get(products.size() - 1), sortField).orElse(null);
     }
 
     /**

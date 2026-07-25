@@ -73,7 +73,7 @@ final class ProductSearchMapper {
 
     /**
      * The cursor for the page after this one: the sort-field value of the last product returned. Empty
-     * when the value is absent, which stops the walk rather than risking a repeat of the same page.
+     * when that row has no value for the field, in which case there is nothing to page from.
      */
     static Optional<Cursor> cursorOf(Product product, ProductSortField sortField) {
         Optional<String> value = switch (sortField) {

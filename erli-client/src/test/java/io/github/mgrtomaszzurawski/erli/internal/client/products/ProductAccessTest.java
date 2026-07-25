@@ -123,9 +123,8 @@ class ProductAccessTest {
                 + "\"name\":\"Kurtka\",\"slug\":\"kurtka\",\"status\":\"active\",\"stock\":10,"
                 + "\"price\":10000,\"dispatchTime\":{\"unit\":\"day\",\"period\":1},"
                 + "\"frozen\":{},\"created\":\"2026-07-24T13:50:23.961+02:00\","
-                // `updated` is present so a walk sorted by it can actually derive a cursor; without it
-                // the stream would stop after page one for a different reason and the paging guard below
-                // would never be reached.
+                // `updated` is present so a walk sorted by it can derive a cursor and therefore reach
+                // the paging guard; without it the stream would simply end after page one.
                 + "\"updated\":\"2026-07-25T09:00:00.000+02:00\"}";
     }
 
@@ -431,6 +430,22 @@ class ProductAccessTest {
                 .pageSize(2)
                 .sortBy(ProductSortField.UPDATED, SortOrder.DESC)
                 .build()).limit(2).toList();
+
+        assertEquals(2, page.size());
+        server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
+    }
+
+    @Test
+    void deliversAFullFirstPageEvenWhenNoCursorCanBeDerivedFromIt() {
+        // archivedAt is absent on a live product, so no cursor exists. The page was already fetched and
+        // mapped, so it must be handed over rather than discarded by an exception.
+        server.stubFor(post(urlEqualTo(SEARCH_PATH))
+                .willReturn(okJson("[" + productBody("sku-a") + "," + productBody("sku-b") + "]")));
+
+        List<Product> page = products().search(ProductSearchRequest.builder()
+                .pageSize(2)
+                .sortBy(ProductSortField.ARCHIVED_AT, SortOrder.DESC)
+                .build()).toList();
 
         assertEquals(2, page.size());
         server.verify(1, postRequestedFor(urlEqualTo(SEARCH_PATH)));
