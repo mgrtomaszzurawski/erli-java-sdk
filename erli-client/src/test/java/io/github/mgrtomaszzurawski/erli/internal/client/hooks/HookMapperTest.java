@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.hooks;
 
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.Hook;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.HookKind;
 import io.github.mgrtomaszzurawski.erli.rest.model.HookResponseInner;
@@ -10,6 +11,7 @@ import java.net.URI;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,6 +43,49 @@ class HookMapperTest {
         assertTrue(HookMapper.toDomain(new HookResponseInner()
                 .hookName(HookResponseInner.HookNameEnum.ORDER_CREATED)
                 .url(HOOK_URL)).accessToken().isEmpty());
+    }
+
+    /**
+     * The API does not require {@code https} — a shop may already have registered an {@code http}
+     * endpoint through the panel. Reading it back must work, or {@code list()} would fail wholesale
+     * exactly when the shop needs to see the insecure subscription in order to replace it.
+     */
+    @Test
+    void readsBackAnInsecureSubscriptionTheApiAlreadyHolds() {
+        HookResponseInner storedOverHttp = new HookResponseInner()
+                .hookName(HookResponseInner.HookNameEnum.ORDER_CREATED)
+                .url("http://legacy.example/order-created");
+
+        Hook hook = HookMapper.toDomain(storedOverHttp);
+
+        assertEquals(URI.create("http://legacy.example/order-created"), hook.url());
+    }
+
+    /** …but the same subscription must not be registrable, which is what {@code save} checks. */
+    @Test
+    void refusesToRegisterAnInsecureSubscription() {
+        Hook insecure = HookMapper.toDomain(new HookResponseInner()
+                .hookName(HookResponseInner.HookNameEnum.ORDER_CREATED)
+                .url("http://legacy.example/order-created"));
+
+        assertThrows(IllegalArgumentException.class, insecure::requireRegisterable);
+    }
+
+    /**
+     * A stored subscription the SDK cannot represent must surface inside the documented exception
+     * taxonomy, not as a bare {@link IllegalArgumentException} escaping {@code list()}.
+     */
+    @Test
+    void translatesAnUnusableStoredSubscriptionIntoTheSdkTaxonomy() {
+        HookResponseInner overlongUrl = new HookResponseInner()
+                .hookName(HookResponseInner.HookNameEnum.ORDER_CREATED)
+                .url("https://shop.example/" + "x".repeat(Hook.MAX_URL_LENGTH));
+
+        ErliTransportException thrown =
+                assertThrows(ErliTransportException.class, () -> HookMapper.toDomain(overlongUrl));
+
+        assertTrue(thrown.getMessage().contains("orderCreated"), thrown.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, thrown.getCause());
     }
 
     @Test

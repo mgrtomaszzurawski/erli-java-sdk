@@ -30,6 +30,7 @@ import java.util.Objects;
 public final class InboxAccessImpl implements InboxAccess {
 
     private static final String FIELD_ID = "id";
+    private static final String UNIDENTIFIED_MESSAGE = "with no id";
 
     private final HttpRuntime runtime;
     private final JsonCodec codec;
@@ -80,10 +81,12 @@ public final class InboxAccessImpl implements InboxAccess {
      */
     private Message toDomain(JsonNode messageNode) {
         JsonNode idNode = messageNode.get(FIELD_ID);
+        String messageId = idNode == null ? UNIDENTIFIED_MESSAGE : idNode.asText();
         try {
             return MessageMapper.toDomain(messageNode, codec);
-        } catch (RuntimeException failure) {
-            String messageId = idNode == null ? "unknown" : idNode.asText();
+        } catch (IllegalStateException | IllegalArgumentException | ErliTransportException failure) {
+            // Deliberately narrow: anything else is an SDK bug, and labelling it "unmappable wire data"
+            // would send the caller looking in the wrong place.
             throw new ErliTransportException(
                     "Could not map inbox message " + messageId + "; acknowledge it with markRead to skip it",
                     failure);

@@ -42,27 +42,35 @@ class CommsDomainContractTest {
     private static final int OVER_THE_PRODUCT_LIMIT = ProductSyncNotification.MAX_PRODUCT_IDS + 1;
 
     @Test
-    void hookRedactsItsAccessTokenAndAnythingCarriedInTheUrlQuery() {
-        String described = Hook.of(HookKind.CHECK_BUYABILITY, URI.create(HOOK_URL), ACCESS_TOKEN).toString();
+    void hookRedactsItsAccessTokenButKeepsTheEndpointReadable() {
+        Hook hook = Hook.of(HookKind.CHECK_BUYABILITY, URI.create(HOOK_URL), ACCESS_TOKEN);
+
+        String described = hook.toString();
 
         assertFalse(described.contains(ACCESS_TOKEN), "the shop's own credential must not be printable");
-        assertTrue(described.contains("shop.example"), "the host aids debugging and is not a secret");
+        assertTrue(described.contains(HOOK_URL), "a query-less endpoint stays fully readable for debugging");
+    }
 
-        // A webhook URL commonly carries the shared secret as a query parameter, so the query goes too.
-        String withSecretInQuery = Hook.of(
-                HookKind.CHECK_BUYABILITY, URI.create(HOOK_URL + "?token=" + ACCESS_TOKEN)).toString();
+    /** A webhook URL commonly carries the shared secret as a query parameter, so the query goes too. */
+    @Test
+    void hookRedactsASecretCarriedInTheUrlQuery() {
+        Hook hook = Hook.of(HookKind.CHECK_BUYABILITY, URI.create(HOOK_URL + "?token=" + ACCESS_TOKEN));
 
-        assertFalse(withSecretInQuery.contains(ACCESS_TOKEN), "a secret in the query must not be printable");
-        assertTrue(withSecretInQuery.contains("/hook"), "the path is still useful and stays visible");
+        String described = hook.toString();
+
+        assertFalse(described.contains(ACCESS_TOKEN), "a secret in the query must not be printable");
+        assertTrue(described.contains(HOOK_URL), "scheme, host and path stay visible");
     }
 
     @Test
     void hookRejectsAnOverlongUrlOrToken() {
-        String longPath = "https://shop.example/" + "x".repeat(Hook.MAX_URL_LENGTH);
+        URI overlongUrl = URI.create("https://shop.example/" + "x".repeat(Hook.MAX_URL_LENGTH));
+        URI validUrl = URI.create(HOOK_URL);
+        String overlongToken = "t".repeat(Hook.MAX_ACCESS_TOKEN_LENGTH + 1);
+
+        assertThrows(IllegalArgumentException.class, () -> Hook.of(HookKind.ORDER_CREATED, overlongUrl));
         assertThrows(IllegalArgumentException.class,
-                () -> Hook.of(HookKind.ORDER_CREATED, URI.create(longPath)));
-        assertThrows(IllegalArgumentException.class, () -> Hook.of(HookKind.ORDER_CREATED,
-                URI.create(HOOK_URL), "t".repeat(Hook.MAX_ACCESS_TOKEN_LENGTH + 1)));
+                () -> Hook.of(HookKind.ORDER_CREATED, validUrl, overlongToken));
     }
 
     /**
@@ -71,12 +79,17 @@ class CommsDomainContractTest {
      */
     @Test
     void hookRejectsAnEndpointThatIsNotPlainHttps() {
-        assertThrows(IllegalArgumentException.class,
-                () -> Hook.of(HookKind.ORDER_CREATED, URI.create("http://shop.example/hook")));
-        assertThrows(IllegalArgumentException.class,
-                () -> Hook.of(HookKind.ORDER_CREATED, URI.create("/relative/hook")));
-        assertThrows(IllegalArgumentException.class,
-                () -> Hook.of(HookKind.ORDER_CREATED, URI.create("https://user:pass@shop.example/hook")));
+        // Parsed up front: URI.create throws the same exception type being asserted, so leaving it
+        // inside the lambda would let a malformed literal pass the test for the wrong reason.
+        URI cleartext = URI.create("http://shop.example/hook");
+        URI relative = URI.create("/relative/hook");
+        URI hostless = URI.create("https:///hook");
+        URI withCredentials = URI.create("https://user:pass@shop.example/hook");
+
+        assertThrows(IllegalArgumentException.class, () -> Hook.of(HookKind.ORDER_CREATED, cleartext));
+        assertThrows(IllegalArgumentException.class, () -> Hook.of(HookKind.ORDER_CREATED, relative));
+        assertThrows(IllegalArgumentException.class, () -> Hook.of(HookKind.ORDER_CREATED, hostless));
+        assertThrows(IllegalArgumentException.class, () -> Hook.of(HookKind.ORDER_CREATED, withCredentials));
     }
 
     @Test

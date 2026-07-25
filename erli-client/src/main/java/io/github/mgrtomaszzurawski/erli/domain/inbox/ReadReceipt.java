@@ -14,11 +14,15 @@ import java.util.Objects;
 public sealed interface ReadReceipt {
 
     /**
-     * The exact id length this operation accepts. Enforced on the request side only: a
-     * {@link MessageId} read back from the API is taken as it arrives, but an id sent here is checked
-     * so a malformed one is rejected locally rather than as a server-side validation error.
+     * The id length this operation documents ({@code minLength}/{@code maxLength} 24). It is
+     * <strong>not</strong> enforced here, deliberately. Every id acknowledged through this type was
+     * issued by the API and read back by {@link InboxAccess#unread()}, so a client-side length check
+     * would only ever reject the server's own value — and it would reject it at the worst moment: the
+     * SDK's advice for a message it cannot map is to acknowledge that id and move on, which a novel id
+     * shape would make impossible. A genuinely malformed id is answered by the API with a clear
+     * validation error instead.
      */
-    int REQUIRED_ID_LENGTH = 24;
+    int DOCUMENTED_ID_LENGTH = 24;
 
     /** Acknowledge every message up to and including {@code lastMessageId}. */
     static ReadReceipt upTo(MessageId lastMessageId) {
@@ -38,7 +42,7 @@ public sealed interface ReadReceipt {
     record UpTo(MessageId lastMessageId) implements ReadReceipt {
 
         public UpTo {
-            requireAcknowledgeable(lastMessageId);
+            Objects.requireNonNull(lastMessageId, "lastMessageId");
         }
     }
 
@@ -54,17 +58,8 @@ public sealed interface ReadReceipt {
             if (ids.isEmpty()) {
                 throw new IllegalArgumentException("ids must name at least one message");
             }
-            ids.forEach(ReadReceipt::requireAcknowledgeable);
+            ids.forEach(id -> Objects.requireNonNull(id, "messageId"));
             ids = List.copyOf(ids);
-        }
-    }
-
-    private static void requireAcknowledgeable(MessageId id) {
-        Objects.requireNonNull(id, "messageId");
-        if (id.value().length() != REQUIRED_ID_LENGTH) {
-            throw new IllegalArgumentException(
-                    "A message id sent to mark-read must be exactly " + REQUIRED_ID_LENGTH
-                            + " characters, but was " + id.value().length() + ": " + id);
         }
     }
 }

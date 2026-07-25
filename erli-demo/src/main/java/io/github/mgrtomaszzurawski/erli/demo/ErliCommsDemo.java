@@ -28,8 +28,9 @@ public final class ErliCommsDemo {
         try (ErliClient client = ErliClient.fromEnvironment()) {
             List<Hook> hooks = client.hooks().list();
             System.out.printf("GET /hooks OK -> %d subscription(s)%n", hooks.size());
-            hooks.forEach(hook -> System.out.printf("  %s -> %s (accessToken %s)%n",
-                    hook.kind(), hook.url(), hook.accessToken().isPresent() ? "set" : "unset"));
+            // Printing the record, not hook.url(): Hook.toString() redacts the token and the URL's
+            // query string, which a raw URI would put straight into the log.
+            hooks.forEach(hook -> System.out.printf("  %s%n", hook));
 
             List<Message> unread = client.inbox().unread();
             System.out.printf("GET /inbox OK -> %d unread message(s)%n", unread.size());

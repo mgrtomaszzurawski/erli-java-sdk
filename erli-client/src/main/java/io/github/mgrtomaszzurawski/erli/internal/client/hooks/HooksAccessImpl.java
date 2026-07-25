@@ -38,7 +38,7 @@ public final class HooksAccessImpl implements HooksAccess {
 
     @Override
     public void save(Hook hook) {
-        Objects.requireNonNull(hook, "hook");
+        Objects.requireNonNull(hook, "hook").requireRegisterable();
         runtime.put(ApiPaths.HOOK_BY_NAME.replace(ApiPaths.HOOK_NAME_PLACEHOLDER, hook.kind().wireValue()),
                 HookMapper.toRaw(hook), Void.class);
     }

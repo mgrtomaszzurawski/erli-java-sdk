@@ -28,17 +28,20 @@ try (ErliClient client = ErliClient.fromEnvironment()) {
             System.getenv("SHOP_HOOK_TOKEN")));   // optional: echoed back so you can authorise the call
 
     for (Hook hook : client.hooks().list()) {
-        System.out.println(hook.kind() + " -> " + hook.url());
+        System.out.println(hook);   // toString() redacts the token and the URL's query string
     }
 
     client.hooks().delete(HookKind.ORDER_CREATED);
 }
 ```
 
-The URL must be `https` and must not carry credentials in its userinfo: Erli sends the access token
+A hook you register must use `https` and must not carry credentials in its userinfo: Erli sends the access token
 and, for the three `ORDER_*` kinds, the buyer's personal data to this endpoint. `Hook.toString()`
 redacts the token *and* the URL's query string, since a webhook URL often carries the shared secret
 there.
+
+A subscription already stored on the shop is read back as-is even if it breaks those rules, so
+`list()` can still show you an insecure hook you need to replace.
 
 `save` creates or overwrites the subscription named by `hook.kind()` — there is one subscription per
 kind, so saving twice replaces rather than duplicates. `delete` succeeds even when nothing was

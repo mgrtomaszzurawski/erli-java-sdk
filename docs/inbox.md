@@ -20,16 +20,19 @@ try (ErliClient client = ErliClient.fromEnvironment()) {
         }
         // The batch is oldest-first, so acknowledging the last id acknowledges all of them.
         int marked = client.inbox().markRead(ReadReceipt.upTo(batch.get(batch.size() - 1).id()));
-        if (marked == 0) {
-            // Nothing was acknowledged, so the next call would return the same batch forever.
-            throw new IllegalStateException("inbox did not advance");
+        if (marked < batch.size()) {
+            // Fewer messages were acknowledged than were handed out, so the next call would return
+            // some of the same ones. Stop rather than spin.
+            throw new IllegalStateException("inbox did not fully advance: marked " + marked
+                    + " of " + batch.size());
         }
     }
 }
 ```
 
-Ids sent to `markRead` must be exactly 24 characters (the API's own constraint), which `ReadReceipt`
-checks before a request goes out.
+`markRead` returns how many messages were actually acknowledged. `upTo` is a **range**: acknowledging
+the last id of a batch acknowledges every message up to and including it — verified against the live
+API, not inferred.
 
 If only some messages were processed successfully, acknowledge exactly those instead — the rest come
 back on the next call:
@@ -38,8 +41,7 @@ back on the next call:
 client.inbox().markRead(ReadReceipt.exactly(processedIds));
 ```
 
-`markRead` returns how many messages the API marked. Acknowledging an id that does not exist is not an
-error; it simply marks nothing.
+Acknowledging an id that does not exist is not an error; it simply marks nothing (the call returns `0`).
 
 There is no cursor for these operations, so the SDK returns a plain `List` rather than a lazy
 `Stream`: draining means calling `unread()` again after acknowledging.

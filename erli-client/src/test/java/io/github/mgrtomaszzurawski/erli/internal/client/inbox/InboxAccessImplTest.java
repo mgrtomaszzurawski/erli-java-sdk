@@ -41,6 +41,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -57,6 +58,7 @@ class InboxAccessImplTest {
     private static final String TEST_KEY = "test-key";
     private static final String USER_AGENT = "erli-java-sdk/test";
     private static final String MESSAGE_ID = "5f9e1b3b0f0b9b0001c3e0b1";
+    private static final String HEALTHY_MESSAGE_ID = "5f9e1b3b0f0b9b0001c3e0a0";
     private static final String VALIDATION_ERROR_FIXTURE = "/fixtures/inbox/observed-search-validation-error.json";
 
     private static final String SYNC_MESSAGE_JSON = """
@@ -126,17 +128,26 @@ class InboxAccessImplTest {
      */
     @Test
     void namesTheOffendingMessageWhenOneCannotBeMapped() {
-        String unmappableCarrier = SYNC_MESSAGE_JSON.replace(
-                "\"payload\":{\"id\":\"hash-1\",\"externalProductIds\":[\"SKU-1\"],\"fields\":[]}",
-                "\"payload\":{\"id\":\"hash-1\"}");
-        server.stubFor(get(urlEqualTo(INBOX_PATH)).willReturn(okJson(unmappableCarrier)));
+        // Two messages, one of them broken: the point of the id is telling them apart, which a
+        // single-message batch cannot demonstrate. The broken one drops the required externalProductIds.
+        String batchWithOneBrokenMessage = """
+                [{"id":"5f9e1b3b0f0b9b0001c3e0a0","shopId":100007,"created":"2026-07-25T12:00:00Z",
+                  "read":false,"type":"productsNeedSync",
+                  "payload":{"id":"hash-0","externalProductIds":["SKU-0"]}},
+                 {"id":"5f9e1b3b0f0b9b0001c3e0b1","shopId":100007,"created":"2026-07-25T12:00:01Z",
+                  "read":false,"type":"productsNeedSync","payload":{"id":"hash-1"}}]""";
+        server.stubFor(get(urlEqualTo(INBOX_PATH)).willReturn(okJson(batchWithOneBrokenMessage)));
 
         ErliTransportException thrown = assertThrows(ErliTransportException.class, () -> inbox().unread());
 
         assertTrue(thrown.getMessage().contains(MESSAGE_ID),
-                "the failure must name the message so it can be acknowledged and skipped: "
-                        + thrown.getMessage());
+                "the failure must name the message that could not be mapped: " + thrown.getMessage());
+        assertFalse(thrown.getMessage().contains(HEALTHY_MESSAGE_ID),
+                "the healthy message must not be blamed: " + thrown.getMessage());
         assertTrue(thrown.getMessage().contains("markRead"), thrown.getMessage());
+        // Pin the reason, so the test cannot pass on some unrelated mapping failure.
+        assertTrue(thrown.getCause().getMessage().contains("externalProductIds"),
+                "the cause must state which field was missing: " + thrown.getCause().getMessage());
     }
 
     @Test

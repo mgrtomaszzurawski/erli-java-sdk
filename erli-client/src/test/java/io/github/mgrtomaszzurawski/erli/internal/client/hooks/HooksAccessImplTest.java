@@ -26,6 +26,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -167,6 +168,17 @@ class HooksAccessImplTest {
 
         server.verify(putRequestedFor(urlEqualTo(HOOK_PATH)).withRequestBody(
                 equalToJson("{\"hookName\":\"checkBuyability\",\"url\":\"" + HOOK_URL + "\"}")));
+    }
+
+    /** The https rule is enforced where it matters: nothing insecure may reach the API. */
+    @Test
+    void refusesToSaveAnInsecureHookWithoutCallingTheApi() {
+        Hook insecure = new Hook(
+                HookKind.ORDER_CREATED, URI.create("http://legacy.example/hook"), Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> hooks().save(insecure));
+
+        server.verify(0, putRequestedFor(urlEqualTo("/hooks/orderCreated")));
     }
 
     @Test

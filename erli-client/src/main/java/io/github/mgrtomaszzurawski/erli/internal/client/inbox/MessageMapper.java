@@ -1,6 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.inbox;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Message;
@@ -48,16 +49,8 @@ final class MessageMapper {
     static Message toDomain(JsonNode messageNode, JsonCodec codec) {
         Objects.requireNonNull(messageNode, "message node");
         JsonNode payloadNode = messageNode.get(FIELD_PAYLOAD);
-        // Detach the payload before binding the envelope. The generated envelope declares `payload` as
-        // the anyOf wrapper, so leaving it in place makes Jackson deep-bind the whole order snapshot
-        // into a branch this mapper then discards and re-binds itself below — roughly half the mapping
-        // cost of a message, for a value that is thrown away. Safe to mutate: the tree is decoded per
-        // call by InboxAccessImpl and dropped as soon as this returns.
-        if (messageNode instanceof ObjectNode envelopeNode) {
-            envelopeNode.remove(FIELD_PAYLOAD);
-        }
         io.github.mgrtomaszzurawski.erli.rest.model.Message rawMessage = codec.convert(
-                messageNode, io.github.mgrtomaszzurawski.erli.rest.model.Message.class);
+                withoutPayload(messageNode), io.github.mgrtomaszzurawski.erli.rest.model.Message.class);
         String typeName = requireText(rawMessage.getType(), "type");
         MessageType type = MessageType.fromWireValue(typeName).orElse(MessageType.UNKNOWN);
         return new Message(
@@ -121,6 +114,22 @@ final class MessageMapper {
         }
         // Reached only if MessageType gains a constant without a payload shape being wired here.
         throw new IllegalStateException("No payload mapping is wired for message type " + type);
+    }
+
+    /**
+     * The envelope without its payload. The generated envelope declares {@code payload} as the anyOf
+     * wrapper, so binding the message as-is makes Jackson deep-bind the whole order snapshot into a
+     * branch this mapper discards and re-binds itself — about half the mapping cost of a message, for
+     * a value that is thrown away. The copy is shallow (child references are shared, not cloned) and
+     * the caller's tree is left untouched.
+     */
+    private static JsonNode withoutPayload(JsonNode messageNode) {
+        if (!(messageNode instanceof ObjectNode objectNode)) {
+            return messageNode;
+        }
+        ObjectNode envelopeOnly = JsonNodeFactory.instance.objectNode().setAll(objectNode);
+        envelopeOnly.remove(FIELD_PAYLOAD);
+        return envelopeOnly;
     }
 
     private static ProductsSyncEvent toProductsSyncEvent(MessagePayloadAnyOf3 rawPayload) {
