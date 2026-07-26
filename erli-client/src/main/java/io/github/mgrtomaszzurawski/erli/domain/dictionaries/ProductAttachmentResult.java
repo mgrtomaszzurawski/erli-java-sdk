@@ -39,7 +39,7 @@ public record ProductAttachmentResult(boolean succeeded, List<Long> updatedProdu
     public record ProductError(Optional<Long> productId, String error) {
 
         public ProductError {
-            productId = productId == null ? Optional.empty() : productId;
+            Objects.requireNonNull(productId, "productId");
         }
     }
 }

@@ -5,6 +5,32 @@ plugins {
     java
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.spotbugs) apply false
+    alias(libs.plugins.sonarqube)
+}
+
+// SonarQube analysis (quality platform). Config only — host/credentials come from the environment at
+// invocation, never the build file (they are secrets). Not part of `build`; run explicitly at PR-ready:
+//   ./gradlew sonar --no-configuration-cache \
+//     -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_LOGIN -Dsonar.password=$SONAR_PASSWORD
+// after a full `build` so the JaCoCo XML exists (else new_coverage reads 0).
+sonar {
+    properties {
+        property("sonar.projectKey", "erli-java-sdk")
+        property("sonar.projectName", "erli-java-sdk")
+        property("sonar.sourceEncoding", "UTF-8")
+        // Coverage is measured only on the hand-written SDK module.
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            "${rootDir}/erli-client/build/reports/jacoco/test/jacocoTestReport.xml",
+        )
+    }
+}
+
+// The generated Layer-1 module is not our code and is never hand-edited — keep it out of the analysis.
+project(":erli-rest-models") {
+    sonar {
+        isSkipProject = true
+    }
 }
 
 allprojects {

@@ -27,12 +27,12 @@ final class Redaction {
 
     /** Render a personal-data optional: {@code ***} when present, {@code null} when empty. */
     static String hide(Optional<String> value) {
-        return value == null || value.isEmpty() ? ABSENT : PRESENT_BUT_REDACTED;
+        return value.isEmpty() ? ABSENT : PRESENT_BUT_REDACTED;
     }
 
     /** Render a non-personal optional plainly, using the same absent marker as {@link #hide}. */
     static String show(Optional<?> value) {
-        return value == null || value.isEmpty() ? ABSENT : String.valueOf(value.get());
+        return value.isEmpty() ? ABSENT : String.valueOf(value.get());
     }
 
     /**

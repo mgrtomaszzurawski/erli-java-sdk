@@ -3,6 +3,7 @@
 openapiGenerator = "7.11.0"
 spotless = "6.25.0"
 spotbugs = "6.0.26"
+sonarqube = "4.4.1.3373"
 jackson = "2.18.2"
 jacksonNullable = "0.2.6"
 jakartaAnnotation = "2.1.1"
@@ -23,3 +24,4 @@ wiremock-standalone = { module = "org.wiremock:wiremock-standalone", version.ref
 openapi-generator = { id = "org.openapi.generator", version.ref = "openapiGenerator" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugs" }
+sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
