@@ -247,7 +247,8 @@ class DictionaryEndpointsTest {
         server.stubFor(patch(urlEqualTo("/dictionaries/responsiblePersons/7"))
                 .willReturn(okJson(responsiblePartyJson())));
 
-        dictionaries().updateResponsiblePerson(7L, ResponsiblePartyUpdate.builder(CountryCode.PL).city("Kraków").build());
+        dictionaries().updateResponsiblePerson(7L, ResponsiblePartyUpdate.builder(CountryCode.PL).city("Kraków").
+                build());
 
         // country travels on every patch even though only the city changed: the API demands it.
         server.verify(patchRequestedFor(urlEqualTo("/dictionaries/responsiblePersons/7"))
@@ -370,7 +371,8 @@ class DictionaryEndpointsTest {
         dictionaries.responsiblePersons(ResponsiblePartyQuery.none());
         dictionaries.responsibleProducers(ResponsiblePartyQuery.none());
         dictionaries.createResponsibleProducer(newParty());
-        dictionaries.updateResponsibleProducer(7L, ResponsiblePartyUpdate.builder(CountryCode.PL).city("Gdańsk").build());
+        dictionaries.updateResponsibleProducer(7L, ResponsiblePartyUpdate.builder(CountryCode.PL).city("Gdańsk").
+                build());
         dictionaries.deleteResponsiblePerson(7L);
 
         server.verify(getRequestedFor(urlEqualTo(RESPONSIBLE_PERSONS_PATH)));

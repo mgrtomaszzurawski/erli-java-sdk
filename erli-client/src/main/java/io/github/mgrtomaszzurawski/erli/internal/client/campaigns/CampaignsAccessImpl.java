@@ -39,7 +39,8 @@ public final class CampaignsAccessImpl implements CampaignsAccess {
                 .add(START_DATE_PARAMETER, DATE_FORMAT.format(startDate))
                 .add(END_DATE_PARAMETER, DATE_FORMAT.format(endDate))
                 .build();
-        ShopCampaignsCostSummaryResponse rawResponse = runtime.get(ApiPaths.CAMPAIGNS_SUMMARY, query, ShopCampaignsCostSummaryResponse.class);
+        ShopCampaignsCostSummaryResponse rawResponse = runtime.get(ApiPaths.CAMPAIGNS_SUMMARY, query,
+                ShopCampaignsCostSummaryResponse.class);
         return CampaignMapper.toDomain(rawResponse);
     }
 }

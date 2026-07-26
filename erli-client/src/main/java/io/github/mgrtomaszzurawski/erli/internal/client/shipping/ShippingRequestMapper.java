@@ -110,7 +110,8 @@ final class ShippingRequestMapper {
             raw.setVendor(CreateExternalParcelInner.VendorEnum.fromValue(draft.vendor().wireValue()));
             draft.status().ifPresent(status -> raw.setStatus(externalStatus(status)));
             draft.trackingNumber().ifPresent(
-                    trackingNumber -> raw.setTrackingNumber(new CreateExternalParcelInnerTrackingNumber(trackingNumber)));
+                    trackingNumber -> raw.
+                            setTrackingNumber(new CreateExternalParcelInnerTrackingNumber(trackingNumber)));
             draft.deliveryMethod().ifPresent(
                     deliveryMethod -> raw.setTypeId(new CreateExternalParcelInnerTypeId(deliveryMethod.value())));
             rawDrafts.add(raw);

@@ -149,7 +149,8 @@ final class ExternalParcelMapper {
      * contract, whereas {@code toString()} agreeing with it today is a generator artifact, and an
      * {@code Object} parameter would switch the compiler off for all three.
      */
-    private static ParcelStatus toStatus(io.github.mgrtomaszzurawski.erli.rest.model.ExternalParcel.StatusEnum rawStatus) {
+    private static ParcelStatus toStatus(io.github.mgrtomaszzurawski.erli.rest.
+            model.ExternalParcel.StatusEnum rawStatus) {
         return rawStatus == null ? ParcelStatus.UNRECOGNIZED : ParcelStatus.fromWire(rawStatus.getValue());
     }
 

@@ -68,7 +68,8 @@ class CategoryMapperTest {
     @Test
     void rejectsANonNumericIdAsAPaginationCursor() {
         IllegalStateException failure =
-                assertThrows(IllegalStateException.class, () -> CategoryMapper.numericId(CategoryId.of("not-a-number")));
+                assertThrows(IllegalStateException.class, () -> CategoryMapper.numericId(CategoryId.
+                        of("not-a-number")));
 
         assertTrue(failure.getMessage().contains("not-a-number"), failure.getMessage());
     }

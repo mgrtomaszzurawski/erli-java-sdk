@@ -36,21 +36,29 @@ final class ProductRequestMapper {
         content.description().ifPresent(value -> rawRequest.setDescription(ProductPayloadMapper.description(value)));
         content.ean().ifPresent(rawRequest::setEan);
         content.sku().ifPresent(rawRequest::setSku);
-        content.baseMarket().ifPresent(value -> rawRequest.setBaseMarket(ProductCreate.BaseMarketEnum.fromValue(value.wireName())));
-        content.externalReferences().ifPresent(value -> rawRequest.setExternalReferences(ProductPayloadMapper.externalReferences(value)));
+        content.baseMarket().ifPresent(value ->
+                rawRequest.setBaseMarket(ProductCreate.BaseMarketEnum.fromValue(value.wireName())));
+        content.externalReferences().ifPresent(value ->
+                rawRequest.setExternalReferences(ProductPayloadMapper.externalReferences(value)));
         content.sourceFulfillmentProductId().ifPresent(rawRequest::setSourceFulfillmentProductId);
         content.importantFeatures().ifPresent(rawRequest::setImportantFeatures);
-        content.externalAttributes().ifPresent(value -> rawRequest.setExternalAttributes(ProductPayloadMapper.externalAttributes(value)));
-        content.externalCategories().ifPresent(value -> rawRequest.setExternalCategories(ProductPayloadMapper.externalCategories(value)));
-        content.externalVariantGroup().ifPresent(value -> rawRequest.setExternalVariantGroup(ProductPayloadMapper.externalVariantGroup(value)));
-        content.externalResponsibleProducer().ifPresent(value -> rawRequest.setExternalResponsibleProducer(ProductPayloadMapper.responsibleProducers(value)));
-        content.externalResponsiblePerson().ifPresent(value -> rawRequest.setExternalResponsiblePerson(ProductPayloadMapper.responsiblePersons(value)));
+        content.externalAttributes().ifPresent(value ->
+                rawRequest.setExternalAttributes(ProductPayloadMapper.externalAttributes(value)));
+        content.externalCategories().ifPresent(value ->
+                rawRequest.setExternalCategories(ProductPayloadMapper.externalCategories(value)));
+        content.externalVariantGroup().ifPresent(value ->
+                rawRequest.setExternalVariantGroup(ProductPayloadMapper.externalVariantGroup(value)));
+        content.externalResponsibleProducer().ifPresent(value ->
+                rawRequest.setExternalResponsibleProducer(ProductPayloadMapper.responsibleProducers(value)));
+        content.externalResponsiblePerson().ifPresent(value ->
+                rawRequest.setExternalResponsiblePerson(ProductPayloadMapper.responsiblePersons(value)));
         content.images().ifPresent(value -> rawRequest.setImages(ProductPayloadMapper.images(value)));
         content.files().ifPresent(value -> rawRequest.setFiles(ProductPayloadMapper.files(value)));
         content.price().ifPresent(value -> rawRequest.setPrice(ProductValues.toMinorUnits(value)));
         content.mobilePrice().ifPresent(value -> rawRequest.setMobilePrice(ProductValues.toMinorUnits(value)));
         content.cataloguePrice().ifPresent(value -> rawRequest.setCataloguePrice(ProductValues.toMinorUnits(value)));
-        content.referencePriceType().ifPresent(value -> rawRequest.setReferencePriceType(ProductCreate.ReferencePriceTypeEnum.fromValue(value.wireName())));
+        content.referencePriceType().ifPresent(value ->
+                rawRequest.setReferencePriceType(ProductCreate.ReferencePriceTypeEnum.fromValue(value.wireName())));
         content.stock().ifPresent(rawRequest::setStock);
         content.status().ifPresent(value -> rawRequest.setStatus(ProductCreate.StatusEnum.fromValue(value.wireName())));
         content.archived().ifPresent(rawRequest::setArchived);
@@ -60,8 +68,10 @@ final class ProductRequestMapper {
         content.obligatoryIdentifier().ifPresent(rawRequest::setObligatoryIdentifier);
         content.voluntaryIdentifier().ifPresent(rawRequest::setVoluntaryIdentifier);
         content.returnIdentifier().ifPresent(rawRequest::setReturnIdentifier);
-        content.invoiceType().ifPresent(value -> rawRequest.setInvoiceType(ProductCreate.InvoiceTypeEnum.fromValue(value.wireName())));
-        content.taxRate().ifPresent(value -> rawRequest.setTaxRate(ProductCreate.TaxRateEnum.fromValue(value.wireName())));
+        content.invoiceType().ifPresent(value ->
+                rawRequest.setInvoiceType(ProductCreate.InvoiceTypeEnum.fromValue(value.wireName())));
+        content.taxRate().ifPresent(value ->
+                rawRequest.setTaxRate(ProductCreate.TaxRateEnum.fromValue(value.wireName())));
         content.basketLimit().ifPresent(rawRequest::setBasketLimit);
         content.energyLabel().ifPresent(rawRequest::setEnergyLabel);
         content.instructionWithSafetyInformation().ifPresent(rawRequest::setInstructionWithSafetyInformation);
@@ -69,13 +79,16 @@ final class ProductRequestMapper {
         content.producerId().ifPresent(rawRequest::setProducerId);
         content.responsiblePersonId().ifPresent(rawRequest::setResponsiblePersonId);
         content.externalMetaProductId().ifPresent(rawRequest::setExternalMetaProductId);
-        content.externalProductSets().ifPresent(value -> rawRequest.setExternalProductSets(ProductPayloadMapper.externalProductSets(value)));
+        content.externalProductSets().ifPresent(value ->
+                rawRequest.setExternalProductSets(ProductPayloadMapper.externalProductSets(value)));
         content.productSets().ifPresent(value -> rawRequest.setProductSets(ProductPayloadMapper.productSets(value)));
-        content.productAttachments().ifPresent(value -> rawRequest.setProductAttachments(ProductPayloadMapper.productAttachments(value)));
+        content.productAttachments().ifPresent(value ->
+                rawRequest.setProductAttachments(ProductPayloadMapper.productAttachments(value)));
         content.automaticDiscountRuleId().ifPresent(rawRequest::setAutomaticDiscountRuleId);
         content.packaging().ifPresent(value -> rawRequest.setPackaging(ProductPayloadMapper.packaging(value)));
         content.frozen().ifPresent(frozen -> rawRequest.setFrozen(createFrozen(frozen)));
-        dropUnsetCollections(content, value -> rawRequest.setImages(null), value -> rawRequest.setExternalReferences(null));
+        dropUnsetCollections(content, value -> rawRequest.setImages(null), value -> rawRequest.
+                setExternalReferences(null));
         return rawRequest;
     }
 
@@ -87,21 +100,29 @@ final class ProductRequestMapper {
         content.description().ifPresent(value -> rawRequest.setDescription(ProductPayloadMapper.description(value)));
         content.ean().ifPresent(rawRequest::setEan);
         content.sku().ifPresent(rawRequest::setSku);
-        content.baseMarket().ifPresent(value -> rawRequest.setBaseMarket(ProductUpdate.BaseMarketEnum.fromValue(value.wireName())));
-        content.externalReferences().ifPresent(value -> rawRequest.setExternalReferences(ProductPayloadMapper.externalReferences(value)));
+        content.baseMarket().ifPresent(value ->
+                rawRequest.setBaseMarket(ProductUpdate.BaseMarketEnum.fromValue(value.wireName())));
+        content.externalReferences().ifPresent(value ->
+                rawRequest.setExternalReferences(ProductPayloadMapper.externalReferences(value)));
         content.sourceFulfillmentProductId().ifPresent(rawRequest::setSourceFulfillmentProductId);
         content.importantFeatures().ifPresent(rawRequest::setImportantFeatures);
-        content.externalAttributes().ifPresent(value -> rawRequest.setExternalAttributes(ProductPayloadMapper.externalAttributes(value)));
-        content.externalCategories().ifPresent(value -> rawRequest.setExternalCategories(ProductPayloadMapper.externalCategories(value)));
-        content.externalVariantGroup().ifPresent(value -> rawRequest.setExternalVariantGroup(ProductPayloadMapper.externalVariantGroup(value)));
-        content.externalResponsibleProducer().ifPresent(value -> rawRequest.setExternalResponsibleProducer(ProductPayloadMapper.responsibleProducers(value)));
-        content.externalResponsiblePerson().ifPresent(value -> rawRequest.setExternalResponsiblePerson(ProductPayloadMapper.responsiblePersons(value)));
+        content.externalAttributes().ifPresent(value ->
+                rawRequest.setExternalAttributes(ProductPayloadMapper.externalAttributes(value)));
+        content.externalCategories().ifPresent(value ->
+                rawRequest.setExternalCategories(ProductPayloadMapper.externalCategories(value)));
+        content.externalVariantGroup().ifPresent(value ->
+                rawRequest.setExternalVariantGroup(ProductPayloadMapper.externalVariantGroup(value)));
+        content.externalResponsibleProducer().ifPresent(value ->
+                rawRequest.setExternalResponsibleProducer(ProductPayloadMapper.responsibleProducers(value)));
+        content.externalResponsiblePerson().ifPresent(value ->
+                rawRequest.setExternalResponsiblePerson(ProductPayloadMapper.responsiblePersons(value)));
         content.images().ifPresent(value -> rawRequest.setImages(ProductPayloadMapper.images(value)));
         content.files().ifPresent(value -> rawRequest.setFiles(ProductPayloadMapper.files(value)));
         content.price().ifPresent(value -> rawRequest.setPrice(ProductValues.toMinorUnits(value)));
         content.mobilePrice().ifPresent(value -> rawRequest.setMobilePrice(ProductValues.toMinorUnits(value)));
         content.cataloguePrice().ifPresent(value -> rawRequest.setCataloguePrice(ProductValues.toMinorUnits(value)));
-        content.referencePriceType().ifPresent(value -> rawRequest.setReferencePriceType(ProductUpdate.ReferencePriceTypeEnum.fromValue(value.wireName())));
+        content.referencePriceType().ifPresent(value ->
+                rawRequest.setReferencePriceType(ProductUpdate.ReferencePriceTypeEnum.fromValue(value.wireName())));
         content.stock().ifPresent(rawRequest::setStock);
         content.status().ifPresent(value -> rawRequest.setStatus(ProductUpdate.StatusEnum.fromValue(value.wireName())));
         content.archived().ifPresent(rawRequest::setArchived);
@@ -111,8 +132,10 @@ final class ProductRequestMapper {
         content.obligatoryIdentifier().ifPresent(rawRequest::setObligatoryIdentifier);
         content.voluntaryIdentifier().ifPresent(rawRequest::setVoluntaryIdentifier);
         content.returnIdentifier().ifPresent(rawRequest::setReturnIdentifier);
-        content.invoiceType().ifPresent(value -> rawRequest.setInvoiceType(ProductUpdate.InvoiceTypeEnum.fromValue(value.wireName())));
-        content.taxRate().ifPresent(value -> rawRequest.setTaxRate(ProductUpdate.TaxRateEnum.fromValue(value.wireName())));
+        content.invoiceType().ifPresent(value ->
+                rawRequest.setInvoiceType(ProductUpdate.InvoiceTypeEnum.fromValue(value.wireName())));
+        content.taxRate().ifPresent(value ->
+                rawRequest.setTaxRate(ProductUpdate.TaxRateEnum.fromValue(value.wireName())));
         content.basketLimit().ifPresent(rawRequest::setBasketLimit);
         content.energyLabel().ifPresent(rawRequest::setEnergyLabel);
         content.instructionWithSafetyInformation().ifPresent(rawRequest::setInstructionWithSafetyInformation);
@@ -120,15 +143,18 @@ final class ProductRequestMapper {
         content.producerId().ifPresent(rawRequest::setProducerId);
         content.responsiblePersonId().ifPresent(rawRequest::setResponsiblePersonId);
         content.externalMetaProductId().ifPresent(rawRequest::setExternalMetaProductId);
-        content.externalProductSets().ifPresent(value -> rawRequest.setExternalProductSets(ProductPayloadMapper.externalProductSets(value)));
+        content.externalProductSets().ifPresent(value ->
+                rawRequest.setExternalProductSets(ProductPayloadMapper.externalProductSets(value)));
         content.productSets().ifPresent(value -> rawRequest.setProductSets(ProductPayloadMapper.productSets(value)));
-        content.productAttachments().ifPresent(value -> rawRequest.setProductAttachments(ProductPayloadMapper.productAttachments(value)));
+        content.productAttachments().ifPresent(value ->
+                rawRequest.setProductAttachments(ProductPayloadMapper.productAttachments(value)));
         content.automaticDiscountRuleId().ifPresent(rawRequest::setAutomaticDiscountRuleId);
         content.packaging().ifPresent(value -> rawRequest.setPackaging(ProductPayloadMapper.packaging(value)));
         content.frozen().ifPresent(frozen -> rawRequest.setFrozen(updateFrozen(frozen)));
         patch.newExternalId().ifPresent(value -> rawRequest.setNewExternalId(value.value()));
         applyOverrideFrozen(patch, rawRequest::setOverrideFrozen, rawRequest::setOverrideFrozen_JsonNullable);
-        dropUnsetCollections(content, value -> rawRequest.setImages(null), value -> rawRequest.setExternalReferences(null));
+        dropUnsetCollections(content, value -> rawRequest.setImages(null), value -> rawRequest.
+                setExternalReferences(null));
         for (ProductField field : patch.cleared()) {
             clear(rawRequest, field);
         }
@@ -148,23 +174,32 @@ final class ProductRequestMapper {
         content.description().ifPresent(value -> rawRequest.setDescription(ProductPayloadMapper.description(value)));
         content.ean().ifPresent(rawRequest::setEan);
         content.sku().ifPresent(rawRequest::setSku);
-        content.baseMarket().ifPresent(value -> rawRequest.setBaseMarket(ProductsBatchUpdatePatchRequestInner.BaseMarketEnum.fromValue(value.wireName())));
-        content.externalReferences().ifPresent(value -> rawRequest.setExternalReferences(ProductPayloadMapper.externalReferences(value)));
+        content.baseMarket().ifPresent(value -> rawRequest.
+                setBaseMarket(ProductsBatchUpdatePatchRequestInner.BaseMarketEnum.fromValue(value.wireName())));
+        content.externalReferences().ifPresent(value ->
+                rawRequest.setExternalReferences(ProductPayloadMapper.externalReferences(value)));
         content.sourceFulfillmentProductId().ifPresent(rawRequest::setSourceFulfillmentProductId);
         content.importantFeatures().ifPresent(rawRequest::setImportantFeatures);
-        content.externalAttributes().ifPresent(value -> rawRequest.setExternalAttributes(ProductPayloadMapper.externalAttributes(value)));
-        content.externalCategories().ifPresent(value -> rawRequest.setExternalCategories(ProductPayloadMapper.externalCategories(value)));
-        content.externalVariantGroup().ifPresent(value -> rawRequest.setExternalVariantGroup(ProductPayloadMapper.externalVariantGroup(value)));
-        content.externalResponsibleProducer().ifPresent(value -> rawRequest.setExternalResponsibleProducer(ProductPayloadMapper.responsibleProducers(value)));
-        content.externalResponsiblePerson().ifPresent(value -> rawRequest.setExternalResponsiblePerson(ProductPayloadMapper.responsiblePersons(value)));
+        content.externalAttributes().ifPresent(value ->
+                rawRequest.setExternalAttributes(ProductPayloadMapper.externalAttributes(value)));
+        content.externalCategories().ifPresent(value ->
+                rawRequest.setExternalCategories(ProductPayloadMapper.externalCategories(value)));
+        content.externalVariantGroup().ifPresent(value ->
+                rawRequest.setExternalVariantGroup(ProductPayloadMapper.externalVariantGroup(value)));
+        content.externalResponsibleProducer().ifPresent(value ->
+                rawRequest.setExternalResponsibleProducer(ProductPayloadMapper.responsibleProducers(value)));
+        content.externalResponsiblePerson().ifPresent(value ->
+                rawRequest.setExternalResponsiblePerson(ProductPayloadMapper.responsiblePersons(value)));
         content.images().ifPresent(value -> rawRequest.setImages(ProductPayloadMapper.images(value)));
         content.files().ifPresent(value -> rawRequest.setFiles(ProductPayloadMapper.files(value)));
         content.price().ifPresent(value -> rawRequest.setPrice(ProductValues.toMinorUnits(value)));
         content.mobilePrice().ifPresent(value -> rawRequest.setMobilePrice(ProductValues.toMinorUnits(value)));
         content.cataloguePrice().ifPresent(value -> rawRequest.setCataloguePrice(ProductValues.toMinorUnits(value)));
-        content.referencePriceType().ifPresent(value -> rawRequest.setReferencePriceType(ProductsBatchUpdatePatchRequestInner.ReferencePriceTypeEnum.fromValue(value.wireName())));
+        content.referencePriceType().ifPresent(value -> rawRequest.setReferencePriceType(
+                ProductsBatchUpdatePatchRequestInner.ReferencePriceTypeEnum.fromValue(value.wireName())));
         content.stock().ifPresent(rawRequest::setStock);
-        content.status().ifPresent(value -> rawRequest.setStatus(ProductsBatchUpdatePatchRequestInner.StatusEnum.fromValue(value.wireName())));
+        content.status().ifPresent(value ->
+                rawRequest.setStatus(ProductsBatchUpdatePatchRequestInner.StatusEnum.fromValue(value.wireName())));
         content.archived().ifPresent(rawRequest::setArchived);
         content.dispatchTime().ifPresent(value -> rawRequest.setDispatchTime(ProductPayloadMapper.dispatchTime(value)));
         content.deliveryPriceList().ifPresent(rawRequest::setDeliveryPriceList);
@@ -172,8 +207,10 @@ final class ProductRequestMapper {
         content.obligatoryIdentifier().ifPresent(rawRequest::setObligatoryIdentifier);
         content.voluntaryIdentifier().ifPresent(rawRequest::setVoluntaryIdentifier);
         content.returnIdentifier().ifPresent(rawRequest::setReturnIdentifier);
-        content.invoiceType().ifPresent(value -> rawRequest.setInvoiceType(ProductsBatchUpdatePatchRequestInner.InvoiceTypeEnum.fromValue(value.wireName())));
-        content.taxRate().ifPresent(value -> rawRequest.setTaxRate(ProductsBatchUpdatePatchRequestInner.TaxRateEnum.fromValue(value.wireName())));
+        content.invoiceType().ifPresent(value -> rawRequest.
+                setInvoiceType(ProductsBatchUpdatePatchRequestInner.InvoiceTypeEnum.fromValue(value.wireName())));
+        content.taxRate().ifPresent(value ->
+                rawRequest.setTaxRate(ProductsBatchUpdatePatchRequestInner.TaxRateEnum.fromValue(value.wireName())));
         content.basketLimit().ifPresent(rawRequest::setBasketLimit);
         content.energyLabel().ifPresent(rawRequest::setEnergyLabel);
         content.instructionWithSafetyInformation().ifPresent(rawRequest::setInstructionWithSafetyInformation);
@@ -181,15 +218,18 @@ final class ProductRequestMapper {
         content.producerId().ifPresent(rawRequest::setProducerId);
         content.responsiblePersonId().ifPresent(rawRequest::setResponsiblePersonId);
         content.externalMetaProductId().ifPresent(rawRequest::setExternalMetaProductId);
-        content.externalProductSets().ifPresent(value -> rawRequest.setExternalProductSets(ProductPayloadMapper.externalProductSets(value)));
+        content.externalProductSets().ifPresent(value ->
+                rawRequest.setExternalProductSets(ProductPayloadMapper.externalProductSets(value)));
         content.productSets().ifPresent(value -> rawRequest.setProductSets(ProductPayloadMapper.productSets(value)));
-        content.productAttachments().ifPresent(value -> rawRequest.setProductAttachments(ProductPayloadMapper.productAttachments(value)));
+        content.productAttachments().ifPresent(value ->
+                rawRequest.setProductAttachments(ProductPayloadMapper.productAttachments(value)));
         content.automaticDiscountRuleId().ifPresent(rawRequest::setAutomaticDiscountRuleId);
         content.packaging().ifPresent(value -> rawRequest.setPackaging(ProductPayloadMapper.packaging(value)));
         content.frozen().ifPresent(frozen -> rawRequest.setFrozen(updateFrozen(frozen)));
         patch.newExternalId().ifPresent(value -> rawRequest.setNewExternalId(value.value()));
         applyOverrideFrozen(patch, rawRequest::setOverrideFrozen, rawRequest::setOverrideFrozen_JsonNullable);
-        dropUnsetCollections(content, value -> rawRequest.setImages(null), value -> rawRequest.setExternalReferences(null));
+        dropUnsetCollections(content, value -> rawRequest.setImages(null), value -> rawRequest.
+                setExternalReferences(null));
         for (ProductField field : patch.cleared()) {
             clearBatchEntry(rawRequest, field);
         }
@@ -289,7 +329,8 @@ final class ProductRequestMapper {
         rawRequest.setSku(ProductPayloadMapper.frozenFlag(frozen, ProductField.SKU));
         rawRequest.setExternalAttributes(ProductPayloadMapper.frozenFlag(frozen, ProductField.EXTERNAL_ATTRIBUTES));
         rawRequest.setExternalCategories(ProductPayloadMapper.frozenFlag(frozen, ProductField.EXTERNAL_CATEGORIES));
-        rawRequest.setExternalVariantGroup(ProductPayloadMapper.frozenFlag(frozen, ProductField.EXTERNAL_VARIANT_GROUP));
+        rawRequest.setExternalVariantGroup(ProductPayloadMapper.frozenFlag(frozen,
+                ProductField.EXTERNAL_VARIANT_GROUP));
         rawRequest.setImages(ProductPayloadMapper.frozenFlag(frozen, ProductField.IMAGES));
         rawRequest.setFiles(ProductPayloadMapper.frozenFlag(frozen, ProductField.FILES));
         rawRequest.setPrice(ProductPayloadMapper.frozenFlag(frozen, ProductField.PRICE));
@@ -319,7 +360,8 @@ final class ProductRequestMapper {
         rawRequest.setSku(ProductPayloadMapper.frozenFlag(frozen, ProductField.SKU));
         rawRequest.setExternalAttributes(ProductPayloadMapper.frozenFlag(frozen, ProductField.EXTERNAL_ATTRIBUTES));
         rawRequest.setExternalCategories(ProductPayloadMapper.frozenFlag(frozen, ProductField.EXTERNAL_CATEGORIES));
-        rawRequest.setExternalVariantGroup(ProductPayloadMapper.frozenFlag(frozen, ProductField.EXTERNAL_VARIANT_GROUP));
+        rawRequest.setExternalVariantGroup(ProductPayloadMapper.frozenFlag(frozen,
+                ProductField.EXTERNAL_VARIANT_GROUP));
         rawRequest.setImages(ProductPayloadMapper.frozenFlag(frozen, ProductField.IMAGES));
         rawRequest.setFiles(ProductPayloadMapper.frozenFlag(frozen, ProductField.FILES));
         rawRequest.setPrice(ProductPayloadMapper.frozenFlag(frozen, ProductField.PRICE));

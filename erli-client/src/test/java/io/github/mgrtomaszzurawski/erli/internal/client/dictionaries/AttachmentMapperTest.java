@@ -227,7 +227,7 @@ class AttachmentMapperTest {
 
         ProductAttachmentResult result = AttachmentMapper.toProductAttachmentResult(raw);
 
-        assertFalse(result.ok());
+        assertFalse(result.succeeded());
         assertFalse(result.isComplete());
         assertEquals(List.of(11L), result.updatedProductIds());
         assertEquals(1, result.errors().size());

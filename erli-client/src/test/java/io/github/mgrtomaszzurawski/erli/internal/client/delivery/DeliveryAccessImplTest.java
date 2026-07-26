@@ -253,7 +253,8 @@ class DeliveryAccessImplTest {
     private static DeliveryPrice priceOf(BigDecimal amount) {
         return new DeliveryPrice(
                 new DeliveryMethodRef(DeliveryMethodId.of("erliDHL5kg"), Optional.empty()),
-                Money.of(amount, java.util.Currency.getInstance("PLN")), Money.ofMinorUnits(0, "PLN"), Optional.empty(), false);
+                Money.of(amount, java.util.Currency.getInstance("PLN")), Money.ofMinorUnits(0, "PLN"), Optional.
+                        empty(), false);
     }
 
     @Test

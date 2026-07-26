@@ -427,13 +427,15 @@ public final class ProductContent {
             return this;
         }
 
-    /** Set seller-supplied attributes, before catalog matching. A null clears the setting; an empty list is a real value meaning "no entries". */
+    /** Set seller-supplied attributes,
+            before catalog matching. A null clears the setting; an empty list is a real value meaning "no entries". */
         public Builder externalAttributes(List<ExternalAttribute> value) {
             this.externalAttributes = Optional.ofNullable(value).map(List::copyOf);
             return this;
         }
 
-    /** Set seller-supplied category paths, before matching. A null clears the setting; an empty list is a real value meaning "no entries". */
+    /** Set seller-supplied category paths,
+            before matching. A null clears the setting; an empty list is a real value meaning "no entries". */
         public Builder externalCategories(List<ExternalCategory> value) {
             this.externalCategories = Optional.ofNullable(value).map(List::copyOf);
             return this;

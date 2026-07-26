@@ -111,7 +111,8 @@ final class ProductMapper {
                 ProductValues.mapEach(rawProduct.getExternalAttributes(), ProductMapper::toExternalAttribute),
                 ProductValues.mapEach(rawProduct.getExternalCategories(), ProductMapper::toExternalCategory),
                 ProductValues.mapOptional(rawProduct.getExternalVariantGroup(), ProductMapper::toVariantGroup),
-                ProductValues.mapEach(rawProduct.getExternalResponsibleProducer(), ProductMapper::toResponsibleProducer),
+                ProductValues.mapEach(rawProduct.getExternalResponsibleProducer(),
+                        ProductMapper::toResponsibleProducer),
                 ProductValues.mapEach(rawProduct.getExternalResponsiblePerson(), ProductMapper::toResponsiblePerson),
                 Optional.ofNullable(rawProduct.getExternalMetaProductId()),
                 ProductValues.mapOptional(rawProduct.getExternalProductSets(), ProductMapper::toExternalProductSet),
@@ -244,7 +245,8 @@ final class ProductMapper {
 
     private static ExternalCategory toExternalCategory(ProductCreateExternalCategoriesInner rawCategory) {
         return new ExternalCategory(
-                ProductValues.mapOptional(rawCategory.getSource(), value -> ProductEnums.toExternalSource(value.getValue())),
+                ProductValues.mapOptional(rawCategory.getSource(), value -> ProductEnums.toExternalSource(value.
+                        getValue())),
                 ProductValues.mapEach(rawCategory.getBreadcrumb(), entry -> new DictionaryValue(
                         AttributeValueMapper.identifierText(entry.getId()),
                         Optional.ofNullable(entry.getName()))),
@@ -268,7 +270,8 @@ final class ProductMapper {
                         value -> ProductEnums.toResponsibleEntitySource(value.getValue())));
     }
 
-    private static ExternalResponsibleEntity toResponsiblePerson(ProductCreateExternalResponsiblePersonInner rawPerson) {
+    private static ExternalResponsibleEntity toResponsiblePerson(
+            ProductCreateExternalResponsiblePersonInner rawPerson) {
         return new ExternalResponsibleEntity(
                 Optional.ofNullable(rawPerson.getExternalId()),
                 ProductValues.mapOptional(rawPerson.getSource(),
@@ -319,7 +322,8 @@ final class ProductMapper {
         splitMarkets(rawAttachment.getMarkets(), knownMarkets, unrecognisedMarkets);
         return new ProductAttachment(
                 Optional.ofNullable(rawAttachment.getId()),
-                ProductValues.mapOptional(rawAttachment.getKind(), value -> ProductEnums.toAttachmentKind(value.getValue())),
+                ProductValues.mapOptional(rawAttachment.getKind(), value -> ProductEnums.toAttachmentKind(value.
+                        getValue())),
                 Optional.ofNullable(rawAttachment.getUrl()),
                 knownMarkets,
                 unrecognisedMarkets);
@@ -372,7 +376,8 @@ final class ProductMapper {
      * {@link DispatchTime} to resolve rather than being rejected here.
      */
     private static DispatchTime toDispatchTime(ProductCreateDispatchTime rawDispatchTime) {
-        int period = ((Number) require(rawDispatchTime.getPeriod(), "dispatchTime period").getActualInstance()).intValue();
+        int period = ((Number) require(rawDispatchTime.getPeriod(), "dispatchTime period").getActualInstance()).
+                intValue();
         DispatchTimeUnit unit = rawDispatchTime.getUnit() == null
                 ? DispatchTime.DEFAULT_UNIT
                 : ProductEnums.toDispatchTimeUnit(rawDispatchTime.getUnit().getValue());
@@ -380,7 +385,8 @@ final class ProductMapper {
     }
 
     private static Packaging toPackaging(ProductCreatePackaging rawPackaging) {
-        return new Packaging(ProductValues.orEmpty(rawPackaging.getTags()), Optional.ofNullable(rawPackaging.getWeight()));
+        return new Packaging(ProductValues.orEmpty(rawPackaging.getTags()), Optional.ofNullable(rawPackaging.
+                getWeight()));
     }
 
     /**

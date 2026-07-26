@@ -176,7 +176,8 @@ class HttpRuntimeTest {
     void getListDecodesBareJsonArray() {
         server.stubFor(get(urlPathEqualTo(ME_PATH)).willReturn(okJson("[" + SHOP_JSON + "," + SHOP_JSON + "]")));
 
-        List<ShopResponse> result = runtimeWith(fastRetry()).getList(ME_PATH, QueryParameters.empty(), ShopResponse.class);
+        List<ShopResponse> result = runtimeWith(fastRetry()).getList(ME_PATH, QueryParameters.empty(), ShopResponse.
+                class);
 
         assertEquals(2, result.size());
         assertEquals(100007, result.get(0).getId().intValue());

@@ -83,7 +83,8 @@ class ShippingWriteOperationsTest {
                 "shipping": { "vendor": "dpd" }, "status": "sent",
                 "createdAt": "2026-07-20T08:14:00Z", "updatedAt": "2026-07-21T09:30:00Z" },
               { "orderId": "100007x9999", "vendor": "dhl",
-                "error": [ { "errorCode": 1110, "errorMessage": "Nie mozna dodac paczki do anulowanego zamowienia" } ] } ]
+                "error": [ { "errorCode": 1110,
+                        "errorMessage": "Nie mozna dodac paczki do anulowanego zamowienia" } ] } ]
             """;
     private static final String POSTING_POINTS_JSON = """
             [ { "id": 4471, "name": "Magazyn", "type": "point", "isDefault": true,

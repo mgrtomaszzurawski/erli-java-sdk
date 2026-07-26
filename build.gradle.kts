@@ -43,4 +43,23 @@ configure(subprojects.filter { it.name in handWrittenModules }) {
             endWithNewline()
         }
     }
+
+    apply(plugin = "checkstyle")
+    configure<CheckstyleExtension> {
+        toolVersion = "10.21.1"
+        configDirectory.set(rootProject.file("config/checkstyle"))
+        configFile = rootProject.file("config/checkstyle/checkstyle.xml")
+        isIgnoreFailures = false // the tree is clean; a new violation now fails the build
+        isShowViolations = true
+        maxWarnings = 0
+    }
+    tasks.withType<Checkstyle>().configureEach {
+        // module-info.java is a declarative descriptor, not styled code, and Checkstyle's parser
+        // throws on its grammar (requires/exports). Nothing in the config applies to it anyway.
+        exclude("**/module-info.java")
+        reports {
+            xml.required.set(true)
+            html.required.set(false)
+        }
+    }
 }

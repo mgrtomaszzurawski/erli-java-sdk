@@ -11,14 +11,14 @@ import java.util.Optional;
  * <p><strong>Partial success is normal and is reported with HTTP 200.</strong> The API answers
  * {@code {"ok":false,"updated":[],"errors":[{"productId":…,"error":"…"}]}} when some products could
  * not be attached — an unknown product id, for instance — so a caller that only checks for an
- * exception would believe an attach that changed nothing had succeeded. Always check {@link #ok()}
+ * exception would believe an attach that changed nothing had succeeded. Always check {@link #succeeded()}
  * or {@link #errors()}. (The published schema documents this operation as returning no body.)
  *
- * @param ok whether the API considered the whole operation successful
+ * @param succeeded whether the API considered the whole operation successful
  * @param updatedProductIds the products whose attachment actually changed
  * @param errors one entry per product the API refused, verbatim
  */
-public record ProductAttachmentResult(boolean ok, List<Long> updatedProductIds, List<ProductError> errors) {
+public record ProductAttachmentResult(boolean succeeded, List<Long> updatedProductIds, List<ProductError> errors) {
 
     public ProductAttachmentResult {
         updatedProductIds = List.copyOf(Objects.requireNonNull(updatedProductIds, "updatedProductIds"));
@@ -27,7 +27,7 @@ public record ProductAttachmentResult(boolean ok, List<Long> updatedProductIds, 
 
     /** Whether every requested product was updated. */
     public boolean isComplete() {
-        return ok && errors.isEmpty();
+        return succeeded && errors.isEmpty();
     }
 
     /**
