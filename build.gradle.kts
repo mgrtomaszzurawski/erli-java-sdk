@@ -42,13 +42,23 @@ sonar {
             "sonar.coverage.jacoco.xmlReportPaths",
             "${rootDir}/erli-client/build/reports/jacoco/test/jacocoTestReport.xml",
         )
+        // The exception-by-remediation design is a deliberate sealed hierarchy
+        // (ErliValidationException -> ErliApiException -> ErliException -> RuntimeException); S110's
+        // 5-parent limit does not fit a domain exception that necessarily sits on RuntimeException.
+        property("sonar.issue.ignore.multicriteria", "e1")
+        property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S110")
+        property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/core/error/*.java")
     }
 }
 
-// The generated Layer-1 module is not our code and is never hand-edited — keep it out of the analysis.
-project(":erli-rest-models") {
-    sonar {
-        isSkipProject = true
+// Sonar analyses the shipped SDK. The generated Layer-1 module and the illustrative demo/examples/
+// jpms smoke-check modules are not the product — the same scope every other gate uses — so their
+// sample-code smells (System.out in a runnable demo, etc.) are not the SDK's quality signal.
+listOf(":erli-rest-models", ":erli-demo", ":erli-examples", ":erli-jpms-consumer").forEach { path ->
+    project(path) {
+        sonar {
+            isSkipProject = true
+        }
     }
 }
 

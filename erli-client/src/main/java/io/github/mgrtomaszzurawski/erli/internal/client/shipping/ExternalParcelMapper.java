@@ -28,6 +28,8 @@ import java.util.Optional;
  */
 final class ExternalParcelMapper {
 
+    private static final String FIELD_ORDER_ID = "orderId";
+
     /** Present only on a refused entry — the discriminator the anyOf branches do not give us. */
     private static final String ERROR_FIELD = "error";
 
@@ -38,7 +40,7 @@ final class ExternalParcelMapper {
         Objects.requireNonNull(rawParcel, "raw ExternalParcel");
         return new ExternalParcel(
                 ParcelId.of(String.valueOf(requireField(rawParcel.getId(), "id"))),
-                OrderId.of(requireField(rawParcel.getOrderId(), "orderId")),
+                OrderId.of(requireField(rawParcel.getOrderId(), FIELD_ORDER_ID)),
                 ParcelType.fromWire(requireField(rawParcel.getType(), "type").getValue()),
                 toVendor(requireField(rawParcel.getShipping(), "shipping")),
                 toStatus(rawParcel.getStatus()),
@@ -83,7 +85,7 @@ final class ExternalParcelMapper {
 
     private static ExternalParcelResult toRejected(CreateExternalParcelResponseAnyOf1 raw) {
         return new ExternalParcelResult.Rejected(
-                OrderId.of(requireField(raw.getOrderId(), "orderId")),
+                OrderId.of(requireField(raw.getOrderId(), FIELD_ORDER_ID)),
                 Optional.ofNullable(raw.getVendor())
                         .map(CreateExternalParcelResponseAnyOf1.VendorEnum::getValue)
                         .map(DeliveryVendor::fromWire),
@@ -95,7 +97,7 @@ final class ExternalParcelMapper {
     private static ExternalParcel toCreated(CreateExternalParcelResponseAnyOf raw) {
         return new ExternalParcel(
                 ParcelId.of(String.valueOf(requireField(raw.getId(), "id"))),
-                OrderId.of(requireField(raw.getOrderId(), "orderId")),
+                OrderId.of(requireField(raw.getOrderId(), FIELD_ORDER_ID)),
                 ParcelType.fromWire(requireField(raw.getType(), "type").getValue()),
                 toVendor(requireField(raw.getShipping(), "shipping")),
                 toStatus(raw.getStatus()),

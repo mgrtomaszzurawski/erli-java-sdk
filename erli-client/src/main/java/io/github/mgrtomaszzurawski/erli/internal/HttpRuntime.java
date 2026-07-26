@@ -55,6 +55,8 @@ public final class HttpRuntime {
     private final JsonCodec codec;
     private final ErrorMapper errorMapper;
 
+    // A dependency-injection constructor: each parameter is a distinct collaborator, not a data clump.
+    @SuppressWarnings("java:S107")
     public HttpRuntime(HttpClient httpClient, String baseUrl, ApiKey apiKey, RetryPolicy retryPolicy,
             String userAgent, Duration requestTimeout, JsonCodec codec, ErrorMapper errorMapper) {
         this.httpClient = Objects.requireNonNull(httpClient, "httpClient");
@@ -155,6 +157,8 @@ public final class HttpRuntime {
                 .header(HEADER_USER_AGENT, userAgent);
     }
 
+    // A retry loop: the continue statements are the retry paths; collapsing them to one exit hurts clarity.
+    @SuppressWarnings("java:S135")
     private <T> T execute(HttpRequest request, String path, boolean idempotent, Function<String, T> decoder) {
         int attempt = 0;
         int retryIndex = FIRST_RETRY_INDEX;

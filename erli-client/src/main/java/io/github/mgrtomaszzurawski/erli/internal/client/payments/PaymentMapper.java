@@ -149,8 +149,8 @@ final class PaymentMapper {
 
     private static List<OrderId> toOrderIds(List<Integer> rawOrderIds) {
         List<Integer> orderIds = require(rawOrderIds, FIELD_ORDER_IDS);
-        // The spec types these as integers here but as the "NNNNNNxNNNN" text form everywhere else;
-        // core owns OrderId, so keep one type and carry whatever the server sent as its text.
+        // Here the spec types order ids as integers, though everywhere else they are the NNNNNNxNNNN text
+        // form. Core owns OrderId, so this keeps one type and carries the server value through as text.
         return orderIds.stream().map(String::valueOf).map(OrderId::of).toList();
     }
 

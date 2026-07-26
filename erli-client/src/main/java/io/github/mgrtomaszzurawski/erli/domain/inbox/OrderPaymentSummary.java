@@ -14,8 +14,10 @@ import java.util.Optional;
  * @param id     the marketplace's payment id
  * @param status the payment's status, when the API reports one this SDK version recognises — an
  *               unrecognised status decodes to absent (CORE-12)
+ * @deprecated the API superseded this in favour of the payments endpoints; read {@code client.payments()}
+ *         instead. Kept so an order event still maps losslessly.
  */
-@Deprecated(since = "0.1.0")
+@Deprecated(since = "0.1.0", forRemoval = false)
 public record OrderPaymentSummary(long id, Optional<PaymentStatus> status) {
 
     public OrderPaymentSummary {

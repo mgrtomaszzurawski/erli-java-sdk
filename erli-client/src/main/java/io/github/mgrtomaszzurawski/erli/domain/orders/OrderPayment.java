@@ -12,6 +12,6 @@ import java.util.Optional;
  *         bucket), which is authoritative and carries far more detail. It is still mapped so that an
  *         order fetched today round-trips losslessly, but new code should not read it.
  */
-@Deprecated(since = "0.1.0")
+@Deprecated(since = "0.1.0", forRemoval = false)
 public record OrderPayment(long id, Optional<PaymentStatus> status) {
 }

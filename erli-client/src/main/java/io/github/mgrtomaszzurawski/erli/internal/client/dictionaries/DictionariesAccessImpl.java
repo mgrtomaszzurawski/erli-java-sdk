@@ -58,6 +58,8 @@ import java.util.stream.Stream;
  */
 public final class DictionariesAccessImpl implements DictionariesAccess {
 
+    private static final String PARAM_QUERY = "query";
+
     private static final String PARAM_ID = "id";
     private static final String PARAM_COD = "cod";
     private static final String PARAM_VENDOR = "vendor";
@@ -128,7 +130,7 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
 
     @Override
     public List<DeliveryMethod> deliveryMethods(DeliveryMethodQuery query) {
-        Objects.requireNonNull(query, "query");
+        Objects.requireNonNull(query, PARAM_QUERY);
         return runtime.getList(ApiPaths.DICTIONARIES_DELIVERY_METHODS, deliveryMethodParameters(query),
                         io.github.mgrtomaszzurawski.erli.rest.model.DeliveryMethod.class)
                 .stream()
@@ -139,7 +141,7 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     @Override
     public List<DeliveryMethod> deliveryMethods(PriceListName priceList, DeliveryMethodQuery query) {
         Objects.requireNonNull(priceList, "priceList");
-        Objects.requireNonNull(query, "query");
+        Objects.requireNonNull(query, PARAM_QUERY);
         Map<String, String> pathValues = Map.of(ApiPaths.PRICE_LIST_PARAM, priceList.value());
         return runtime.getList(PathTemplate.expand(ApiPaths.DICTIONARIES_DELIVERY_METHODS_BY_PRICE_LIST, pathValues),
                         deliveryMethodParameters(query),
@@ -160,7 +162,7 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
 
     @Override
     public List<ShippingMethod> shippingMethods(ShippingMethodQuery query) {
-        Objects.requireNonNull(query, "query");
+        Objects.requireNonNull(query, PARAM_QUERY);
         ShippingMethodId id = query.id();
         ShippingOperator operator = query.operator();
         QueryParameters parameters = QueryParameters.builder()
@@ -187,7 +189,7 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
 
     @Override
     public List<ResponsibleParty> responsiblePersons(ResponsiblePartyQuery query) {
-        Objects.requireNonNull(query, "query");
+        Objects.requireNonNull(query, PARAM_QUERY);
         return runtime.getList(ApiPaths.DICTIONARIES_RESPONSIBLE_PERSONS, responsiblePartyParameters(query),
                         ResponsibleSchema.class)
                 .stream()
@@ -219,7 +221,7 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
 
     @Override
     public List<ResponsibleParty> responsibleProducers(ResponsiblePartyQuery query) {
-        Objects.requireNonNull(query, "query");
+        Objects.requireNonNull(query, PARAM_QUERY);
         return runtime.getList(ApiPaths.DICTIONARIES_RESPONSIBLE_PRODUCERS, responsiblePartyParameters(query),
                         ResponsibleSchema.class)
                 .stream()
@@ -251,7 +253,7 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
 
     @Override
     public List<Attachment> attachments(AttachmentQuery query) {
-        Objects.requireNonNull(query, "query");
+        Objects.requireNonNull(query, PARAM_QUERY);
         AttachmentKind kind = query.kind();
         Long id = query.id();
         QueryParameters parameters = QueryParameters.builder()

@@ -69,6 +69,9 @@ import java.util.Optional;
 @SuppressWarnings("PMD.CyclomaticComplexity")
 final class OrderEventMapper {
 
+    private static final String MISSING_FIELD_PREFIX = "order payload is missing the required '";
+    private static final String MISSING_FIELD_SUFFIX = "' field";
+
     private static final String FIELD_DELIVERY_TRACKING = "deliveryTracking";
     private static final String CURRENCY_CODE_PLN = "PLN";
     private static final String CURRENCY_CODE_EUR = "EUR";
@@ -146,7 +149,7 @@ final class OrderEventMapper {
 
     private static List<OrderLine> toLines(List<OrderItemsInner> rawItems, Currency currency) {
         if (rawItems == null) {
-            throw new IllegalStateException("order payload is missing the required 'items' field");
+            throw new IllegalStateException(MISSING_FIELD_PREFIX + "items" + MISSING_FIELD_SUFFIX);
         }
         return rawItems.stream().map(rawItem -> toLine(rawItem, currency)).toList();
     }
@@ -405,7 +408,7 @@ final class OrderEventMapper {
     private static OrderDelivery requireDelivery(MessagePayloadAnyOf rawPayload) {
         OrderDelivery rawDelivery = rawPayload.getDelivery();
         if (rawDelivery == null) {
-            throw new IllegalStateException("order payload is missing the required 'delivery' field");
+            throw new IllegalStateException(MISSING_FIELD_PREFIX + "delivery" + MISSING_FIELD_SUFFIX);
         }
         return rawDelivery;
     }
@@ -438,28 +441,28 @@ final class OrderEventMapper {
 
     private static String requireText(String value, String field) {
         if (value == null || value.isBlank()) {
-            throw new IllegalStateException("order payload is missing the required '" + field + "' field");
+            throw new IllegalStateException(MISSING_FIELD_PREFIX + field + MISSING_FIELD_SUFFIX);
         }
         return value;
     }
 
     private static int requireInteger(Integer value, String field) {
         if (value == null) {
-            throw new IllegalStateException("order payload is missing the required '" + field + "' field");
+            throw new IllegalStateException(MISSING_FIELD_PREFIX + field + MISSING_FIELD_SUFFIX);
         }
         return value;
     }
 
     private static boolean requireBoolean(Boolean value, String field) {
         if (value == null) {
-            throw new IllegalStateException("order payload is missing the required '" + field + "' field");
+            throw new IllegalStateException(MISSING_FIELD_PREFIX + field + MISSING_FIELD_SUFFIX);
         }
         return value;
     }
 
     private static OffsetDateTime requireTimestamp(OffsetDateTime value, String field) {
         if (value == null) {
-            throw new IllegalStateException("order payload is missing the required '" + field + "' field");
+            throw new IllegalStateException(MISSING_FIELD_PREFIX + field + MISSING_FIELD_SUFFIX);
         }
         return value;
     }

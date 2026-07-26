@@ -196,6 +196,9 @@ final class AttachmentMapper {
         return markets.stream().map(Market::wireValue).toList();
     }
 
+    // 12 fields shared verbatim by two generated response types with no common interface; a carrier
+    // record would just relocate the same 12 fields. This is the DRY factoring, not a data clump.
+    @SuppressWarnings("java:S107")
     private static Attachment build(
             Integer id,
             Integer shopId,

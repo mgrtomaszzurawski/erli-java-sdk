@@ -26,6 +26,8 @@ import java.util.Optional;
  */
 public record Hook(HookKind kind, URI url, Optional<String> accessToken) {
 
+    private static final String FIELD_ACCESS_TOKEN = "accessToken";
+
     /** The API's limit on the hook URL. */
     public static final int MAX_URL_LENGTH = 2000;
     /** The API's limit on the access token. */
@@ -45,9 +47,9 @@ public record Hook(HookKind kind, URI url, Optional<String> accessToken) {
     public Hook {
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(url, "url");
-        Objects.requireNonNull(accessToken, "accessToken");
+        Objects.requireNonNull(accessToken, FIELD_ACCESS_TOKEN);
         requireAtMost(url.toString(), MAX_URL_LENGTH, "url");
-        accessToken.ifPresent(token -> requireAtMost(token, MAX_ACCESS_TOKEN_LENGTH, "accessToken"));
+        accessToken.ifPresent(token -> requireAtMost(token, MAX_ACCESS_TOKEN_LENGTH, FIELD_ACCESS_TOKEN));
     }
 
     /** A subscription without an access token. The URL must be a plain {@code https} endpoint. */
@@ -57,7 +59,7 @@ public record Hook(HookKind kind, URI url, Optional<String> accessToken) {
 
     /** A subscription whose calls carry an access token. The URL must be a plain {@code https} endpoint. */
     public static Hook of(HookKind kind, URI url, String accessToken) {
-        return validated(new Hook(kind, url, Optional.of(Objects.requireNonNull(accessToken, "accessToken"))));
+        return validated(new Hook(kind, url, Optional.of(Objects.requireNonNull(accessToken, FIELD_ACCESS_TOKEN))));
     }
 
     /**

@@ -37,6 +37,8 @@ import java.util.stream.Stream;
  */
 public final class ProductAccessImpl implements ProductAccess {
 
+    private static final String PARAM_EXTERNAL_ID = "externalId";
+
     private final HttpRuntime runtime;
 
     public ProductAccessImpl(HttpRuntime runtime) {
@@ -59,7 +61,7 @@ public final class ProductAccessImpl implements ProductAccess {
 
     @Override
     public Optional<Product> get(ProductExternalId externalId, Set<ProductField> fields) {
-        Objects.requireNonNull(externalId, "externalId");
+        Objects.requireNonNull(externalId, PARAM_EXTERNAL_ID);
         Objects.requireNonNull(fields, "fields");
         try {
             ProductResponse rawResponse = runtime.get(path(ApiPaths.PRODUCT_BY_EXTERNAL_ID, externalId),
@@ -74,7 +76,7 @@ public final class ProductAccessImpl implements ProductAccess {
 
     @Override
     public void create(ProductExternalId externalId, ProductDraft draft) {
-        Objects.requireNonNull(externalId, "externalId");
+        Objects.requireNonNull(externalId, PARAM_EXTERNAL_ID);
         Objects.requireNonNull(draft, "draft");
         // 202 Accepted with an empty body: there is nothing to decode, only to have succeeded.
         runtime.post(path(ApiPaths.PRODUCT_BY_EXTERNAL_ID, externalId),
@@ -83,7 +85,7 @@ public final class ProductAccessImpl implements ProductAccess {
 
     @Override
     public ProductUpdateResult update(ProductExternalId externalId, ProductPatch patch) {
-        Objects.requireNonNull(externalId, "externalId");
+        Objects.requireNonNull(externalId, PARAM_EXTERNAL_ID);
         Objects.requireNonNull(patch, "patch");
         ProductUpdateResponse rawResponse = runtime.patch(path(ApiPaths.PRODUCT_BY_EXTERNAL_ID, externalId),
                 ProductRequestMapper.toUpdate(patch), ProductUpdateResponse.class);
@@ -189,7 +191,7 @@ public final class ProductAccessImpl implements ProductAccess {
 
     @Override
     public Discount startDiscount(ProductExternalId externalId, DiscountRequest request) {
-        Objects.requireNonNull(externalId, "externalId");
+        Objects.requireNonNull(externalId, PARAM_EXTERNAL_ID);
         Objects.requireNonNull(request, "request");
         var rawResponse = runtime.post(path(ApiPaths.PRODUCT_DISCOUNT, externalId),
                 ProductResultMapper.toCreateDiscount(request),
@@ -199,7 +201,7 @@ public final class ProductAccessImpl implements ProductAccess {
 
     @Override
     public Optional<Discount> getDiscount(ProductExternalId externalId) {
-        Objects.requireNonNull(externalId, "externalId");
+        Objects.requireNonNull(externalId, PARAM_EXTERNAL_ID);
         try {
             var rawResponse = runtime.get(path(ApiPaths.PRODUCT_DISCOUNT, externalId),
                     io.github.mgrtomaszzurawski.erli.rest.model.Discount.class);
