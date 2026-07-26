@@ -4,6 +4,7 @@
 plugins {
     java
     alias(libs.plugins.spotless) apply false
+    alias(libs.plugins.spotbugs) apply false
 }
 
 allprojects {
@@ -61,5 +62,20 @@ configure(subprojects.filter { it.name in handWrittenModules }) {
             xml.required.set(true)
             html.required.set(false)
         }
+    }
+
+    apply(plugin = "com.github.spotbugs")
+    configure<com.github.spotbugs.snom.SpotBugsExtension> {
+        toolVersion.set("4.8.6")
+        effort.set(com.github.spotbugs.snom.Effort.MAX)
+        reportLevel.set(com.github.spotbugs.snom.Confidence.LOW) // report even low-confidence findings
+        ignoreFailures.set(false) // tree is clean; a new bug pattern now fails the build
+        excludeFilter.set(rootProject.file("config/spotbugs/exclude.xml"))
+    }
+    // Only the main hand-written bytecode; tests use WireMock/JUnit patterns SpotBugs misreads.
+    tasks.matching { it.name == "spotbugsTest" }.configureEach { enabled = false }
+    tasks.withType<com.github.spotbugs.snom.SpotBugsTask>().configureEach {
+        reports.create("xml") { required.set(true) }
+        reports.create("html") { required.set(false) }
     }
 }

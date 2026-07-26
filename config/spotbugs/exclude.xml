@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs exclusion filter for the erli-java-sdk. Every entry is a verified false positive or a
+  deliberate, safe pattern — keep it minimal and justified. The generated erli-rest-models module is
+  not analysed at all (it is not a hand-written module).
+-->
+<FindBugsFilter>
+    <!-- Records that expose a List/array component: the mappers already wrap every collection in
+         List.copyOf() in the compact constructor, so the stored reference is immutable. SpotBugs'
+         EI_EXPOSE_REP heuristic cannot see that and would fire on every such record. -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- The *Query value records cache an empty instance (e.g. AttachmentQuery.none()) in a static
+         final field. SpotBugs misreads "static instance + factory" as the singleton pattern and then
+         complains the canonical record constructor is non-private — but it is a value type with a
+         public builder, not a singleton. False positive. -->
+    <Match>
+        <Class name="~.*\.\w+Query"/>
+        <Bug pattern="SING_SINGLETON_HAS_NONPRIVATE_CONSTRUCTOR"/>
+    </Match>
+
+    <!-- frozenFlag returns Boolean.TRUE to freeze a field or null to omit it — the tri-state the
+         freeze wire contract needs. Every caller passes the result straight to a nullable Layer-1
+         setter (setX(Boolean)); nothing unboxes it, so the null is safe by construction. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.erli.internal.client.products.ProductPayloadMapper"/>
+        <Method name="frozenFlag"/>
+        <Bug pattern="NP_BOOLEAN_RETURN_NULL"/>
+    </Match>
+
+    <!-- readTreeLenient is a deliberate best-effort parse of a possibly-malformed error body; it must
+         never itself throw, so catching Exception and falling back is the point, not an oversight. -->
+    <Match>
+        <Class name="io.github.mgrtomaszzurawski.erli.internal.JsonCodec"/>
+        <Method name="readTreeLenient"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+    </Match>
+</FindBugsFilter>
