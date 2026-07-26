@@ -79,3 +79,27 @@ tasks.register<Test>("e2eTest") {
     // Always re-run: results depend on live server state, not just inputs.
     outputs.upToDateWhen { false }
 }
+
+// PIT mutation testing — the adequacy oracle (are the tests load-bearing, not faked?). Configured in
+// this module (not the root) because the pitest plugin registers its extension only once the java
+// plugin is present, which is here. Report-only, run explicitly at develop->main / release, NOT
+// per-PR (slow; equivalent mutants make 100% impossible). Targets the business logic; the @Tag("e2e")
+// live tests are excluded so no minion hits the network. Band ~70-85%. Run: ./gradlew :erli-client:pitest
+apply(plugin = "info.solidsoft.pitest")
+configure<info.solidsoft.gradle.pitest.PitestPluginExtension> {
+    pitestVersion.set("1.17.0")
+    junit5PluginVersion.set("1.2.1")
+    targetClasses.set(
+        listOf(
+            "io.github.mgrtomaszzurawski.erli.internal.*",
+            "io.github.mgrtomaszzurawski.erli.core.retry.*",
+            "io.github.mgrtomaszzurawski.erli.core.model.*",
+            "io.github.mgrtomaszzurawski.erli.core.error.*",
+        ),
+    )
+    excludedGroups.set(listOf("e2e")) // JUnit5 tag: keep live-sandbox tests out of the minions
+    threads.set(6) // ~0.5 GB/minion, under the 8 GB cgroup cap
+    timestampedReports.set(false)
+    outputFormats.set(listOf("XML", "HTML"))
+    // Report-only: no mutationThreshold, so it never fails the build.
+}

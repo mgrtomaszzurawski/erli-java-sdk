@@ -5,6 +5,7 @@ plugins {
     java
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.spotbugs) apply false
+    alias(libs.plugins.pitest) apply false
     alias(libs.plugins.sonarqube)
 }
 
@@ -32,6 +33,7 @@ project(":erli-rest-models") {
         isSkipProject = true
     }
 }
+
 
 allprojects {
     group = "io.github.mgrtomaszzurawski"
