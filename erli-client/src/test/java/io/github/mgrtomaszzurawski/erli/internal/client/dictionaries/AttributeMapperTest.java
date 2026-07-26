@@ -1,5 +1,10 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.mgrtomaszzurawski.erli.core.model.AttributeId;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Attribute;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttributeType;
@@ -7,16 +12,10 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttributeValues;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.rest.model.AttributeResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.AttributeValuesResponseInner;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class AttributeMapperTest {
 

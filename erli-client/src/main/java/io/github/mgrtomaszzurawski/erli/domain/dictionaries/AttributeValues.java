@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.model.AttributeId;
-
 import java.util.List;
 import java.util.Objects;
 

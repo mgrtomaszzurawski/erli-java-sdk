@@ -10,7 +10,6 @@ import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
-
 import java.util.List;
 import java.util.Objects;
 

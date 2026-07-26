@@ -6,7 +6,6 @@ import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopCampaignsCostSummaryResponse;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
@@ -40,7 +39,8 @@ public final class CampaignsAccessImpl implements CampaignsAccess {
                 .add(START_DATE_PARAMETER, DATE_FORMAT.format(startDate))
                 .add(END_DATE_PARAMETER, DATE_FORMAT.format(endDate))
                 .build();
-        ShopCampaignsCostSummaryResponse rawResponse = runtime.get(ApiPaths.CAMPAIGNS_SUMMARY, query, ShopCampaignsCostSummaryResponse.class);
+        ShopCampaignsCostSummaryResponse rawResponse = runtime.get(ApiPaths.CAMPAIGNS_SUMMARY, query,
+                ShopCampaignsCostSummaryResponse.class);
         return CampaignMapper.toDomain(rawResponse);
     }
 }

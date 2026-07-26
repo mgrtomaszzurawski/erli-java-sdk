@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;

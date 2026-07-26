@@ -165,8 +165,8 @@ final class AttachmentMapper {
                                 error.getError()))
                         .toList();
         // A body that omits `ok` but reports no errors is a success; only an explicit false is not.
-        boolean ok = rawResult.getOk() == null ? errors.isEmpty() : rawResult.getOk();
-        return new ProductAttachmentResult(ok, updated, errors);
+        boolean succeeded = rawResult.getSucceeded() == null ? errors.isEmpty() : rawResult.getSucceeded();
+        return new ProductAttachmentResult(succeeded, updated, errors);
     }
 
     /**

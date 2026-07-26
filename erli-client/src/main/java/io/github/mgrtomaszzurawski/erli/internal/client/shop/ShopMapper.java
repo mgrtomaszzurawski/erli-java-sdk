@@ -5,7 +5,6 @@ import io.github.mgrtomaszzurawski.erli.domain.shop.Shop;
 import io.github.mgrtomaszzurawski.erli.domain.shop.ShopCompany;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponse;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponseCompany;
-
 import java.util.Objects;
 import java.util.Optional;
 

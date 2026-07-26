@@ -1,20 +1,18 @@
 package io.github.mgrtomaszzurawski.erli.domain.delivery;
 
-import io.github.mgrtomaszzurawski.erli.ErliClient;
-import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
-import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
-import io.github.mgrtomaszzurawski.erli.core.model.Money;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import io.github.mgrtomaszzurawski.erli.ErliClient;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
+import io.github.mgrtomaszzurawski.erli.core.model.DeliveryMethodId;
+import io.github.mgrtomaszzurawski.erli.core.model.Money;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 /**
  * Live end-to-end proof of the delivery area against the Erli sandbox. Tagged {@code e2e}, so it is

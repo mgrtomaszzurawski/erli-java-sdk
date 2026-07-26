@@ -17,6 +17,8 @@ import java.util.Optional;
  *
  * <p>Build one with {@link #builder()}; instances are immutable and reusable across calls.
  */
+// A product carries ~40 optional fields; a content type that models them all has that many accessors.
+@SuppressWarnings("PMD.TooManyMethods")
 public final class ProductContent {
 
     private final Optional<String> name;
@@ -330,6 +332,7 @@ public final class ProductContent {
 
     /** Builder for {@link ProductContent}. Every field is optional here; the rules live in
      * {@link ProductDraft} and {@link ProductPatch}. */
+    @SuppressWarnings("PMD.TooManyMethods") // one withX() per product field — inherent to the builder
     public static final class Builder {
 
         private Optional<String> name = Optional.empty();
@@ -427,13 +430,15 @@ public final class ProductContent {
             return this;
         }
 
-    /** Set seller-supplied attributes, before catalog matching. A null clears the setting; an empty list is a real value meaning "no entries". */
+    /** Set seller-supplied attributes,
+            before catalog matching. A null clears the setting; an empty list is a real value meaning "no entries". */
         public Builder externalAttributes(List<ExternalAttribute> value) {
             this.externalAttributes = Optional.ofNullable(value).map(List::copyOf);
             return this;
         }
 
-    /** Set seller-supplied category paths, before matching. A null clears the setting; an empty list is a real value meaning "no entries". */
+    /** Set seller-supplied category paths,
+            before matching. A null clears the setting; an empty list is a real value meaning "no entries". */
         public Builder externalCategories(List<ExternalCategory> value) {
             this.externalCategories = Optional.ofNullable(value).map(List::copyOf);
             return this;

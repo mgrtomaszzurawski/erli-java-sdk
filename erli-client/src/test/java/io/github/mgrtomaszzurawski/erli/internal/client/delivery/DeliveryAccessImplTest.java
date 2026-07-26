@@ -1,5 +1,23 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.delivery;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.patch;
+import static com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
@@ -25,13 +43,6 @@ import io.github.mgrtomaszzurawski.erli.domain.delivery.SizeLimit;
 import io.github.mgrtomaszzurawski.erli.internal.ErrorMapper;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import java.math.BigDecimal;
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -39,24 +50,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Stream;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.patch;
-import static com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Drives the delivery facade against a real local HTTP server. Every write case verifies the request
@@ -254,7 +253,8 @@ class DeliveryAccessImplTest {
     private static DeliveryPrice priceOf(BigDecimal amount) {
         return new DeliveryPrice(
                 new DeliveryMethodRef(DeliveryMethodId.of("erliDHL5kg"), Optional.empty()),
-                Money.of(amount, java.util.Currency.getInstance("PLN")), Money.ofMinorUnits(0, "PLN"), Optional.empty(), false);
+                Money.of(amount, java.util.Currency.getInstance("PLN")), Money.ofMinorUnits(0, "PLN"), Optional.
+                        empty(), false);
     }
 
     @Test

@@ -5,7 +5,6 @@ import io.github.mgrtomaszzurawski.erli.domain.products.DictionaryValue;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf1Values;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOf2ValuesInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductCreateExternalAttributesInnerAnyOfId;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;

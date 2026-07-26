@@ -1,20 +1,19 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.hooks;
 
-import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-import io.github.mgrtomaszzurawski.erli.domain.hooks.Hook;
-import io.github.mgrtomaszzurawski.erli.domain.hooks.HookKind;
-import io.github.mgrtomaszzurawski.erli.rest.model.HookResponseInner;
-import io.github.mgrtomaszzurawski.erli.rest.model.HookSave;
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-import java.util.stream.Stream;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import io.github.mgrtomaszzurawski.erli.domain.hooks.Hook;
+import io.github.mgrtomaszzurawski.erli.domain.hooks.HookKind;
+import io.github.mgrtomaszzurawski.erli.rest.model.HookResponseInner;
+import io.github.mgrtomaszzurawski.erli.rest.model.HookSave;
+import java.net.URI;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 
 class HookMapperTest {
 

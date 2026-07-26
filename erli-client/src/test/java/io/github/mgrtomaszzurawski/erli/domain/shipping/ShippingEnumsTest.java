@@ -1,15 +1,14 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
-import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 /**
  * Pins the wire mapping of the shipping enums, mirroring what {@code DeliveryVendorTest} does for the

@@ -1,18 +1,17 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
-import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
-import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Category;
-import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
-import io.github.mgrtomaszzurawski.erli.rest.model.CategoryResponse;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
+import io.github.mgrtomaszzurawski.erli.domain.dictionaries.Category;
+import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
+import io.github.mgrtomaszzurawski.erli.rest.model.CategoryResponse;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class CategoryMapperTest {
 
@@ -69,7 +68,8 @@ class CategoryMapperTest {
     @Test
     void rejectsANonNumericIdAsAPaginationCursor() {
         IllegalStateException failure =
-                assertThrows(IllegalStateException.class, () -> CategoryMapper.numericId(CategoryId.of("not-a-number")));
+                assertThrows(IllegalStateException.class, () -> CategoryMapper.numericId(CategoryId.
+                        of("not-a-number")));
 
         assertTrue(failure.getMessage().contains("not-a-number"), failure.getMessage());
     }

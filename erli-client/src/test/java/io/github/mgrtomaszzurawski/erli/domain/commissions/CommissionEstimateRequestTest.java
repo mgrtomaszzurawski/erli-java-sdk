@@ -1,11 +1,11 @@
 package io.github.mgrtomaszzurawski.erli.domain.commissions;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** The public request contract: what a consumer can and cannot build. */
 class CommissionEstimateRequestTest {

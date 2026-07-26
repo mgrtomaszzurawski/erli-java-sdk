@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.shipping;
 
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
-
 import java.util.Objects;
 import java.util.Optional;
 

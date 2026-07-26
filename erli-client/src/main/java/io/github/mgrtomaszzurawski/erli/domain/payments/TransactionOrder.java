@@ -2,7 +2,6 @@ package io.github.mgrtomaszzurawski.erli.domain.payments;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
-
 import java.util.List;
 import java.util.Optional;
 

@@ -1,22 +1,5 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.stubbing.Scenario;
-import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
-import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
-import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
-import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
-import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponse;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.net.http.HttpClient;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
@@ -36,6 +19,22 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
+import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
+import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
+import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponse;
+import java.net.http.HttpClient;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class HttpRuntimeTest {
 
@@ -177,7 +176,8 @@ class HttpRuntimeTest {
     void getListDecodesBareJsonArray() {
         server.stubFor(get(urlPathEqualTo(ME_PATH)).willReturn(okJson("[" + SHOP_JSON + "," + SHOP_JSON + "]")));
 
-        List<ShopResponse> result = runtimeWith(fastRetry()).getList(ME_PATH, QueryParameters.empty(), ShopResponse.class);
+        List<ShopResponse> result = runtimeWith(fastRetry()).getList(ME_PATH, QueryParameters.empty(), ShopResponse.
+                class);
 
         assertEquals(2, result.size());
         assertEquals(100007, result.get(0).getId().intValue());

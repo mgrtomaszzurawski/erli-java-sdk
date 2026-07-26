@@ -51,7 +51,8 @@ import java.util.function.Function;
  */
 final class ProductEnums {
 
-    private static final Map<String, ProductStatus> PRODUCT_STATUSES = index(ProductStatus.values(), ProductStatus::wireName);
+    private static final Map<String, ProductStatus> PRODUCT_STATUSES = index(ProductStatus.values(),
+            ProductStatus::wireName);
     private static final Map<String, BaseMarket> BASE_MARKETS = index(BaseMarket.values(), BaseMarket::wireName);
     private static final Map<String, Market> MARKETS = index(Market.values(), Market::wireValue);
     private static final Map<String, InvoiceType> INVOICE_TYPES = index(InvoiceType.values(), InvoiceType::wireName);
@@ -78,7 +79,8 @@ final class ProductEnums {
             index(ImageTransformation.values(), ImageTransformation::wireName);
     private static final Map<String, AttachmentKind> ATTACHMENT_KINDS =
             index(AttachmentKind.values(), AttachmentKind::wireValue);
-    private static final Map<String, ProductField> PRODUCT_FIELDS = index(ProductField.values(), ProductField::wireName);
+    private static final Map<String, ProductField> PRODUCT_FIELDS = index(ProductField.values(),
+            ProductField::wireName);
 
     private ProductEnums() {
     }

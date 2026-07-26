@@ -66,7 +66,8 @@ public final class ApiPaths {
     public static final String DELIVERY_PRICE_LISTS_DETAILS = "/delivery/priceListsDetails";
 
     // --- APPEND BLOCK: bucket D Dictionaries ------------------------------------------------------
-    /** Name of the {@link #DICTIONARIES_DELIVERY_METHODS_BY_PRICE_LIST} placeholder, for {@link PathTemplate#expand}. */
+    /** Name of the {@link #DICTIONARIES_DELIVERY_METHODS_BY_PRICE_LIST} placeholder,
+            for {@link PathTemplate#expand}. */
     public static final String PRICE_LIST_PARAM = "priceList";
     /** Name of the responsible-party path placeholder, for {@link PathTemplate#expand}. */
     public static final String RESPONSIBLE_ID_PARAM = "id";

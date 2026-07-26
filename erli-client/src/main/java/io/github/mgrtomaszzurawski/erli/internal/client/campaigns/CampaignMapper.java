@@ -6,7 +6,6 @@ import io.github.mgrtomaszzurawski.erli.domain.campaigns.CampaignId;
 import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopCampaignsCostSummaryResponse;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopCampaignsCostSummaryResponseDataInner;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;

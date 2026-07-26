@@ -12,7 +12,6 @@ import io.github.mgrtomaszzurawski.erli.rest.model.CreateDiscount;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductBatchResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductBatchResponseInnerError;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductUpdateResponse;
-
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;

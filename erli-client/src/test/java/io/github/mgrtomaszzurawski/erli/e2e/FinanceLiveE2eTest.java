@@ -1,10 +1,17 @@
 package io.github.mgrtomaszzurawski.erli.e2e;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+
 import io.github.mgrtomaszzurawski.erli.ErliClient;
-import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
-import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliApiException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
+import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
+import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.domain.billing.BillingEntry;
 import io.github.mgrtomaszzurawski.erli.domain.billing.BillingEntryFilter;
 import io.github.mgrtomaszzurawski.erli.domain.campaigns.CampaignCostSummary;
@@ -14,21 +21,13 @@ import io.github.mgrtomaszzurawski.erli.domain.payments.Payment;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentSearch;
 import io.github.mgrtomaszzurawski.erli.domain.payments.Payout;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PayoutSearch;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 /**
  * Live proof for the Finance bucket against the real Erli sandbox — the Definition-of-Done e2e

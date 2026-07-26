@@ -13,10 +13,9 @@ import io.github.mgrtomaszzurawski.erli.internal.ApiPaths;
 import io.github.mgrtomaszzurawski.erli.internal.CursorPagination;
 import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.Page;
-import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
-import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
 import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
-
+import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
+import io.github.mgrtomaszzurawski.erli.internal.client.finance.MinorUnits;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +69,8 @@ public final class PaymentsAccessImpl implements PaymentsAccess {
     @Override
     public Optional<Payment> findPayment(long paymentId) {
         try {
-            var rawPayment = runtime.get(operationPath(ApiPaths.PAYMENT_OPERATION_BY_ID, paymentId), typeQuery(PaymentSearchMapper.TYPE_PAYMENT),
+            var rawPayment = runtime.get(operationPath(ApiPaths.PAYMENT_OPERATION_BY_ID, paymentId),
+                    typeQuery(PaymentSearchMapper.TYPE_PAYMENT),
                     io.github.mgrtomaszzurawski.erli.rest.model.Payment.class);
             return Optional.of(PaymentMapper.toPayment(rawPayment));
         } catch (ErliNotFoundException absent) {
@@ -81,7 +81,8 @@ public final class PaymentsAccessImpl implements PaymentsAccess {
     @Override
     public Optional<Payout> findPayout(long payoutId) {
         try {
-            var rawPayout = runtime.get(operationPath(ApiPaths.PAYMENT_OPERATION_BY_ID, payoutId), typeQuery(PaymentSearchMapper.TYPE_PAYOUT),
+            var rawPayout = runtime.get(operationPath(ApiPaths.PAYMENT_OPERATION_BY_ID, payoutId),
+                    typeQuery(PaymentSearchMapper.TYPE_PAYOUT),
                     io.github.mgrtomaszzurawski.erli.rest.model.Payout.class);
             return Optional.of(PaymentMapper.toPayout(rawPayout));
         } catch (ErliNotFoundException absent) {
@@ -102,25 +103,28 @@ public final class PaymentsAccessImpl implements PaymentsAccess {
     }
 
     private Page<Payment> fetchPaymentsPage(PaymentSearch search, Cursor after) {
-        List<io.github.mgrtomaszzurawski.erli.rest.model.Payment> rawPayments = runtime.postList(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
-                PaymentSearchMapper.toPaymentBody(search, after),
-                io.github.mgrtomaszzurawski.erli.rest.model.Payment.class);
+        List<io.github.mgrtomaszzurawski.erli.rest.model.Payment> rawPayments =
+                runtime.postList(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
+                        PaymentSearchMapper.toPaymentBody(search, after),
+                        io.github.mgrtomaszzurawski.erli.rest.model.Payment.class);
         List<Payment> payments = rawPayments.stream().map(PaymentMapper::toPayment).toList();
         return new Page<>(payments, nextPaymentCursor(payments, search));
     }
 
     private Page<Payout> fetchPayoutsPage(PayoutSearch search, Cursor after) {
-        List<io.github.mgrtomaszzurawski.erli.rest.model.Payout> rawPayouts = runtime.postList(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
-                PaymentSearchMapper.toPayoutBody(search, after),
-                io.github.mgrtomaszzurawski.erli.rest.model.Payout.class);
+        List<io.github.mgrtomaszzurawski.erli.rest.model.Payout> rawPayouts =
+                runtime.postList(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
+                        PaymentSearchMapper.toPayoutBody(search, after),
+                        io.github.mgrtomaszzurawski.erli.rest.model.Payout.class);
         List<Payout> payouts = rawPayouts.stream().map(PaymentMapper::toPayout).toList();
         return new Page<>(payouts, nextPayoutCursor(payouts, search));
     }
 
     private Page<Transaction> fetchReturnsPage(ReturnSearch search, int pageNumber) {
-        List<io.github.mgrtomaszzurawski.erli.rest.model.Transaction> rawTransactions = runtime.postList(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
-                PaymentSearchMapper.toReturnBody(search, pageNumber),
-                io.github.mgrtomaszzurawski.erli.rest.model.Transaction.class);
+        List<io.github.mgrtomaszzurawski.erli.rest.model.Transaction> rawTransactions =
+                runtime.postList(ApiPaths.PAYMENT_OPERATIONS_SEARCH,
+                        PaymentSearchMapper.toReturnBody(search, pageNumber),
+                        io.github.mgrtomaszzurawski.erli.rest.model.Transaction.class);
         List<Transaction> transactions =
                 rawTransactions.stream().map(PaymentMapper::toTransaction).toList();
         // A short page is the last one; otherwise hand back any non-null cursor so the spliterator

@@ -7,12 +7,12 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilter;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductFilterField;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSortField;
+import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf1;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf1Value;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf2;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf3;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf4;
-import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOf;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductFilterAnyOfValue;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductSearch;
 import io.github.mgrtomaszzurawski.erli.rest.model.ProductSearchPagination;
@@ -22,7 +22,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashSet;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Builds the {@code POST /products/_search} request body and derives the pagination cursor.

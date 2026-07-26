@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-import io.github.mgrtomaszzurawski.erli.core.model.AttachmentKind;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.CountryCode;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.NewResponsibleParty;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.ResponsibleParty;
@@ -99,6 +98,8 @@ final class ResponsiblePartyMapper {
     }
 
     /** Builds the Layer-1 patch request; only the fields the caller set are carried over. */
+    // One independent `if set, carry over` per optional field — linear breadth, not tangled depth.
+    @SuppressWarnings("PMD.NPathComplexity")
     static UpdateResponsibleSchema toUpdateRequest(ResponsiblePartyUpdate update) {
         Objects.requireNonNull(update, "update");
         UpdateResponsibleSchema request = new UpdateResponsibleSchema();

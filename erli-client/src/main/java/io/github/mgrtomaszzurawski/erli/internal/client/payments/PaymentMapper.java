@@ -29,7 +29,6 @@ final class PaymentMapper {
     private static final String FIELD_AMOUNT = "amount";
     private static final String FIELD_STATUS = "status";
     private static final String FIELD_CREATED_AT = "createdAt";
-    private static final String FIELD_COMPLETED_AT = "completedAt";
     private static final String FIELD_ORDER_IDS = "orderIds";
     private static final String OPERATOR_PAYU_WIRE_VALUE = "PAYU";
     private static final String RAW_PAYMENT_NAME = "raw Payment";

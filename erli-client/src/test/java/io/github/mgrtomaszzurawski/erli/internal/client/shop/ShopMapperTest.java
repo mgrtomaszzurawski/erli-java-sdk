@@ -1,15 +1,15 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.shop;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.mgrtomaszzurawski.erli.domain.shop.MatchingPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.shop.Shop;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponse;
 import io.github.mgrtomaszzurawski.erli.rest.model.ShopResponseCompany;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ShopMapperTest {
 

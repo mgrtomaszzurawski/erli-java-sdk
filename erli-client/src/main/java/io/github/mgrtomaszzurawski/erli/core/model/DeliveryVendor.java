@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.core.model;
 
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;

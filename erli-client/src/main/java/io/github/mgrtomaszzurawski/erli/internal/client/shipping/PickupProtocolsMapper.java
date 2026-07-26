@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.shipping;
 
 import io.github.mgrtomaszzurawski.erli.domain.shipping.PickupProtocols;
-
 import java.util.Objects;
 
 /** Maps the generated pickup-protocols payload onto its domain record. Internal. */

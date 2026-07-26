@@ -2,7 +2,6 @@ package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
 import io.github.mgrtomaszzurawski.erli.domain.products.Product;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -52,7 +51,7 @@ final class ProductProjection {
      *                 "no projection", which the callers handle before reaching here)
      */
     static Set<ProductField> widen(Set<ProductField> selected) {
-        EnumSet<ProductField> projection = EnumSet.copyOf(selected);
+        Set<ProductField> projection = EnumSet.copyOf(selected);
         projection.addAll(MAPPING_ESSENTIALS);
         return projection;
     }

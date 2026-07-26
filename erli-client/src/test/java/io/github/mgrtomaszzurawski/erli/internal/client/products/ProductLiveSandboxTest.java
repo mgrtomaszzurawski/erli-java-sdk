@@ -1,5 +1,9 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.products;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliApiException;
@@ -18,19 +22,14 @@ import io.github.mgrtomaszzurawski.erli.domain.products.ProductPatch;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductSearchRequest;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductStatus;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductUpdateResult;
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * End-to-end proof of the products bucket against the live Erli sandbox, including the write→read seed.

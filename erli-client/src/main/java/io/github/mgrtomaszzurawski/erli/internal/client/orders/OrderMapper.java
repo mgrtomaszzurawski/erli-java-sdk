@@ -68,6 +68,9 @@ import java.util.OptionalInt;
  * <p>Required fields are validated: a payload missing one fails fast with a message naming the field,
  * because a half-built {@code Order} is far harder to debug downstream than an immediate error.
  */
+// Cohesive translation layer: one class that maps every field of an order. High total cyclomatic count
+// is field breadth, not tangle — the per-method logic stays simple.
+@SuppressWarnings("PMD.CyclomaticComplexity")
 final class OrderMapper {
 
     private static final String CURRENCY_PLN = "PLN";

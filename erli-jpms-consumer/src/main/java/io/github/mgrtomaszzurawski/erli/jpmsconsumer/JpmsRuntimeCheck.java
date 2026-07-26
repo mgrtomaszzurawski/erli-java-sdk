@@ -9,7 +9,6 @@ import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionEstimateReq
 import io.github.mgrtomaszzurawski.erli.domain.payments.PaymentSearch;
 import io.github.mgrtomaszzurawski.erli.domain.payments.PayoutSearch;
 import io.github.mgrtomaszzurawski.erli.domain.payments.ReturnSearch;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;

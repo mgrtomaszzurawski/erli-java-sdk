@@ -1,5 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.domain.payments;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.core.model.PaymentStatus;
@@ -7,8 +9,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * The sealed union exists so results of the three searches can be combined into one timeline; this
@@ -20,7 +20,8 @@ class PaymentOperationTest {
 
     private static Payment payment() {
         return new Payment(77L, List.of(OrderId.of("1234")), Money.ofPln("149.99"), PaymentStatus.COMPLETED,
-                WHEN, Optional.of(WHEN), PaymentOperator.PAYU, Optional.of("PAYU.blik"), Optional.empty(), Optional.empty());
+                WHEN, Optional.of(WHEN), PaymentOperator.PAYU, Optional.of("PAYU.blik"), Optional.empty(), Optional.
+                        empty());
     }
 
     private static Transaction transaction() {

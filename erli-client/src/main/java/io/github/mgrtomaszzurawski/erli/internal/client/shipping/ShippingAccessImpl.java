@@ -1,5 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.shipping;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.mgrtomaszzurawski.erli.core.model.ParcelId;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ExternalParcel;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ExternalParcelDraft;
@@ -17,8 +18,6 @@ import io.github.mgrtomaszzurawski.erli.internal.HttpRuntime;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
 import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
 import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
-import com.fasterxml.jackson.databind.JsonNode;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

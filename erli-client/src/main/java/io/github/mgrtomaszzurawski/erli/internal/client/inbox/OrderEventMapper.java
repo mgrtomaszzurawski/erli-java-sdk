@@ -64,6 +64,9 @@ import java.util.Optional;
  *       fields are set — see {@link #toDeliveryTracking}.</li>
  * </ul>
  */
+// Cohesive translation layer: one class that maps every field of the order-event snapshot. High total
+// cyclomatic count is field breadth, not tangle — the per-method logic stays simple.
+@SuppressWarnings("PMD.CyclomaticComplexity")
 final class OrderEventMapper {
 
     private static final String FIELD_DELIVERY_TRACKING = "deliveryTracking";

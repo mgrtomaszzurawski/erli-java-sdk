@@ -1,7 +1,7 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.dictionaries;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
@@ -20,16 +20,18 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 final class ManageAttachedProductsResponse {
 
-    private Boolean ok;
+    private Boolean succeeded;
     private List<Integer> updated;
     private List<ProductErrorResponse> errors;
 
-    Boolean getOk() {
-        return ok;
+    @JsonProperty("ok")
+    Boolean getSucceeded() {
+        return succeeded;
     }
 
-    void setOk(Boolean ok) {
-        this.ok = ok;
+    @JsonProperty("ok")
+    void setSucceeded(Boolean succeeded) {
+        this.succeeded = succeeded;
     }
 
     List<Integer> getUpdated() {

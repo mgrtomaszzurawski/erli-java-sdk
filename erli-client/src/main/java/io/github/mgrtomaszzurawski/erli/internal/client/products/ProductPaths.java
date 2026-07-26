@@ -4,7 +4,6 @@ import io.github.mgrtomaszzurawski.erli.core.model.ProductExternalId;
 import io.github.mgrtomaszzurawski.erli.domain.products.ProductField;
 import io.github.mgrtomaszzurawski.erli.internal.PathTemplate;
 import io.github.mgrtomaszzurawski.erli.internal.QueryParameters;
-
 import java.util.Map;
 import java.util.Set;
 

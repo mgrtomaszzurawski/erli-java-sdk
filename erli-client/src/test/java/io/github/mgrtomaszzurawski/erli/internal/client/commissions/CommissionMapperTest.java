@@ -1,5 +1,9 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.commissions;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionEstimate;
@@ -7,10 +11,6 @@ import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionEstimateReq
 import io.github.mgrtomaszzurawski.erli.rest.model.EstimateCommissionRequest;
 import io.github.mgrtomaszzurawski.erli.rest.model.EstimateCommissionResponse;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Field-level mapper coverage, asserted directly rather than through the facade (TESTING.md). */
 class CommissionMapperTest {

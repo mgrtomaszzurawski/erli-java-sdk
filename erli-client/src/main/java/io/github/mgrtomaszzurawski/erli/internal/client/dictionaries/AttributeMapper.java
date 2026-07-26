@@ -6,7 +6,6 @@ import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttributeType;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.AttributeValues;
 import io.github.mgrtomaszzurawski.erli.rest.model.AttributeResponseInner;
 import io.github.mgrtomaszzurawski.erli.rest.model.AttributeValuesResponseInner;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;

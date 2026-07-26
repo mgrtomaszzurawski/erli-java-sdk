@@ -1,15 +1,15 @@
 package io.github.mgrtomaszzurawski.erli.domain.products;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
 import io.github.mgrtomaszzurawski.erli.core.model.SortOrder;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Rules the write-side domain types enforce locally, so a request the marketplace would reject fails at

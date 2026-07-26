@@ -4,7 +4,6 @@ import io.github.mgrtomaszzurawski.erli.ErliClient;
 import io.github.mgrtomaszzurawski.erli.domain.hooks.Hook;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.Message;
 import io.github.mgrtomaszzurawski.erli.domain.inbox.MessageQuery;
-
 import java.util.List;
 
 /**

@@ -1,13 +1,12 @@
 package io.github.mgrtomaszzurawski.erli.internal;
 
-import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.github.mgrtomaszzurawski.erli.core.model.Cursor;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 class CursorPaginationTest {
 

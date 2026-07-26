@@ -1,7 +1,6 @@
 package io.github.mgrtomaszzurawski.erli.domain.campaigns;
 
 import io.github.mgrtomaszzurawski.erli.core.model.Money;
-
 import java.time.OffsetDateTime;
 import java.util.Optional;
 

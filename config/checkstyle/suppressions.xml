@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<!--
+  Checkstyle suppressions for the erli-java-sdk. Keep this list minimal and justified — a suppression
+  is a documented exception, not a way to make a number go down.
+-->
+<suppressions>
+    <!-- Test code: magic numbers are the fixtures (expected values, indices, sample amounts), and a
+         WireMock/JUnit test that spelled every literal as a constant would be less readable, not more. -->
+    <suppress checks="MagicNumber" files="[\\/]src[\\/]test[\\/]"/>
+
+    <!-- Demo, example and JPMS smoke-check modules are illustrative/verification code; literal page
+         sizes, ids and dates there read more clearly inline than behind constants, like test fixtures. -->
+    <suppress checks="MagicNumber" files="[\\/]erli-demo[\\/]"/>
+    <suppress checks="MagicNumber" files="[\\/]erli-examples[\\/]"/>
+    <suppress checks="MagicNumber" files="[\\/]erli-jpms-consumer[\\/]"/>
+</suppressions>

@@ -1,25 +1,5 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.commissions;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
-import io.github.mgrtomaszzurawski.erli.ErliClient;
-import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
-import io.github.mgrtomaszzurawski.erli.core.error.ErliApiException;
-import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
-import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
-import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
-import io.github.mgrtomaszzurawski.erli.core.model.Money;
-import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
-import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionEstimate;
-import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionEstimateRequest;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
-import java.time.Duration;
-import java.util.Random;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
@@ -32,6 +12,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import io.github.mgrtomaszzurawski.erli.ErliClient;
+import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliApiException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliServerException;
+import io.github.mgrtomaszzurawski.erli.core.error.ErliValidationException;
+import io.github.mgrtomaszzurawski.erli.core.model.CategoryId;
+import io.github.mgrtomaszzurawski.erli.core.model.Money;
+import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
+import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionEstimate;
+import io.github.mgrtomaszzurawski.erli.domain.commissions.CommissionEstimateRequest;
+import java.time.Duration;
+import java.util.Random;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Verify-on-write coverage for the commissions slice plus the Finance bucket's mandatory error-path

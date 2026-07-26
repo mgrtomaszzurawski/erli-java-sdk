@@ -114,7 +114,8 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     @Override
     public List<AttributeValues> attributeValues(CategoryId categoryId) {
         AttributeValuesFilter filter = new AttributeValuesFilter().categoryId(numericCategoryId(categoryId));
-        return runtime.postList(ApiPaths.DICTIONARIES_ATTRIBUTE_VALUES_SEARCH, filter, AttributeValuesResponseInner.class)
+        return runtime.postList(ApiPaths.DICTIONARIES_ATTRIBUTE_VALUES_SEARCH, filter, AttributeValuesResponseInner.
+                class)
                 .stream()
                 .map(AttributeMapper::toAttributeValues)
                 .toList();
@@ -204,8 +205,9 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     public ResponsibleParty updateResponsiblePerson(long id, ResponsiblePartyUpdate update) {
         Objects.requireNonNull(update, "update");
         Map<String, String> pathValues = Map.of(ApiPaths.RESPONSIBLE_ID_PARAM, String.valueOf(id));
-        return ResponsiblePartyMapper.toDomain(runtime.patch(PathTemplate.expand(ApiPaths.DICTIONARIES_RESPONSIBLE_PERSON_BY_ID, pathValues),
-                ResponsiblePartyMapper.toUpdateRequest(update), ResponsibleSchema.class));
+        return ResponsiblePartyMapper.toDomain(
+                runtime.patch(PathTemplate.expand(ApiPaths.DICTIONARIES_RESPONSIBLE_PERSON_BY_ID, pathValues),
+                        ResponsiblePartyMapper.toUpdateRequest(update), ResponsibleSchema.class));
     }
 
     @Override
@@ -235,8 +237,9 @@ public final class DictionariesAccessImpl implements DictionariesAccess {
     public ResponsibleParty updateResponsibleProducer(long id, ResponsiblePartyUpdate update) {
         Objects.requireNonNull(update, "update");
         Map<String, String> pathValues = Map.of(ApiPaths.RESPONSIBLE_ID_PARAM, String.valueOf(id));
-        return ResponsiblePartyMapper.toDomain(runtime.patch(PathTemplate.expand(ApiPaths.DICTIONARIES_RESPONSIBLE_PRODUCER_BY_ID, pathValues),
-                ResponsiblePartyMapper.toUpdateRequest(update), ResponsibleSchema.class));
+        return ResponsiblePartyMapper.toDomain(
+                runtime.patch(PathTemplate.expand(ApiPaths.DICTIONARIES_RESPONSIBLE_PRODUCER_BY_ID, pathValues),
+                        ResponsiblePartyMapper.toUpdateRequest(update), ResponsibleSchema.class));
     }
 
     @Override

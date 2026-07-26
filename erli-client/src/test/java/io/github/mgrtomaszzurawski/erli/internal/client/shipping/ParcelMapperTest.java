@@ -1,5 +1,10 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.shipping;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.core.model.ParcelId;
 import io.github.mgrtomaszzurawski.erli.core.model.ShippingMethodId;
@@ -13,17 +18,11 @@ import io.github.mgrtomaszzurawski.erli.domain.shipping.PickupType;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingCountry;
 import io.github.mgrtomaszzurawski.erli.domain.shipping.ShippingParty;
 import io.github.mgrtomaszzurawski.erli.internal.JsonCodec;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 /**
  * White-box test of the raw→domain mapping. Asserts the mapped <em>fields</em>, not merely that a

@@ -1,11 +1,10 @@
 package io.github.mgrtomaszzurawski.erli.core.model;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.util.Currency;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 class MoneyTest {
 

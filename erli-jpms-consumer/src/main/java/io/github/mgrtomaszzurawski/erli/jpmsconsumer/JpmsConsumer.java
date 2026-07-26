@@ -6,7 +6,6 @@ import io.github.mgrtomaszzurawski.erli.core.error.ErliException;
 import io.github.mgrtomaszzurawski.erli.core.model.OrderId;
 import io.github.mgrtomaszzurawski.erli.domain.dictionaries.DeliveryMethod;
 import io.github.mgrtomaszzurawski.erli.domain.shop.Shop;
-
 import java.util.List;
 
 /**

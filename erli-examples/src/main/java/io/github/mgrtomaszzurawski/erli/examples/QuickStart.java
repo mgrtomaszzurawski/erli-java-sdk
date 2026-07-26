@@ -5,7 +5,6 @@ import io.github.mgrtomaszzurawski.erli.core.auth.ApiKey;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliAuthException;
 import io.github.mgrtomaszzurawski.erli.core.retry.RetryPolicy;
 import io.github.mgrtomaszzurawski.erli.domain.shop.Shop;
-
 import java.time.Duration;
 
 /**

@@ -1,8 +1,13 @@
 package io.github.mgrtomaszzurawski.erli.internal.client.orders;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.mgrtomaszzurawski.erli.core.error.ErliException;
 import io.github.mgrtomaszzurawski.erli.core.error.ErliTransportException;
-import io.github.mgrtomaszzurawski.erli.core.model.BankAccount;
 import io.github.mgrtomaszzurawski.erli.core.model.Buyer;
 import io.github.mgrtomaszzurawski.erli.core.model.Country;
 import io.github.mgrtomaszzurawski.erli.core.model.Delivery;
@@ -30,12 +35,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Currency;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Field-level mapping contract for {@link OrderMapper}.
