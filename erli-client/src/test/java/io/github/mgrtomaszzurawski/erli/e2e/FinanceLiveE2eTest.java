@@ -117,8 +117,10 @@ class FinanceLiveE2eTest {
         // live 400 maps to the right remediation exception. The spec marks endDate optional; the
         // server both requires it and refuses one past its own clock.
         try (ErliClient client = ErliClient.fromEnvironment()) {
+            var campaigns = client.campaigns();
+            LocalDate futureEndDate = LocalDate.now(WARSAW).plusYears(1);
             ErliValidationException failure = assertThrows(ErliValidationException.class,
-                    () -> client.campaigns().costSummary(START_DATE, LocalDate.now(WARSAW).plusYears(1)));
+                    () -> campaigns.costSummary(START_DATE, futureEndDate));
 
             assertEquals(400, failure.details().httpStatus());
             assertNotNull(failure.details().polishMessage(), "Erli returns an operator-facing message");

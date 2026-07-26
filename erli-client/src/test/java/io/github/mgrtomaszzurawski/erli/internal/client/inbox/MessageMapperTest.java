@@ -150,7 +150,7 @@ class MessageMapperTest {
     }
 
     @Test
-    void mapsOrderLinesRebateAndDelivery() {
+    void mapsTheOrderLine() {
         OrderEvent order = mapFixture(ORDER_FIXTURE).orderEvent().orElseThrow();
 
         OrderLine line = order.lines().get(0);
@@ -165,11 +165,21 @@ class MessageMapperTest {
         assertEquals("5901234123457", line.ean().orElseThrow());
         assertEquals("KT-500", line.sku().orElseThrow());
         assertEquals(TaxRate.TAX_23, line.taxRate().orElseThrow());
+    }
+
+    @Test
+    void mapsTheRebate() {
+        OrderEvent order = mapFixture(ORDER_FIXTURE).orderEvent().orElseThrow();
 
         Rebate rebate = order.rebate().orElseThrow();
         assertEquals(EXPECTED_REBATE_ID, rebate.id());
         assertEquals("Lato 2026", rebate.name());
         assertEquals("LATO10", rebate.code().orElseThrow());
+    }
+
+    @Test
+    void mapsTheDeliveryAndItsPickupPlace() {
+        OrderEvent order = mapFixture(ORDER_FIXTURE).orderEvent().orElseThrow();
 
         Delivery delivery = order.delivery();
         assertEquals("Paczkomat InPost", delivery.name());
@@ -244,8 +254,9 @@ class MessageMapperTest {
     void rejectsDeliveryTrackingWithoutAStatus() {
         String withoutStatus = withTrackingBlock("\"trackingUrl\": \"" + TRACKING_URL + "\"");
 
+        JsonNode withoutStatusNode = codec.readTreeLenient(withoutStatus);
         IllegalStateException thrown = assertThrows(IllegalStateException.class,
-                () -> MessageMapper.toDomain(codec.readTreeLenient(withoutStatus), codec));
+                () -> MessageMapper.toDomain(withoutStatusNode, codec));
 
         // The type alone does not discriminate: every missing required field in this mapper throws
         // IllegalStateException, so assert the message names the check that actually fired.
@@ -357,8 +368,9 @@ class MessageMapperTest {
         String withFutureSellerStatus = readFixture(ORDER_FIXTURE)
                 .replace("\"sellerStatus\": \"readyToProcess\"", "\"sellerStatus\": \"teleported\"");
 
+        JsonNode withFutureSellerStatusNode = codec.readTreeLenient(withFutureSellerStatus);
         IllegalStateException thrown = assertThrows(IllegalStateException.class,
-                () -> MessageMapper.toDomain(codec.readTreeLenient(withFutureSellerStatus), codec));
+                () -> MessageMapper.toDomain(withFutureSellerStatusNode, codec));
 
         assertTrue(thrown.getMessage().contains("sellerStatus"), thrown.getMessage());
         assertTrue(thrown.getMessage().contains("does not recognise"),
@@ -382,8 +394,9 @@ class MessageMapperTest {
     void rejectsAMessageMissingARequiredField() {
         String withoutShopId = readFixture(SYNC_FIXTURE).replace("\"shopId\": 100007,", "");
 
+        JsonNode withoutShopIdNode = codec.readTreeLenient(withoutShopId);
         IllegalStateException thrown = assertThrows(IllegalStateException.class,
-                () -> MessageMapper.toDomain(codec.readTreeLenient(withoutShopId), codec));
+                () -> MessageMapper.toDomain(withoutShopIdNode, codec));
         assertTrue(thrown.getMessage().contains("shopId"), thrown.getMessage());
     }
 

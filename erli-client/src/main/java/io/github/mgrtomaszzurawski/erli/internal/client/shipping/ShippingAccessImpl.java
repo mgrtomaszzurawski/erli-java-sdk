@@ -32,6 +32,8 @@ import java.util.Objects;
  */
 public final class ShippingAccessImpl implements ShippingAccess {
 
+    private static final String PARAM_PARCEL_ID = "parcelId";
+
     private static final String PARCEL_ID_PARAMETER = "id";
     private static final String PARAM_PARCEL_IDS = "parcelIds";
     private static final String PARAM_ID = "id";
@@ -50,7 +52,7 @@ public final class ShippingAccessImpl implements ShippingAccess {
 
     @Override
     public Parcel parcel(ParcelId parcelId) {
-        Objects.requireNonNull(parcelId, "parcelId");
+        Objects.requireNonNull(parcelId, PARAM_PARCEL_ID);
         return ParcelMapper.toDomain(runtime.get(byParcelId(ApiPaths.SHIPPING_PARCEL_BY_ID, parcelId),
                 io.github.mgrtomaszzurawski.erli.rest.model.Parcel.class));
     }
@@ -77,7 +79,7 @@ public final class ShippingAccessImpl implements ShippingAccess {
 
     @Override
     public Parcel cancelParcel(ParcelId parcelId) {
-        Objects.requireNonNull(parcelId, "parcelId");
+        Objects.requireNonNull(parcelId, PARAM_PARCEL_ID);
         return ParcelMapper.toDomain(runtime.delete(byParcelId(ApiPaths.SHIPPING_PARCEL_BY_ID, parcelId),
                 QueryParameters.empty(), io.github.mgrtomaszzurawski.erli.rest.model.Parcel.class));
     }
@@ -94,14 +96,14 @@ public final class ShippingAccessImpl implements ShippingAccess {
 
     @Override
     public ExternalParcel externalParcel(ParcelId parcelId) {
-        Objects.requireNonNull(parcelId, "parcelId");
+        Objects.requireNonNull(parcelId, PARAM_PARCEL_ID);
         return ExternalParcelMapper.toDomain(runtime.get(byParcelId(ApiPaths.SHIPPING_EXTERNAL_BY_ID, parcelId),
                 io.github.mgrtomaszzurawski.erli.rest.model.ExternalParcel.class));
     }
 
     @Override
     public ExternalParcel updateExternalParcel(ParcelId parcelId, ExternalParcelUpdate update) {
-        Objects.requireNonNull(parcelId, "parcelId");
+        Objects.requireNonNull(parcelId, PARAM_PARCEL_ID);
         Objects.requireNonNull(update, "update");
         return ExternalParcelMapper.toDomain(runtime.patch(byParcelId(ApiPaths.SHIPPING_EXTERNAL_BY_ID, parcelId),
                 ShippingRequestMapper.toRaw(update),
@@ -110,14 +112,14 @@ public final class ShippingAccessImpl implements ShippingAccess {
 
     @Override
     public void deleteExternalParcel(ParcelId parcelId) {
-        Objects.requireNonNull(parcelId, "parcelId");
+        Objects.requireNonNull(parcelId, PARAM_PARCEL_ID);
         // Answered with 204 and no body; Void.class tells the runtime to expect nothing back.
         runtime.delete(byParcelId(ApiPaths.SHIPPING_EXTERNAL_BY_ID, parcelId), QueryParameters.empty(), Void.class);
     }
 
     @Override
     public PickupProtocols pickupProtocols(List<ParcelId> parcelIds) {
-        requireNotEmpty(parcelIds, "parcelIds");
+        requireNotEmpty(parcelIds, PARAM_PARCEL_IDS);
         QueryParameters parameters = QueryParameters.builder()
                 .addCsv(PARAM_PARCEL_IDS, parcelIds.stream().map(ParcelId::value).toList())
                 .build();

@@ -34,6 +34,8 @@ import java.util.stream.Stream;
  */
 public final class PaymentsAccessImpl implements PaymentsAccess {
 
+    private static final String PARAM_SEARCH = "search";
+
     private static final String ID_PLACEHOLDER = "id";
     private static final String TYPE_PARAMETER = "type";
     private static final String AMOUNT_FIELD = "amount";
@@ -47,19 +49,19 @@ public final class PaymentsAccessImpl implements PaymentsAccess {
 
     @Override
     public Stream<Payment> searchPayments(PaymentSearch search) {
-        Objects.requireNonNull(search, "search");
+        Objects.requireNonNull(search, PARAM_SEARCH);
         return CursorPagination.stream(after -> fetchPaymentsPage(search, after));
     }
 
     @Override
     public Stream<Payout> searchPayouts(PayoutSearch search) {
-        Objects.requireNonNull(search, "search");
+        Objects.requireNonNull(search, PARAM_SEARCH);
         return CursorPagination.stream(after -> fetchPayoutsPage(search, after));
     }
 
     @Override
     public Stream<Transaction> searchReturns(ReturnSearch search) {
-        Objects.requireNonNull(search, "search");
+        Objects.requireNonNull(search, PARAM_SEARCH);
         // This endpoint is page-numbered, so the cursor spliterator is driven by a page counter
         // rather than by a value taken from the last item.
         AtomicInteger pageNumber = new AtomicInteger(FIRST_PAGE);

@@ -45,6 +45,7 @@ import java.util.OptionalInt;
  * @param purchasedAt            when the order was paid for, once it has been
  * @param cursor                 this order's pagination cursor; see {@link OrderAccess#search}
  */
+@SuppressWarnings("deprecation") // the deprecated OrderPayment component is mapped for lossless round-trip
 public record Order(
         OrderId id,
         Optional<String> externalOrderId,
@@ -56,7 +57,7 @@ public record Order(
         Optional<String> comment,
         Money totalPrice,
         Optional<DeliveryTracking> deliveryTracking,
-        @Deprecated Optional<OrderPayment> payment,
+        Optional<OrderPayment> payment,
         List<OrderReturn> returns,
         OptionalInt calculatedParcelsCount,
         SellerStatus sellerStatus,

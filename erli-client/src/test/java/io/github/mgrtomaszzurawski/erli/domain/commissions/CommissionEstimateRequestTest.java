@@ -52,7 +52,9 @@ class CommissionEstimateRequestTest {
 
     @Test
     void rejectsAQuantityBelowOne() {
-        assertThrows(IllegalArgumentException.class, () -> validBuilder().quantity(0).build());
-        assertThrows(IllegalArgumentException.class, () -> validBuilder().quantity(-1).build());
+        CommissionEstimateRequest.Builder zeroQuantity = validBuilder().quantity(0);
+        assertThrows(IllegalArgumentException.class, zeroQuantity::build);
+        CommissionEstimateRequest.Builder negativeQuantity = validBuilder().quantity(-1);
+        assertThrows(IllegalArgumentException.class, negativeQuantity::build);
     }
 }

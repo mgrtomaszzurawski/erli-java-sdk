@@ -57,9 +57,10 @@ class PriceListE2ETest {
             // KNOWN-SERVER-BEHAVIORS.md.
             assertEquals(details.size(), summaries.size(), "both endpoints describe the same lists");
 
+            var delivery = client.delivery();
+            var absentListUpdate = PriceListUpdate.builder().price(SAMPLE_PRICE).build();
             ErliValidationException failure = assertThrows(ErliValidationException.class,
-                    () -> client.delivery().updatePriceList(ABSENT_PRICE_LIST_ID,
-                            PriceListUpdate.builder().price(SAMPLE_PRICE).build()));
+                    () -> delivery.updatePriceList(ABSENT_PRICE_LIST_ID, absentListUpdate));
             assertFalse(failure.details().rawBody().isBlank(), "live server sent an empty error body");
         }
     }

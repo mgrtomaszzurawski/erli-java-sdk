@@ -381,8 +381,9 @@ class PaymentsAccessImplTest {
                           "createdAt":"2026-07-24T12:00:00.000+02:00","operator":"PAYU",
                           "methodCode":"PAYU.blik"}]""")));
 
+        var unrecognisedStatusPayments = client.payments().searchPayments(PaymentSearch.all());
         IllegalStateException failure = assertThrows(IllegalStateException.class,
-                () -> client.payments().searchPayments(PaymentSearch.all()).toList());
+                () -> unrecognisedStatusPayments.toList());
 
         assertTrue(failure.getMessage().contains("status"), failure.getMessage());
     }
@@ -415,18 +416,20 @@ class PaymentsAccessImplTest {
     @Test
     void refusesToSilentlyNarrowAMultiValuedFilterOntoAScalarOperator() {
         // Sending only the first of several values would quietly return a different result set.
-        assertThrows(IllegalArgumentException.class, () -> PaymentSearch.builder()
-                .matchingAnyOf(PaymentSearch.PaymentFilterField.ID,
-                        PaymentSearch.ComparisonOperator.EQUAL, List.of(1L, 2L))
-                .build());
+        var paymentFilterBuilder = PaymentSearch.builder();
+        List<Object> multipleValues = List.of(1L, 2L);
+        assertThrows(IllegalArgumentException.class,
+                () -> paymentFilterBuilder.matchingAnyOf(PaymentSearch.PaymentFilterField.ID,
+                        PaymentSearch.ComparisonOperator.EQUAL, multipleValues));
     }
 
     @Test
     void refusesAFilterWithNoValueRatherThanThrowingLaterFromTheStream() {
-        assertThrows(IllegalArgumentException.class, () -> PaymentSearch.builder()
-                .matchingAnyOf(PaymentSearch.PaymentFilterField.ID,
-                        PaymentSearch.ComparisonOperator.IN, List.of())
-                .build());
+        var paymentFilterBuilder = PaymentSearch.builder();
+        List<Object> noValues = List.of();
+        assertThrows(IllegalArgumentException.class,
+                () -> paymentFilterBuilder.matchingAnyOf(PaymentSearch.PaymentFilterField.ID,
+                        PaymentSearch.ComparisonOperator.IN, noValues));
     }
 
     @Test
@@ -471,12 +474,14 @@ class PaymentsAccessImplTest {
     void rejectsPayoutFilterPairingsTheApiWouldReject() {
         // The API's payout filter has two mutually exclusive shapes: id only with in/nin, and
         // createdAt/amount only with the ordering operators.
-        assertThrows(IllegalArgumentException.class, () -> PayoutSearch.builder()
-                .matching(PayoutSearch.PayoutFilterField.ID, PaymentSearch.ComparisonOperator.EQUAL, 5L)
-                .build());
-        assertThrows(IllegalArgumentException.class, () -> PayoutSearch.builder()
-                .matching(PayoutSearch.PayoutFilterField.AMOUNT, PaymentSearch.ComparisonOperator.IN, 5L)
-                .build());
+        var idFilterBuilder = PayoutSearch.builder();
+        assertThrows(IllegalArgumentException.class,
+                () -> idFilterBuilder.matching(PayoutSearch.PayoutFilterField.ID,
+                        PaymentSearch.ComparisonOperator.EQUAL, 5L));
+        var amountFilterBuilder = PayoutSearch.builder();
+        assertThrows(IllegalArgumentException.class,
+                () -> amountFilterBuilder.matching(PayoutSearch.PayoutFilterField.AMOUNT,
+                        PaymentSearch.ComparisonOperator.IN, 5L));
     }
 
     @Test

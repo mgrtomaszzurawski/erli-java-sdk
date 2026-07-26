@@ -418,11 +418,12 @@ class ProductAccessTest {
         server.stubFor(post(urlEqualTo(SEARCH_PATH))
                 .willReturn(okJson("[" + productBody("sku-a") + "," + productBody("sku-b") + "]")));
 
-        IllegalStateException failure = assertThrows(IllegalStateException.class,
-                () -> products().search(ProductSearchRequest.builder()
-                        .pageSize(2)
-                        .sortBy(ProductSortField.UPDATED, SortOrder.DESCENDING)
-                        .build()).toList());
+        ProductSearchRequest searchRequest = ProductSearchRequest.builder()
+                .pageSize(2)
+                .sortBy(ProductSortField.UPDATED, SortOrder.DESCENDING)
+                .build();
+        var results = products().search(searchRequest);
+        IllegalStateException failure = assertThrows(IllegalStateException.class, results::toList);
 
         assertTrue(failure.getMessage().contains("UPDATED"), failure.getMessage());
     }
@@ -508,11 +509,12 @@ class ProductAccessTest {
     void refusesToResumeAPersistedWalkOnASortFieldThatCanRepeat() {
         // A request seeded with a cursor is already a continuation: products may have been skipped
         // before this call was made, so it must be refused like any other continuation.
-        IllegalStateException failure = assertThrows(IllegalStateException.class,
-                () -> products().search(ProductSearchRequest.builder()
-                        .sortBy(ProductSortField.UPDATED, SortOrder.DESCENDING)
-                        .after(io.github.mgrtomaszzurawski.erli.core.model.Cursor.of("2026-07-25T09:00:00Z"))
-                        .build()).toList());
+        ProductSearchRequest searchRequest = ProductSearchRequest.builder()
+                .sortBy(ProductSortField.UPDATED, SortOrder.DESCENDING)
+                .after(io.github.mgrtomaszzurawski.erli.core.model.Cursor.of("2026-07-25T09:00:00Z"))
+                .build();
+        var results = products().search(searchRequest);
+        IllegalStateException failure = assertThrows(IllegalStateException.class, results::toList);
 
         assertTrue(failure.getMessage().contains("UPDATED"), failure.getMessage());
         server.verify(0, postRequestedFor(urlEqualTo(SEARCH_PATH)));
@@ -520,15 +522,17 @@ class ProductAccessTest {
 
     @Test
     void rejectsAFilterValueThatDoesNotMatchTheFieldType() {
-        assertThrows(IllegalArgumentException.class,
-                () -> products().search(ProductSearchRequest.builder()
-                        .filter(ProductFilter.greaterThan(ProductFilterField.STOCK, "plenty"))
-                        .build()).count());
+        ProductSearchRequest numericFilterRequest = ProductSearchRequest.builder()
+                .filter(ProductFilter.greaterThan(ProductFilterField.STOCK, "plenty"))
+                .build();
+        var numericResults = products().search(numericFilterRequest);
+        assertThrows(IllegalArgumentException.class, numericResults::count);
         // Boolean.valueOf would have turned this typo into `false` and returned the wrong products.
-        assertThrows(IllegalArgumentException.class,
-                () -> products().search(ProductSearchRequest.builder()
-                        .filter(ProductFilter.equalTo(ProductFilterField.ARCHIVED, "yes"))
-                        .build()).count());
+        ProductSearchRequest booleanFilterRequest = ProductSearchRequest.builder()
+                .filter(ProductFilter.equalTo(ProductFilterField.ARCHIVED, "yes"))
+                .build();
+        var booleanResults = products().search(booleanFilterRequest);
+        assertThrows(IllegalArgumentException.class, booleanResults::count);
     }
 
     @Test
@@ -575,8 +579,9 @@ class ProductAccessTest {
 
     @Test
     void rejectsAMembershipFilterOnAnEqualityOnlyField() {
+        List<String> membershipValues = List.of("active");
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> ProductFilter.in(ProductFilterField.STATUS, List.of("active")));
+                () -> ProductFilter.in(ProductFilterField.STATUS, membershipValues));
         assertTrue(failure.getMessage().contains("STATUS"), failure.getMessage());
     }
 
@@ -635,8 +640,9 @@ class ProductAccessTest {
         server.stubFor(get(urlPathEqualTo(PRODUCT_PATH)).willReturn(
                 okJson(productBody("sku-1").replace("\"status\":\"active\"", "\"status\":\"embargoed\""))));
 
+        ProductAccess access = products();
         IllegalStateException failure =
-                assertThrows(IllegalStateException.class, () -> products().get(SKU_1));
+                assertThrows(IllegalStateException.class, () -> access.get(SKU_1));
 
         assertTrue(failure.getMessage().contains("status"), failure.getMessage());
         assertTrue(failure.getMessage().contains("does not recognise"), failure.getMessage());
@@ -662,7 +668,9 @@ class ProductAccessTest {
                 .withHeader(CONTENT_TYPE_HEADER, JSON_MEDIA_TYPE)
                 .withBody(OBSERVED_401_BODY)));
 
-        assertThrows(ErliAuthException.class, () -> products().update(SKU_1, stockPatch()));
+        ProductAccess access = products();
+        ProductPatch patch = stockPatch();
+        assertThrows(ErliAuthException.class, () -> access.update(SKU_1, patch));
     }
 
     @Test
@@ -672,7 +680,9 @@ class ProductAccessTest {
                 .withHeader(CONTENT_TYPE_HEADER, JSON_MEDIA_TYPE)
                 .withBody("{\"message\":\"Product not found\"}")));
 
-        assertThrows(ErliNotFoundException.class, () -> products().update(SKU_1, stockPatch()));
+        ProductAccess access = products();
+        ProductPatch patch = stockPatch();
+        assertThrows(ErliNotFoundException.class, () -> access.update(SKU_1, patch));
     }
 
     @Test
@@ -682,7 +692,9 @@ class ProductAccessTest {
                 .withHeader(CONTENT_TYPE_HEADER, JSON_MEDIA_TYPE)
                 .withBody("{\"message\":\"Product already exists\"}")));
 
-        assertThrows(ErliValidationException.class, () -> products().create(SKU_1, minimalDraft()));
+        ProductAccess access = products();
+        ProductDraft draft = minimalDraft();
+        assertThrows(ErliValidationException.class, () -> access.create(SKU_1, draft));
     }
 
     @Test
@@ -692,8 +704,9 @@ class ProductAccessTest {
                 .withHeader(CONTENT_TYPE_HEADER, JSON_MEDIA_TYPE)
                 .withBody("{\"message\":\"Internal error\"}")));
 
-        assertThrows(ErliServerException.class,
-                () -> products().search(ProductSearchRequest.all()).count());
+        ProductSearchRequest searchRequest = ProductSearchRequest.all();
+        var results = products().search(searchRequest);
+        assertThrows(ErliServerException.class, results::count);
     }
 
     @Test
@@ -703,8 +716,9 @@ class ProductAccessTest {
                 .withHeader(CONTENT_TYPE_HEADER, "text/html")
                 .withBody("<html><body>Service unavailable</body></html>")));
 
-        ErliServerException failure = assertThrows(ErliServerException.class,
-                () -> products().search(ProductSearchRequest.all()).count());
+        ProductSearchRequest searchRequest = ProductSearchRequest.all();
+        var results = products().search(searchRequest);
+        ErliServerException failure = assertThrows(ErliServerException.class, results::count);
         assertTrue(failure.details().rawBody().contains("Service unavailable"), failure.getMessage());
     }
 
@@ -726,7 +740,9 @@ class ProductAccessTest {
                 .withHeader(CONTENT_TYPE_HEADER, JSON_MEDIA_TYPE)
                 .withBody("{\"message\":\"Internal error\"}")));
 
-        assertThrows(ErliServerException.class, () -> products().create(SKU_1, minimalDraft()));
+        ProductAccess access = products();
+        ProductDraft draft = minimalDraft();
+        assertThrows(ErliServerException.class, () -> access.create(SKU_1, draft));
 
         // A create is not idempotent: retrying could publish the product twice.
         server.verify(1, postRequestedFor(urlEqualTo(PRODUCT_PATH)));

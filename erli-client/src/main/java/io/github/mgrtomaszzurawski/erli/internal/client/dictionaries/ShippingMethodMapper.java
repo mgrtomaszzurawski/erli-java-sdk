@@ -43,7 +43,8 @@ final class ShippingMethodMapper {
         return new ShippingMethod(
                 ShippingMethodId.of(requireId(rawMethod)),
                 requireName(rawMethod),
-                Optional.ofNullable(rawMethod.getGroupId()).map(groupId -> groupId.getValue()),
+                Optional.ofNullable(rawMethod.getGroupId())
+                        .map(io.github.mgrtomaszzurawski.erli.rest.model.ShippingMethod.GroupIdEnum::getValue),
                 Optional.ofNullable(rawMethod.getOperator())
                         .map(operator -> ShippingOperator.fromWire(operator.getValue())),
                 requireCashOnDelivery(rawMethod),

@@ -293,9 +293,10 @@ class OrderMapperTest {
 
         // Reported inside the documented ErliException taxonomy, so a caller catching ErliException
         // handles a malformed response like any other failure of the call.
-        ErliTransportException thrown = assertThrows(ErliTransportException.class, () -> OrderMapper
-                .toDomain(codec.read(missingSellerStatus,
-                        io.github.mgrtomaszzurawski.erli.rest.model.Order.class)));
+        io.github.mgrtomaszzurawski.erli.rest.model.Order rawOrder = codec.read(missingSellerStatus,
+                io.github.mgrtomaszzurawski.erli.rest.model.Order.class);
+        ErliTransportException thrown = assertThrows(ErliTransportException.class,
+                () -> OrderMapper.toDomain(rawOrder));
 
         assertInstanceOf(ErliException.class, thrown);
         assertTrue(thrown.getMessage().contains("sellerStatus"),
@@ -390,7 +391,9 @@ class OrderMapperTest {
     void returnedCollectionsAreImmutable() {
         Order order = mapFixture(FULL_FIXTURE);
 
-        assertThrows(UnsupportedOperationException.class, () -> order.items().clear());
-        assertThrows(UnsupportedOperationException.class, () -> order.returns().clear());
+        var items = order.items();
+        assertThrows(UnsupportedOperationException.class, items::clear);
+        var returns = order.returns();
+        assertThrows(UnsupportedOperationException.class, returns::clear);
     }
 }

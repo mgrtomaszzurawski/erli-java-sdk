@@ -185,9 +185,9 @@ class BillingAccessImplTest {
 
     @Test
     void rejectsAPageSizeAboveTheApiCap() {
-        assertThrows(IllegalArgumentException.class,
-                () -> BillingEntryFilter.builder().pageSize(BillingEntryFilter.MAX_PAGE_SIZE + 1).build());
-        assertThrows(IllegalArgumentException.class,
-                () -> BillingEntryFilter.builder().pageSize(0).build());
+        var aboveCapFilter = BillingEntryFilter.builder().pageSize(BillingEntryFilter.MAX_PAGE_SIZE + 1);
+        assertThrows(IllegalArgumentException.class, aboveCapFilter::build);
+        var zeroPageFilter = BillingEntryFilter.builder().pageSize(0);
+        assertThrows(IllegalArgumentException.class, zeroPageFilter::build);
     }
 }
