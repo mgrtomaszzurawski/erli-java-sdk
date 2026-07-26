@@ -7,6 +7,24 @@ plugins {
     alias(libs.plugins.spotbugs) apply false
     alias(libs.plugins.pitest) apply false
     alias(libs.plugins.sonarqube)
+    alias(libs.plugins.owasp.dependencycheck)
+}
+
+// OWASP dependency-check (known-CVE scan of the shipped dependencies). Release-only — NOT part of
+// `build`; run at the develop->main boundary: `./gradlew dependencyCheckAggregate`. Fails on a
+// dependency with CVSS >= 7.0. The NVD feed downloads faster with an API key (NVD_API_KEY); an
+// existing on-disk NVD cache is reused when present.
+dependencyCheck {
+    failBuildOnCVSS = 7.0f
+    formats = listOf("HTML", "XML")
+    System.getenv("NVD_API_KEY")?.let { nvd.apiKey = it }
+    // The generated Layer-1 module ships no third-party runtime deps of its own worth scanning twice.
+    skipProjects = listOf(":erli-rest-models")
+    // Speed: only the JVM dependency analyzers are relevant to this SDK.
+    analyzers.assemblyEnabled = false
+    analyzers.nodeEnabled = false
+    analyzers.nodeAuditEnabled = false
+    analyzers.retirejs.enabled = false
 }
 
 // SonarQube analysis (quality platform). Config only — host/credentials come from the environment at
