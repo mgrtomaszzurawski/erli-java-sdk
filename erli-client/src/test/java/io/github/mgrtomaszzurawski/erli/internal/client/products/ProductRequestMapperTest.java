@@ -127,9 +127,13 @@ class ProductRequestMapperTest {
         ProductUpdate raw = ProductRequestMapper.toUpdate(patch);
 
         assertEquals(9, raw.getStock());
-        // A cleared field is carried as an explicit null so the API unsets it; an unset field is absent.
+        // A cleared field is carried as an EXPLICIT null (JsonNullable present-and-null) so the API
+        // unsets it — distinct from an unset field, which is absent (JsonNullable undefined). Asserting
+        // the JsonNullable is present is what pins clear() apart from "never set".
         assertNull(raw.getMobilePrice());
+        assertTrue(raw.getMobilePrice_JsonNullable().isPresent());
         assertNull(raw.getDescription());
+        assertTrue(raw.getDescription_JsonNullable().isPresent());
     }
 
     @Test
@@ -176,6 +180,6 @@ class ProductRequestMapperTest {
         // Optional fields the caller did not set are left absent, not sent as null.
         assertNull(raw.getEan());
         assertNull(raw.getBasketLimit());
-        assertTrue(raw.getTaxRate() == null);
+        assertNull(raw.getTaxRate());
     }
 }
