@@ -240,9 +240,12 @@ class ShippingWriteOperationsTest {
 
     @Test
     void refusesAStatusTheExternalEndpointCannotSet() {
+        ShippingAccessImpl access = shippingAccess();
+        ParcelId parcelId = ParcelId.of("77");
+        ExternalParcelUpdate update =
+                ExternalParcelUpdate.builder(DeliveryVendor.DPD).status(ParcelStatus.CLAIMED).build();
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> shippingAccess().updateExternalParcel(ParcelId.of("77"),
-                        ExternalParcelUpdate.builder(DeliveryVendor.DPD).status(ParcelStatus.CLAIMED).build()));
+                () -> access.updateExternalParcel(parcelId, update));
 
         assertTrue(failure.getMessage().contains("CLAIMED"), failure.getMessage());
         server.verify(0, patchRequestedFor(urlEqualTo(EXTERNAL_BY_ID_PATH)));
@@ -283,32 +286,42 @@ class ShippingWriteOperationsTest {
 
     @Test
     void refusesAnEmptyParcelBatchWithoutSendingAnything() {
-        assertThrows(IllegalArgumentException.class, () -> shippingAccess().createParcels(List.of()));
+        ShippingAccessImpl access = shippingAccess();
+        List<ParcelDraft> noDrafts = List.of();
+        assertThrows(IllegalArgumentException.class, () -> access.createParcels(noDrafts));
 
         server.verify(0, postRequestedFor(urlEqualTo(PARCELS_PATH)));
     }
 
     @Test
     void refusesAnEmptyExternalBatchWithoutSendingAnything() {
+        ShippingAccessImpl access = shippingAccess();
+        List<ExternalParcelDraft> noExternalDrafts = List.of();
         assertThrows(IllegalArgumentException.class,
-                () -> shippingAccess().registerExternalParcels(List.of()));
+                () -> access.registerExternalParcels(noExternalDrafts));
 
         server.verify(0, postRequestedFor(urlEqualTo(EXTERNAL_PATH)));
     }
 
     @Test
     void refusesAnEmptyPickupProtocolRequestWithoutSendingAnything() {
-        assertThrows(IllegalArgumentException.class, () -> shippingAccess().pickupProtocols(List.of()));
+        ShippingAccessImpl access = shippingAccess();
+        List<ParcelId> noParcelIds = List.of();
+        assertThrows(IllegalArgumentException.class, () -> access.pickupProtocols(noParcelIds));
 
         server.verify(0, getRequestedFor(urlPathEqualTo(PICKUP_PROTOCOLS_PATH)));
     }
 
     @Test
     void refusesARelativePathSegmentOnTheDestructiveDeleteVerbs() {
+        ShippingAccessImpl cancelAccess = shippingAccess();
+        ParcelId doubleDotId = ParcelId.of("..");
         assertThrows(IllegalArgumentException.class,
-                () -> shippingAccess().cancelParcel(ParcelId.of("..")));
+                () -> cancelAccess.cancelParcel(doubleDotId));
+        ShippingAccessImpl deleteAccess = shippingAccess();
+        ParcelId dotId = ParcelId.of(".");
         assertThrows(IllegalArgumentException.class,
-                () -> shippingAccess().deleteExternalParcel(ParcelId.of(".")));
+                () -> deleteAccess.deleteExternalParcel(dotId));
 
         // Asserting on every request the server saw, not on a guessed path: the client transmits dot
         // segments un-normalized, so a path-specific check would match nothing whether or not the guard

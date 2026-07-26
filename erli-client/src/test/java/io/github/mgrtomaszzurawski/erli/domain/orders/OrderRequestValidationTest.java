@@ -22,8 +22,9 @@ class OrderRequestValidationTest {
     @ParameterizedTest
     @ValueSource(ints = {0, -1, OrderSearchRequest.MAX_PAGE_SIZE + 1, Integer.MAX_VALUE})
     void rejectsAPageSizeOutsideTheRangeErliAccepts(int pageSize) {
+        var builder = OrderSearchRequest.builder();
         assertThrows(IllegalArgumentException.class,
-                () -> OrderSearchRequest.builder().pageSize(pageSize));
+                () -> builder.pageSize(pageSize));
     }
 
     @ParameterizedTest
@@ -44,16 +45,18 @@ class OrderRequestValidationTest {
     @ParameterizedTest
     @ValueSource(strings = {"", " ", "\t"})
     void rejectsABlankExternalOrderId(String blank) {
+        var builder = OrderUpdateRequest.builder();
         assertThrows(IllegalArgumentException.class,
-                () -> OrderUpdateRequest.builder().externalOrderId(blank));
+                () -> builder.externalOrderId(blank));
     }
 
     @Test
     void rejectsAnExternalOrderIdLongerThanErliAllows() {
         String tooLong = "x".repeat(OVER_LONG_EXTERNAL_ORDER_ID);
+        var builder = OrderUpdateRequest.builder();
 
         assertThrows(IllegalArgumentException.class,
-                () -> OrderUpdateRequest.builder().externalOrderId(tooLong));
+                () -> builder.externalOrderId(tooLong));
     }
 
     @Test
@@ -71,10 +74,11 @@ class OrderRequestValidationTest {
 
     @Test
     void rejectsAMembershipFilterWithNoValues() {
+        List<String> noValues = List.of();
         assertThrows(IllegalArgumentException.class,
-                () -> OrderFilter.in(OrderFilter.Field.ID, List.of()));
+                () -> OrderFilter.in(OrderFilter.Field.ID, noValues));
         assertThrows(IllegalArgumentException.class,
-                () -> OrderFilter.notIn(OrderFilter.Field.ID, List.of()));
+                () -> OrderFilter.notIn(OrderFilter.Field.ID, noValues));
     }
 
     @Test
@@ -92,6 +96,7 @@ class OrderRequestValidationTest {
         mutable.add("221201x2");
 
         assertEquals(1, filter.values().size());
-        assertThrows(UnsupportedOperationException.class, () -> filter.values().clear());
+        var immutableValues = filter.values();
+        assertThrows(UnsupportedOperationException.class, () -> immutableValues.clear());
     }
 }

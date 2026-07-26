@@ -136,7 +136,8 @@ class InboxAccessImplTest {
                   "read":false,"type":"productsNeedSync","payload":{"id":"hash-1"}}]""";
         server.stubFor(get(urlEqualTo(INBOX_PATH)).willReturn(okJson(batchWithOneBrokenMessage)));
 
-        ErliTransportException thrown = assertThrows(ErliTransportException.class, () -> inbox().unread());
+        InboxAccess access = inbox();
+        ErliTransportException thrown = assertThrows(ErliTransportException.class, () -> access.unread());
 
         assertTrue(thrown.getMessage().contains(MESSAGE_ID),
                 "the failure must name the message that could not be mapped: " + thrown.getMessage());
@@ -209,7 +210,8 @@ class InboxAccessImplTest {
         server.stubFor(get(urlEqualTo(INBOX_PATH))
                 .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody(OBSERVED_401_BODY)));
 
-        ErliAuthException thrown = assertThrows(ErliAuthException.class, () -> inbox().unread());
+        InboxAccess access = inbox();
+        ErliAuthException thrown = assertThrows(ErliAuthException.class, () -> access.unread());
 
         assertEquals("security", thrown.details().failureType());
     }
@@ -219,8 +221,10 @@ class InboxAccessImplTest {
         server.stubFor(post(urlEqualTo(MARK_READ_PATH))
                 .willReturn(aResponse().withStatus(HTTP_NOT_FOUND).withBody("{\"message\":\"no such message\"}")));
 
+        InboxAccess access = inbox();
+        ReadReceipt receipt = ReadReceipt.upTo(MessageId.of(MESSAGE_ID));
         assertThrows(ErliNotFoundException.class,
-                () -> inbox().markRead(ReadReceipt.upTo(MessageId.of(MESSAGE_ID))));
+                () -> access.markRead(receipt));
     }
 
     /**
@@ -235,8 +239,10 @@ class InboxAccessImplTest {
         server.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(
                 aResponse().withStatus(HTTP_BAD_REQUEST).withBody(readFixture(VALIDATION_ERROR_FIXTURE))));
 
+        InboxAccess access = inbox();
+        MessageQuery query = MessageQuery.all();
         ErliValidationException thrown =
-                assertThrows(ErliValidationException.class, () -> inbox().search(MessageQuery.all()));
+                assertThrows(ErliValidationException.class, () -> access.search(query));
 
         assertEquals("validation", thrown.details().failureType());
         assertEquals("ValidationFailure", thrown.details().name());
@@ -254,7 +260,8 @@ class InboxAccessImplTest {
     void mapsServerErrorToTheServerRemediation() {
         server.stubFor(get(urlEqualTo(INBOX_PATH)).willReturn(aResponse().withStatus(HTTP_SERVER_ERROR)));
 
-        assertThrows(ErliServerException.class, () -> inbox().unread());
+        InboxAccess access = inbox();
+        assertThrows(ErliServerException.class, () -> access.unread());
     }
 
     /** A non-JSON error body must still map by status and keep the raw text for diagnosis. */
@@ -263,7 +270,8 @@ class InboxAccessImplTest {
         server.stubFor(get(urlEqualTo(INBOX_PATH))
                 .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody("<html>denied</html>")));
 
-        ErliAuthException thrown = assertThrows(ErliAuthException.class, () -> inbox().unread());
+        InboxAccess access = inbox();
+        ErliAuthException thrown = assertThrows(ErliAuthException.class, () -> access.unread());
 
         assertEquals("<html>denied</html>", thrown.details().rawBody());
     }

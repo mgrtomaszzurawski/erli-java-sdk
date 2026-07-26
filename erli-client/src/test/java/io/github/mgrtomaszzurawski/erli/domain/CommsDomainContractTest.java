@@ -99,13 +99,15 @@ class CommsDomainContractTest {
 
     @Test
     void buyabilityQueryRequiresAPositiveQuantity() {
+        ProductExternalId productId = ProductExternalId.of("555");
         assertThrows(IllegalArgumentException.class,
-                () -> BuyabilityQuery.of(ProductExternalId.of("555"), 0));
+                () -> BuyabilityQuery.of(productId, 0));
     }
 
     @Test
     void productSyncNotificationEnforcesTheApiBatchLimits() {
-        assertThrows(IllegalArgumentException.class, () -> ProductSyncNotification.ofProducts(List.of()));
+        List<ProductExternalId> noProducts = List.of();
+        assertThrows(IllegalArgumentException.class, () -> ProductSyncNotification.ofProducts(noProducts));
         List<ProductExternalId> tooMany = IntStream.range(0, OVER_THE_PRODUCT_LIMIT)
                 .mapToObj(index -> ProductExternalId.of("SKU-" + index))
                 .toList();
@@ -123,8 +125,9 @@ class CommsDomainContractTest {
         assertEquals(Set.of(MessageType.ORDER_CREATED),
                 MessageQuery.ofTypes(Set.of(MessageType.ORDER_CREATED)).types());
 
+        Set<MessageType> unsupportedTypes = Set.of(MessageType.ORDER_SELLER_STATUS_CHANGED);
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> MessageQuery.ofTypes(Set.of(MessageType.ORDER_SELLER_STATUS_CHANGED)));
+                () -> MessageQuery.ofTypes(unsupportedTypes));
         assertTrue(thrown.getMessage().contains("ORDER_SELLER_STATUS_CHANGED"), thrown.getMessage());
     }
 

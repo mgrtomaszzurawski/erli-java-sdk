@@ -67,29 +67,20 @@ class ProductRequestMapperTest {
     }
 
     @Test
-    void mapsEveryScalarFieldToTheRawCreateRequest() {
+    void mapsTheScalarStringAndNumberFieldsToTheRawCreateRequest() {
         ProductCreate raw = ProductRequestMapper.toCreate(ProductDraft.of(everyScalarField().build()));
 
         assertEquals("Kurtka zimowa", raw.getName());
         assertEquals("5901234123457", raw.getEan());
         assertEquals("SKU-9001", raw.getSku());
-        assertEquals("pl", raw.getBaseMarket().getValue());
         assertEquals(4242, raw.getSourceFulfillmentProductId());
         assertEquals(17, raw.getStock());
-        // Money is sent as an integer count of minor units: 120.50 PLN is 12050 grosze.
-        assertEquals(12050, raw.getPrice());
-        assertEquals(11800, raw.getMobilePrice());
-        assertEquals(15000, raw.getCataloguePrice());
-        assertEquals("cataloguePrice", raw.getReferencePriceType().getValue());
-        assertEquals("active", raw.getStatus().getValue());
         assertEquals(Boolean.FALSE, raw.getArchived());
         assertEquals("dpl-7", raw.getDeliveryPriceList());
         assertEquals(new BigDecimal("1.250"), raw.getWeight());
         assertEquals("obligatory-1", raw.getObligatoryIdentifier());
         assertEquals("voluntary-1", raw.getVoluntaryIdentifier());
         assertEquals("return-1", raw.getReturnIdentifier());
-        assertEquals("vatInvoice", raw.getInvoiceType().getValue());
-        assertEquals("TAX_23", raw.getTaxRate().getValue());
         assertEquals(5, raw.getBasketLimit());
         assertEquals("energy-label-url", raw.getEnergyLabel());
         assertEquals("safety-url", raw.getInstructionWithSafetyInformation());
@@ -99,6 +90,21 @@ class ProductRequestMapperTest {
         assertEquals("meta-1", raw.getExternalMetaProductId());
         assertEquals(11, raw.getAutomaticDiscountRuleId());
         assertEquals(List.of("waterproof", "warm"), raw.getImportantFeatures());
+    }
+
+    @Test
+    void mapsThePriceAndEnumFieldsToTheRawCreateRequest() {
+        ProductCreate raw = ProductRequestMapper.toCreate(ProductDraft.of(everyScalarField().build()));
+
+        // Money is sent as an integer count of minor units: 120.50 PLN is 12050 grosze.
+        assertEquals(12050, raw.getPrice());
+        assertEquals(11800, raw.getMobilePrice());
+        assertEquals(15000, raw.getCataloguePrice());
+        assertEquals("pl", raw.getBaseMarket().getValue());
+        assertEquals("cataloguePrice", raw.getReferencePriceType().getValue());
+        assertEquals("active", raw.getStatus().getValue());
+        assertEquals("vatInvoice", raw.getInvoiceType().getValue());
+        assertEquals("TAX_23", raw.getTaxRate().getValue());
     }
 
     @Test

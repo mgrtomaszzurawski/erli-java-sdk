@@ -64,8 +64,9 @@ class MinorUnitsTest {
 
     @Test
     void rejectsACurrencyOtherThanZloty() {
+        Money euroAmount = Money.of("100.00", "EUR");
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> MinorUnits.toGrosze(Money.of("100.00", "EUR"), UNIT_PRICE_FIELD));
+                () -> MinorUnits.toGrosze(euroAmount, UNIT_PRICE_FIELD));
 
         assertTrue(failure.getMessage().contains(UNIT_PRICE_FIELD), failure.getMessage());
         assertTrue(failure.getMessage().contains("PLN"), failure.getMessage());
@@ -75,8 +76,9 @@ class MinorUnitsTest {
     @Test
     void rejectsAFractionOfAGroszRatherThanRoundingItAway() {
         // Silent rounding here would under- or over-charge; the caller must decide.
+        Money fractionalGroszAmount = Money.ofPln("10.005");
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> MinorUnits.toGrosze(Money.ofPln("10.005"), UNIT_PRICE_FIELD));
+                () -> MinorUnits.toGrosze(fractionalGroszAmount, UNIT_PRICE_FIELD));
 
         assertTrue(failure.getMessage().contains("whole number of grosze"), failure.getMessage());
     }
@@ -84,8 +86,9 @@ class MinorUnitsTest {
     @Test
     void rejectsAnAmountTooLargeForTheWire() {
         // The API caps money fields at a signed 32-bit grosz value.
+        Money aboveWireCapAmount = Money.ofPln("21474836.48");
         assertThrows(IllegalArgumentException.class,
-                () -> MinorUnits.toGrosze(Money.ofPln("21474836.48"), UNIT_PRICE_FIELD));
+                () -> MinorUnits.toGrosze(aboveWireCapAmount, UNIT_PRICE_FIELD));
     }
 
     @Test

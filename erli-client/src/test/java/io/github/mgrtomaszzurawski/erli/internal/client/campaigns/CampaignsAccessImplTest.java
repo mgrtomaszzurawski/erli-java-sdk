@@ -122,8 +122,10 @@ class CampaignsAccessImplTest {
         server.stubFor(get(urlPathEqualTo(SUMMARY_PATH))
                 .willReturn(aResponse().withStatus(400).withBody(body)));
 
+        var campaigns = client.campaigns();
+        LocalDate futureEndDate = LocalDate.of(2030, 1, 1);
         ErliValidationException failure = assertThrows(ErliValidationException.class,
-                () -> client.campaigns().costSummary(RANGE_START, LocalDate.of(2030, 1, 1)));
+                () -> campaigns.costSummary(RANGE_START, futureEndDate));
 
         assertEquals("699t9AzTJbgZ2", failure.details().traceId());
         assertEquals("validation", failure.details().failureType());
@@ -131,16 +133,18 @@ class CampaignsAccessImplTest {
 
     @Test
     void rejectsAnInvertedRangeBeforeTouchingTheWire() {
+        var campaigns = client.campaigns();
         assertThrows(IllegalArgumentException.class,
-                () -> client.campaigns().costSummary(RANGE_END, RANGE_START));
+                () -> campaigns.costSummary(RANGE_END, RANGE_START));
 
         server.verify(0, getRequestedFor(urlPathEqualTo(SUMMARY_PATH)));
     }
 
     @Test
     void requiresBothDates() {
-        assertThrows(NullPointerException.class, () -> client.campaigns().costSummary(null, RANGE_END));
-        assertThrows(NullPointerException.class, () -> client.campaigns().costSummary(RANGE_START, null));
+        var campaigns = client.campaigns();
+        assertThrows(NullPointerException.class, () -> campaigns.costSummary(null, RANGE_END));
+        assertThrows(NullPointerException.class, () -> campaigns.costSummary(RANGE_START, null));
 
         server.verify(0, getRequestedFor(urlPathEqualTo(SUMMARY_PATH)));
     }

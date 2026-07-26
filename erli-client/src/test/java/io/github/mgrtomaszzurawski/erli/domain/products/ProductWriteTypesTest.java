@@ -39,8 +39,9 @@ class ProductWriteTypesTest {
 
     @Test
     void namesEveryMissingRequiredFieldAtOnce() {
+        ProductContent nameOnlyContent = ProductContent.builder().name("Only a name").build();
         IllegalStateException failure = assertThrows(IllegalStateException.class,
-                () -> ProductDraft.of(ProductContent.builder().name("Only a name").build()));
+                () -> ProductDraft.of(nameOnlyContent));
         String message = failure.getMessage();
         assertTrue(message.contains("price"), message);
         assertTrue(message.contains("stock"), message);
@@ -51,8 +52,9 @@ class ProductWriteTypesTest {
 
     @Test
     void treatsAnEmptyImageListAsAMissingCover() {
+        ProductContent contentWithoutImages = completeContent().images(List.of()).build();
         IllegalStateException failure = assertThrows(IllegalStateException.class,
-                () -> ProductDraft.of(completeContent().images(List.of()).build()));
+                () -> ProductDraft.of(contentWithoutImages));
         assertTrue(failure.getMessage().contains("images"), failure.getMessage());
     }
 
@@ -69,8 +71,9 @@ class ProductWriteTypesTest {
 
     @Test
     void refusesToClearAFieldTheApiDoesNotAllowRemoving() {
+        var patchBuilder = ProductPatch.builder();
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> ProductPatch.builder().clear(ProductField.NAME));
+                () -> patchBuilder.clear(ProductField.NAME));
         assertTrue(failure.getMessage().contains("NAME"), failure.getMessage());
     }
 
@@ -94,17 +97,19 @@ class ProductWriteTypesTest {
 
     @Test
     void rejectsAnEmptyMembershipSetAndAnEmptyJunction() {
+        List<String> emptyMembership = List.of();
         assertThrows(IllegalArgumentException.class,
-                () -> ProductFilter.in(ProductFilterField.SKU, List.of()));
+                () -> ProductFilter.in(ProductFilterField.SKU, emptyMembership));
         assertThrows(IllegalArgumentException.class, ProductFilter::and);
     }
 
     @Test
     void rejectsAPageSizeOutsideTheRangeErliAccepts() {
+        var zeroPageBuilder = ProductSearchRequest.builder();
+        assertThrows(IllegalArgumentException.class, () -> zeroPageBuilder.pageSize(0));
+        var oversizePageBuilder = ProductSearchRequest.builder();
         assertThrows(IllegalArgumentException.class,
-                () -> ProductSearchRequest.builder().pageSize(0));
-        assertThrows(IllegalArgumentException.class,
-                () -> ProductSearchRequest.builder().pageSize(ProductSearchRequest.MAX_PAGE_SIZE + 1));
+                () -> oversizePageBuilder.pageSize(ProductSearchRequest.MAX_PAGE_SIZE + 1));
         assertEquals(ProductSearchRequest.MAX_PAGE_SIZE, ProductSearchRequest.builder()
                 .pageSize(ProductSearchRequest.MAX_PAGE_SIZE).build().pageSize().orElseThrow());
     }
@@ -122,8 +127,9 @@ class ProductWriteTypesTest {
     void rejectsADiscountThatEndsBeforeItStarts() {
         OffsetDateTime start = OffsetDateTime.parse("2026-08-01T00:00:00+02:00");
         OffsetDateTime end = OffsetDateTime.parse("2026-07-01T00:00:00+02:00");
+        Money discountAmount = Money.ofPln("10.00");
         assertThrows(IllegalArgumentException.class,
-                () -> DiscountRequest.between(Money.ofPln("10.00"), start, end));
+                () -> DiscountRequest.between(discountAmount, start, end));
     }
 
     @Test

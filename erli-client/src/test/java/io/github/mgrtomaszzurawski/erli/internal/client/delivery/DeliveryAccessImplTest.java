@@ -227,10 +227,13 @@ class DeliveryAccessImplTest {
         DeliveryPrice fractional = priceOf(new BigDecimal("10.499"));
         DeliveryPrice huge = priceOf(new BigDecimal("99999999999"));
 
+        DeliveryAccessImpl access = deliveryAccess();
+        PriceListDraft notWholeDraft = PriceListDraft.builder("x").price(fractional).build();
         IllegalArgumentException notWhole = assertThrows(IllegalArgumentException.class,
-                () -> deliveryAccess().createPriceList(PriceListDraft.builder("x").price(fractional).build()));
+                () -> access.createPriceList(notWholeDraft));
+        PriceListDraft outOfRangeDraft = PriceListDraft.builder("x").price(huge).build();
         IllegalArgumentException outOfRange = assertThrows(IllegalArgumentException.class,
-                () -> deliveryAccess().createPriceList(PriceListDraft.builder("x").price(huge).build()));
+                () -> access.createPriceList(outOfRangeDraft));
 
         assertTrue(notWhole.getMessage().contains("whole number"), notWhole.getMessage());
         assertTrue(outOfRange.getMessage().contains("range"), outOfRange.getMessage());
@@ -243,8 +246,10 @@ class DeliveryAccessImplTest {
                 new DeliveryMethodRef(DeliveryMethodId.of("erliDHL5kg"), Optional.empty()),
                 Money.ofMinorUnits(1299, "JPY"), Money.ofMinorUnits(0, "PLN"), Optional.empty(), false);
 
+        DeliveryAccessImpl access = deliveryAccess();
+        PriceListDraft draft = PriceListDraft.builder("x").price(inYen).build();
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> deliveryAccess().createPriceList(PriceListDraft.builder("x").price(inYen).build()));
+                () -> access.createPriceList(draft));
 
         assertTrue(failure.getMessage().contains("PLN"), failure.getMessage());
         server.verify(0, postRequestedFor(urlEqualTo(PRICE_LIST_PATH)));
@@ -263,9 +268,10 @@ class DeliveryAccessImplTest {
                 new DeliveryMethodRef(DeliveryMethodId.of("erliTeleportation"), Optional.empty()),
                 Money.ofMinorUnits(100, "PLN"), Money.ofMinorUnits(0, "PLN"), Optional.empty(), false);
 
+        DeliveryAccessImpl access = deliveryAccess();
+        PriceListDraft draft = PriceListDraft.builder("x").price(unknownMethod).build();
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> deliveryAccess().createPriceList(
-                        PriceListDraft.builder("x").price(unknownMethod).build()));
+                () -> access.createPriceList(draft));
 
         assertTrue(failure.getMessage().contains("erliTeleportation"), failure.getMessage());
         server.verify(0, postRequestedFor(urlEqualTo(PRICE_LIST_PATH)));
@@ -277,8 +283,9 @@ class DeliveryAccessImplTest {
                 .withBody("{\"errorCode\":1200,\"errorMessage\":\"name taken\"}")));
 
         // The conflict this area actually produces is on create, not on the read the table drives.
-        assertThrows(ErliValidationException.class, () -> deliveryAccess().createPriceList(
-                PriceListDraft.builder("*").price(samplePrice()).build()));
+        DeliveryAccessImpl access = deliveryAccess();
+        PriceListDraft draft = PriceListDraft.builder("*").price(samplePrice()).build();
+        assertThrows(ErliValidationException.class, () -> access.createPriceList(draft));
     }
 
     /** The mandatory error-path table ({@code TESTING.md}) for this area's read endpoint. */

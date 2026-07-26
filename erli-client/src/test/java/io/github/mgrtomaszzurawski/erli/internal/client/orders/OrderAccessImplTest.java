@@ -291,8 +291,10 @@ class OrderAccessImplTest {
 
     @Test
     void updateRejectsARequestThatWouldChangeNothingWithoutCallingTheApi() {
-        assertThrows(IllegalArgumentException.class,
-                () -> orders().update(OrderId.of(ORDER_ID), OrderUpdateRequest.builder().build()));
+        OrderAccess orderAccess = orders();
+        OrderId orderId = OrderId.of(ORDER_ID);
+        OrderUpdateRequest emptyRequest = OrderUpdateRequest.builder().build();
+        assertThrows(IllegalArgumentException.class, () -> orderAccess.update(orderId, emptyRequest));
 
         server.verify(0, patchRequestedFor(urlEqualTo(ORDER_PATH)));
     }
@@ -360,7 +362,9 @@ class OrderAccessImplTest {
     void mapsEveryErrorStatusToItsRemediationException(int status, Class<? extends ErliException> expected) {
         server.stubFor(get(urlEqualTo(ORDER_PATH)).willReturn(aResponse().withStatus(status)));
 
-        ErliException thrown = assertThrows(ErliException.class, () -> orders().byId(OrderId.of(ORDER_ID)));
+        OrderAccess orderAccess = orders();
+        OrderId orderId = OrderId.of(ORDER_ID);
+        ErliException thrown = assertThrows(ErliException.class, () -> orderAccess.byId(orderId));
 
         assertInstanceOf(expected, thrown);
     }
@@ -375,8 +379,10 @@ class OrderAccessImplTest {
         server.stubFor(get(urlEqualTo(ORDER_PATH))
                 .willReturn(aResponse().withStatus(404).withBody(body)));
 
+        OrderAccess orderAccess = orders();
+        OrderId orderId = OrderId.of(ORDER_ID);
         ErliNotFoundException thrown = assertThrows(ErliNotFoundException.class,
-                () -> orders().byId(OrderId.of(ORDER_ID)));
+                () -> orderAccess.byId(orderId));
 
         assertEquals("notFound", thrown.details().failureType());
         assertEquals("span-7", thrown.details().spanId());
@@ -389,8 +395,11 @@ class OrderAccessImplTest {
                 .willReturn(aResponse().withStatus(400)
                         .withBody("{\"code\":1200,\"message\":\"Order is cancelled\"}")));
 
-        ErliValidationException thrown = assertThrows(ErliValidationException.class, () -> orders()
-                .update(OrderId.of(ORDER_ID), OrderUpdateRequest.ofExternalOrderId("erp-1")));
+        OrderAccess orderAccess = orders();
+        OrderId orderId = OrderId.of(ORDER_ID);
+        OrderUpdateRequest updateRequest = OrderUpdateRequest.ofExternalOrderId("erp-1");
+        ErliValidationException thrown = assertThrows(ErliValidationException.class,
+                () -> orderAccess.update(orderId, updateRequest));
 
         assertTrue(thrown.getMessage().contains("Order is cancelled"), thrown.getMessage());
     }
@@ -400,8 +409,10 @@ class OrderAccessImplTest {
         server.stubFor(patch(urlEqualTo(STATUS_PATH))
                 .willReturn(aResponse().withStatus(502).withBody("<html>Bad Gateway</html>")));
 
+        OrderAccess orderAccess = orders();
+        OrderId orderId = OrderId.of(ORDER_ID);
         ErliServerException thrown = assertThrows(ErliServerException.class,
-                () -> orders().changeStatus(OrderId.of(ORDER_ID), SellerStatus.SENT));
+                () -> orderAccess.changeStatus(orderId, SellerStatus.SENT));
 
         assertTrue(thrown.details().rawBody().contains("Bad Gateway"), thrown.details().rawBody());
     }
@@ -412,8 +423,9 @@ class OrderAccessImplTest {
                 .willReturn(aResponse().withStatus(401)
                         .withBody("{\"failureType\":\"security\",\"message\":\"Invalid API key\"}")));
 
-        ErliAuthException thrown = assertThrows(ErliAuthException.class,
-                () -> orders().search(OrderSearchRequest.all()).toList());
+        OrderSearchRequest searchRequest = OrderSearchRequest.all();
+        var results = orders().search(searchRequest);
+        ErliAuthException thrown = assertThrows(ErliAuthException.class, results::toList);
 
         assertEquals("security", thrown.details().failureType());
     }

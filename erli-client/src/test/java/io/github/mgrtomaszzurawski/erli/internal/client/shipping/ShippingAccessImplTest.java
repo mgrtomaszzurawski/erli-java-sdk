@@ -138,8 +138,10 @@ class ShippingAccessImplTest {
     @ParameterizedTest(name = "id \"{0}\" is rejected as a relative path segment")
     @ValueSource(strings = {".", ".."})
     void refusesRelativePathSegmentsAsParcelIds(String relativeSegment) {
+        var access = shippingAccess();
+        ParcelId parcelId = ParcelId.of(relativeSegment);
         assertThrows(IllegalArgumentException.class,
-                () -> shippingAccess().parcel(ParcelId.of(relativeSegment)));
+                () -> access.parcel(parcelId));
 
         server.verify(0, getRequestedFor(urlMatching(".*")));
     }
@@ -171,8 +173,10 @@ class ShippingAccessImplTest {
         server.stubFor(get(urlEqualTo(PARCEL_PATH))
                 .willReturn(aResponse().withStatus(HTTP_NOT_FOUND).withBody("<html>not found</html>")));
 
+        var access = shippingAccess();
+        ParcelId parcelId = ParcelId.of(PARCEL_ID);
         ErliNotFoundException failure = assertThrows(
-                ErliNotFoundException.class, () -> shippingAccess().parcel(ParcelId.of(PARCEL_ID)));
+                ErliNotFoundException.class, () -> access.parcel(parcelId));
 
         assertEquals("<html>not found</html>", failure.details().rawBody());
     }

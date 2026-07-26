@@ -171,6 +171,9 @@ class ProductLiveSandboxTest {
         return sleepFor(VISIBILITY_PAUSE);
     }
 
+    // A live-sandbox visibility pause: waits for the real server to make a just-written product
+    // readable before the next call. Not deterministic state, so Awaitility buys nothing here.
+    @SuppressWarnings("java:S2925")
     private static boolean sleepFor(Duration pause) {
         try {
             Thread.sleep(pause.toMillis());

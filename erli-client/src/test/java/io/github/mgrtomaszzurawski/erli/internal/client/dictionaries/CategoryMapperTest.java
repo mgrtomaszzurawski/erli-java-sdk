@@ -67,9 +67,9 @@ class CategoryMapperTest {
 
     @Test
     void rejectsANonNumericIdAsAPaginationCursor() {
+        CategoryId nonNumericId = CategoryId.of("not-a-number");
         IllegalStateException failure =
-                assertThrows(IllegalStateException.class, () -> CategoryMapper.numericId(CategoryId.
-                        of("not-a-number")));
+                assertThrows(IllegalStateException.class, () -> CategoryMapper.numericId(nonNumericId));
 
         assertTrue(failure.getMessage().contains("not-a-number"), failure.getMessage());
     }
@@ -93,6 +93,7 @@ class CategoryMapperTest {
     void returnsAnImmutableBreadcrumb() {
         List<Category> categories = mapAll(OBSERVED_CATEGORIES_JSON);
 
-        assertThrows(UnsupportedOperationException.class, () -> categories.get(2).breadcrumb().clear());
+        var breadcrumb = categories.get(2).breadcrumb();
+        assertThrows(UnsupportedOperationException.class, () -> breadcrumb.clear());
     }
 }

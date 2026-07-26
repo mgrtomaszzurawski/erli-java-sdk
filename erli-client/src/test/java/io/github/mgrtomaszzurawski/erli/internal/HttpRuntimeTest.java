@@ -99,8 +99,9 @@ class HttpRuntimeTest {
         server.stubFor(get(urlEqualTo(ME_PATH))
                 .willReturn(aResponse().withStatus(401).withBody(OBSERVED_401_BODY)));
 
+        HttpRuntime httpRuntime = runtimeWith(fastRetry());
         ErliAuthException thrown = assertThrows(ErliAuthException.class,
-                () -> runtimeWith(fastRetry()).get(ME_PATH, ShopResponse.class));
+                () -> httpRuntime.get(ME_PATH, ShopResponse.class));
         assertEquals("security", thrown.details().failureType());
     }
 
@@ -125,8 +126,9 @@ class HttpRuntimeTest {
     void doesNotRetryWhenPolicyForbidsIt() {
         server.stubFor(get(urlEqualTo(ME_PATH)).willReturn(aResponse().withStatus(503)));
 
+        HttpRuntime httpRuntime = runtimeWith(RetryPolicy.none());
         assertThrows(ErliServerException.class,
-                () -> runtimeWith(RetryPolicy.none()).get(ME_PATH, ShopResponse.class));
+                () -> httpRuntime.get(ME_PATH, ShopResponse.class));
         server.verify(1, getRequestedFor(urlEqualTo(ME_PATH)));
     }
 
@@ -167,8 +169,10 @@ class HttpRuntimeTest {
         server.stubFor(patch(urlEqualTo(path)).willReturn(aResponse().withStatus(500)));
 
         // fastRetry allows 3 attempts, but PATCH is non-idempotent so it must not be retried.
+        HttpRuntime httpRuntime = runtimeWith(fastRetry());
+        Map<String, String> patchBody = Map.of("name", "x");
         assertThrows(ErliServerException.class,
-                () -> runtimeWith(fastRetry()).patch(path, Map.of("name", "x"), ShopResponse.class));
+                () -> httpRuntime.patch(path, patchBody, ShopResponse.class));
         server.verify(1, patchRequestedFor(urlEqualTo(path)));
     }
 

@@ -149,7 +149,8 @@ class HooksAccessImplTest {
         server.stubFor(get(urlEqualTo(HOOKS_PATH)).willReturn(
                 okJson("[{\"hookName\":\"somethingThisSdkDoesNotKnow\",\"url\":\"" + HOOK_URL + "\"}]")));
 
-        ErliTransportException thrown = assertThrows(ErliTransportException.class, () -> hooks().list());
+        HooksAccess hooksAccess = hooks();
+        ErliTransportException thrown = assertThrows(ErliTransportException.class, () -> hooksAccess.list());
 
         assertTrue(thrown.getMessage().contains("cannot represent"), thrown.getMessage());
     }
@@ -194,7 +195,8 @@ class HooksAccessImplTest {
         Hook insecure = new Hook(
                 HookKind.ORDER_CREATED, URI.create("http://legacy.example/hook"), Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> hooks().save(insecure));
+        HooksAccess hooksAccess = hooks();
+        assertThrows(IllegalArgumentException.class, () -> hooksAccess.save(insecure));
 
         server.verify(0, putRequestedFor(urlEqualTo("/hooks/orderCreated")));
     }
@@ -274,7 +276,8 @@ class HooksAccessImplTest {
         server.stubFor(get(urlEqualTo(HOOKS_PATH))
                 .willReturn(aResponse().withStatus(HTTP_UNAUTHORIZED).withBody(OBSERVED_401_BODY)));
 
-        ErliAuthException thrown = assertThrows(ErliAuthException.class, () -> hooks().list());
+        HooksAccess hooksAccess = hooks();
+        ErliAuthException thrown = assertThrows(ErliAuthException.class, () -> hooksAccess.list());
 
         assertEquals("security", thrown.details().failureType());
     }
@@ -284,7 +287,8 @@ class HooksAccessImplTest {
         server.stubFor(delete(urlEqualTo(HOOK_PATH))
                 .willReturn(aResponse().withStatus(HTTP_NOT_FOUND).withBody("{\"message\":\"no such hook\"}")));
 
-        assertThrows(ErliNotFoundException.class, () -> hooks().delete(HookKind.CHECK_BUYABILITY));
+        HooksAccess hooksAccess = hooks();
+        assertThrows(ErliNotFoundException.class, () -> hooksAccess.delete(HookKind.CHECK_BUYABILITY));
     }
 
     @Test
@@ -292,8 +296,9 @@ class HooksAccessImplTest {
         server.stubFor(put(urlEqualTo(HOOK_PATH))
                 .willReturn(aResponse().withStatus(HTTP_BAD_REQUEST).withBody(VALIDATION_BODY)));
 
-        assertThrows(ErliValidationException.class,
-                () -> hooks().save(Hook.of(HookKind.CHECK_BUYABILITY, URI.create(HOOK_URL))));
+        HooksAccess hooksAccess = hooks();
+        Hook hook = Hook.of(HookKind.CHECK_BUYABILITY, URI.create(HOOK_URL));
+        assertThrows(ErliValidationException.class, () -> hooksAccess.save(hook));
     }
 
     @Test
@@ -301,7 +306,9 @@ class HooksAccessImplTest {
         server.stubFor(post(urlEqualTo(SYNC_RUN_PATH))
                 .willReturn(aResponse().withStatus(HTTP_SERVER_ERROR)));
 
-        assertThrows(ErliServerException.class, () -> hooks().notifyProductsNeedSync(
-                ProductSyncNotification.ofProducts(List.of(ProductExternalId.of("123")))));
+        HooksAccess hooksAccess = hooks();
+        ProductSyncNotification notification =
+                ProductSyncNotification.ofProducts(List.of(ProductExternalId.of("123")));
+        assertThrows(ErliServerException.class, () -> hooksAccess.notifyProductsNeedSync(notification));
     }
 }

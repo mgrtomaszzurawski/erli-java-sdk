@@ -38,8 +38,9 @@ class ParcelE2ETest {
             // The exception type IS the assertion: a wrong base URL would surface as
             // ErliTransportException and a rejected credential as ErliAuthException, so reaching
             // "not found" proves the host resolved, TLS completed and the Bearer key was accepted.
+            ParcelId absentParcelId = ParcelId.of(ABSENT_PARCEL_ID);
             ErliNotFoundException failure = assertThrows(
-                    ErliNotFoundException.class, () -> shipping.parcel(ParcelId.of(ABSENT_PARCEL_ID)));
+                    ErliNotFoundException.class, () -> shipping.parcel(absentParcelId));
 
             // The server answered with a body of its own rather than the SDK inventing one. Asserting
             // non-emptiness, not merely non-null: `rawBody` is never null by construction, so a null

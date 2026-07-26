@@ -47,27 +47,32 @@ class PathTemplateTest {
 
     @Test
     void rejectsDotAndDotDotSegments() {
+        Map<String, String> dotDotSegment = Map.of("id", "..");
         assertThrows(IllegalArgumentException.class,
-                () -> PathTemplate.expand("/orders/{id}", Map.of("id", "..")));
+                () -> PathTemplate.expand("/orders/{id}", dotDotSegment));
+        Map<String, String> dotSegment = Map.of("id", ".");
         assertThrows(IllegalArgumentException.class,
-                () -> PathTemplate.expand("/orders/{id}", Map.of("id", ".")));
+                () -> PathTemplate.expand("/orders/{id}", dotSegment));
     }
 
     @Test
     void rejectsBlankValue() {
+        Map<String, String> blankValue = Map.of("id", "  ");
         assertThrows(IllegalArgumentException.class,
-                () -> PathTemplate.expand("/orders/{id}", Map.of("id", "  ")));
+                () -> PathTemplate.expand("/orders/{id}", blankValue));
     }
 
     @Test
     void rejectsUnresolvedPlaceholder() {
+        Map<String, String> noParameters = Map.of();
         assertThrows(IllegalArgumentException.class,
-                () -> PathTemplate.expand("/orders/{id}", Map.of()));
+                () -> PathTemplate.expand("/orders/{id}", noParameters));
     }
 
     @Test
     void rejectsUnknownPlaceholderName() {
+        Map<String, String> unknownPlaceholder = Map.of("wrong", "1");
         assertThrows(IllegalArgumentException.class,
-                () -> PathTemplate.expand("/orders/{id}", Map.of("wrong", "1")));
+                () -> PathTemplate.expand("/orders/{id}", unknownPlaceholder));
     }
 }
