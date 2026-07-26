@@ -17,6 +17,8 @@ import java.util.Optional;
  *
  * <p>Build one with {@link #builder()}; instances are immutable and reusable across calls.
  */
+// A product carries ~40 optional fields; a content type that models them all has that many accessors.
+@SuppressWarnings("PMD.TooManyMethods")
 public final class ProductContent {
 
     private final Optional<String> name;
@@ -330,6 +332,7 @@ public final class ProductContent {
 
     /** Builder for {@link ProductContent}. Every field is optional here; the rules live in
      * {@link ProductDraft} and {@link ProductPatch}. */
+    @SuppressWarnings("PMD.TooManyMethods") // one withX() per product field — inherent to the builder
     public static final class Builder {
 
         private Optional<String> name = Optional.empty();

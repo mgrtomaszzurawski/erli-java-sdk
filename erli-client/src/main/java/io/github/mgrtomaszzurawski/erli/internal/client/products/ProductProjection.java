@@ -51,7 +51,7 @@ final class ProductProjection {
      *                 "no projection", which the callers handle before reaching here)
      */
     static Set<ProductField> widen(Set<ProductField> selected) {
-        EnumSet<ProductField> projection = EnumSet.copyOf(selected);
+        Set<ProductField> projection = EnumSet.copyOf(selected);
         projection.addAll(MAPPING_ESSENTIALS);
         return projection;
     }

@@ -64,6 +64,26 @@ configure(subprojects.filter { it.name in handWrittenModules }) {
         }
     }
 
+    // PMD's stricter rules (complexity, System.out) target the shipped SDK, not the illustrative
+    // demo/examples/jpms modules (whose println and identity checks are correct there).
+    if (name == "erli-client") {
+        apply(plugin = "pmd")
+        configure<PmdExtension> {
+            toolVersion = "7.7.0"
+            ruleSetFiles = files(rootProject.file("config/pmd/ruleset.xml"))
+            ruleSets = emptyList() // use only our ruleset, not PMD's defaults
+            isConsoleOutput = false
+            isIgnoreFailures = false // tree is clean; a new violation now fails the build
+        }
+        tasks.matching { it.name == "pmdTest" }.configureEach { enabled = false }
+        tasks.withType<Pmd>().configureEach {
+            reports {
+                xml.required.set(true)
+                html.required.set(false)
+            }
+        }
+    }
+
     apply(plugin = "com.github.spotbugs")
     configure<com.github.spotbugs.snom.SpotBugsExtension> {
         toolVersion.set("4.8.6")

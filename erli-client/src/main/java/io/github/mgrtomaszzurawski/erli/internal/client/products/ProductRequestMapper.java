@@ -242,6 +242,9 @@ final class ProductRequestMapper {
      * {@link ProductPatch#clearableFields()}; anything else was already rejected when the patch was
      * built, so reaching the default here means those two lists have drifted apart.
      */
+    // Exhaustive switch over ProductField (one arm per clearable field) — high cyclomatic by field
+    // count, but flat and exhaustive, which is the point (a new field becomes a compile error here).
+    @SuppressWarnings("PMD.CyclomaticComplexity")
     private static void clear(ProductUpdate rawRequest, ProductField field) {
         switch (field) {
             case DESCRIPTION -> rawRequest.setDescription(null);
@@ -281,6 +284,7 @@ final class ProductRequestMapper {
         }
     }
 
+    @SuppressWarnings("PMD.CyclomaticComplexity") // exhaustive ProductField switch, as clear() above
     private static void clearBatchEntry(ProductsBatchUpdatePatchRequestInner rawRequest, ProductField field) {
         switch (field) {
             case DESCRIPTION -> rawRequest.setDescription(null);

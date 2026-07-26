@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<ruleset name="erli-java-sdk"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        PMD rules for the erli-client SDK module. Focused on real defects and genuine complexity — the
+        bug-finding categories (errorprone, multithreading, performance) plus design complexity
+        (cognitive/cyclomatic/NPath). Pure formatting and naming are Spotless/Checkstyle's job, and
+        PMD's most pedantic or false-positive-prone rules are excluded so a finding means something.
+    </description>
+
+    <!-- Real bug patterns. -->
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="AvoidLiteralsInIfCondition"/>
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
+        <exclude name="AvoidDuplicateLiterals"/>
+        <exclude name="NullAssignment"/>
+        <exclude name="AvoidFieldNameMatchingTypeName"/>
+    </rule>
+
+    <rule ref="category/java/multithreading.xml">
+        <exclude name="UseConcurrentHashMap"/>
+        <exclude name="DoNotUseThreads"/>
+    </rule>
+
+    <rule ref="category/java/performance.xml">
+        <exclude name="AvoidInstantiatingObjectsInLoops"/>
+        <!-- Micro-optimisation nitpicks / false positives for this codebase. -->
+        <exclude name="InsufficientStringBufferDeclaration"/>
+        <exclude name="UseArraysAsList"/>
+        <!-- An exhaustive enum switch is a deliberate design choice (compile-time exhaustiveness),
+             not something to rewrite as if/else just because it has two arms. -->
+        <exclude name="TooFewBranchesForSwitch"/>
+    </rule>
+
+    <!-- Best practices, minus the noisy/inapplicable ones. -->
+    <rule ref="category/java/bestpractices.xml">
+        <exclude name="GuardLogStatement"/>
+        <exclude name="AbstractClassWithoutAbstractMethod"/>
+        <exclude name="LiteralsFirstInComparisons"/>
+        <exclude name="UseVarargs"/>
+        <exclude name="AccessorMethodGeneration"/>
+        <!-- False positive on record compact constructors: `x = normalise(x)` reassigns the record
+             component, which PMD's flow analysis reads as a dead store. -->
+        <exclude name="UnusedAssignment"/>
+    </rule>
+
+    <!-- Complexity — the reason to add PMD on top of Checkstyle/SpotBugs. Thresholds sit a little
+         above PMD defaults so cohesive mappers/builders pass and only genuinely tangled code trips.
+         GodClass is omitted deliberately: its composite metric fires on the mapping layer, which is
+         large by cohesion (one class that knows all of a domain type's fields), not by tangle. -->
+    <rule ref="category/java/design.xml/CognitiveComplexity">
+        <properties>
+            <property name="reportLevel" value="20"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="20"/>
+            <property name="classReportLevel" value="90"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/NPathComplexity">
+        <properties>
+            <property name="reportLevel" value="200"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/ExcessiveParameterList">
+        <properties>
+            <property name="minimum" value="13"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/TooManyMethods">
+        <properties>
+            <property name="maxmethods" value="40"/>
+        </properties>
+    </rule>
+</ruleset>
