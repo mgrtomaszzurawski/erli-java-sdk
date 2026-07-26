@@ -18,6 +18,7 @@ import java.util.Optional;
  *         instead. Kept so an order event still maps losslessly.
  */
 @Deprecated(since = "0.1.0", forRemoval = false)
+@SuppressWarnings("deprecation") // a deprecated type may still reference itself
 public record OrderPaymentSummary(long id, Optional<PaymentStatus> status) {
 
     public OrderPaymentSummary {

@@ -45,9 +45,20 @@ sonar {
         // The exception-by-remediation design is a deliberate sealed hierarchy
         // (ErliValidationException -> ErliApiException -> ErliException -> RuntimeException); S110's
         // 5-parent limit does not fit a domain exception that necessarily sits on RuntimeException.
-        property("sonar.issue.ignore.multicriteria", "e1")
+        property("sonar.issue.ignore.multicriteria", "e1,e2,e3")
         property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S110")
         property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/core/error/*.java")
+        // S1133 ("remove this deprecated code someday") does not apply to OrderPayment/
+        // OrderPaymentSummary: Erli deprecated the embedded payment block upstream, and the SDK keeps
+        // it only so an order still maps losslessly. It is not ours to remove.
+        property("sonar.issue.ignore.multicriteria.e2.ruleKey", "java:S1133")
+        property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/OrderPayment*.java")
+        // OrderFilter is a sealed interface whose four nested records each null-check their own
+        // `operator` field. The shared "operator" message can't live in a private constant (an
+        // interface has no private fields) and a public one would leak into the API, so the three
+        // duplicates stay.
+        property("sonar.issue.ignore.multicriteria.e3.ruleKey", "java:S1192")
+        property("sonar.issue.ignore.multicriteria.e3.resourceKey", "**/OrderFilter.java")
     }
 }
 

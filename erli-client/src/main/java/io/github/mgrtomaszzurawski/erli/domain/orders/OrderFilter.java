@@ -28,6 +28,7 @@ import java.util.Objects;
 public sealed interface OrderFilter
         permits OrderFilter.Comparison, OrderFilter.Membership, OrderFilter.Combination, OrderFilter.Negation {
 
+
     /** The only {@code paymentStatus} value Erli accepts in a filter. */
     String PAYMENT_STATUS_COMPLETED = "completed";
 
